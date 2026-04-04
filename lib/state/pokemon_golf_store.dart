@@ -29,9 +29,16 @@ class PokemonGolfStore extends ChangeNotifier {
 
   ActiveRound? _activeRound;
   String? _trainerName;
+  String? _homeCourseId;
 
   ActiveRound? get activeRound => _activeRound;
   String? get trainerName => _trainerName;
+  String? get homeCourseId => _homeCourseId;
+
+  void setHomeCourseId(String id) {
+    _homeCourseId = id;
+    notifyListeners();
+  }
 
   UnmodifiableSetView<int> get caughtDexNumbers =>
       UnmodifiableSetView<int>(_caughtDexNumbers);
@@ -58,6 +65,10 @@ class PokemonGolfStore extends ChangeNotifier {
       _completedRounds.addAll(results[1] as List<GolfRoundSummary>);
       _trainerName = results[2] as String?;
 
+      try {
+        _homeCourseId = await supa.fetchHomeCourseId();
+      } catch (_) {}
+
       notifyListeners();
     } catch (e) {
       debugPrint('Failed to load user data: $e');
@@ -69,16 +80,19 @@ class PokemonGolfStore extends ChangeNotifier {
     _completedRounds.clear();
     _activeRound = null;
     _trainerName = null;
+    _homeCourseId = null;
     notifyListeners();
     await _supabaseService?.signOut();
   }
 
-  void startRound(int holeCount) {
+  void startRound(int holeCount, {List<int>? holePars, String? courseName}) {
     _activeRound = ActiveRound(
       holeCount: holeCount,
       currentHoleNumber: 1,
       currentEncounter: _encounterService.generateEncounter(),
       completedHoles: const <HoleResult>[],
+      holePars: holePars,
+      courseName: courseName,
     );
     notifyListeners();
   }
@@ -100,6 +114,7 @@ class PokemonGolfStore extends ChangeNotifier {
       completedAt: DateTime.now(),
       holeCount: round.completedHoles.length,
       holes: round.completedHoles,
+      courseName: round.courseName,
     );
     _completedRounds.insert(0, summary);
     _activeRound = null;
@@ -150,6 +165,7 @@ class PokemonGolfStore extends ChangeNotifier {
         completedAt: DateTime.now(),
         holeCount: round.holeCount,
         holes: updatedHoles,
+        courseName: round.courseName,
       );
       _completedRounds.insert(0, summary);
       _activeRound = null;
@@ -184,6 +200,8 @@ class PokemonGolfStore extends ChangeNotifier {
       currentHoleNumber: round.currentHoleNumber + 1,
       currentEncounter: _encounterService.generateEncounter(modifiers),
       completedHoles: updatedHoles,
+      holePars: round.holePars,
+      courseName: round.courseName,
     );
     notifyListeners();
 

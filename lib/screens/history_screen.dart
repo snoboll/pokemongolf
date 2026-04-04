@@ -44,7 +44,7 @@ class HistoryScreen extends StatelessWidget {
                               builder: (_) => ScorecardDetailScreen(
                                 holes: round.holes,
                                 holeCount: round.holeCount,
-                                title: '${round.holeCount}H · ${_formatDate(round.completedAt)}',
+                                title: round.courseName ?? '${round.holeCount}H · ${_formatDate(round.completedAt)}',
                               ),
                             ),
                           );
@@ -142,12 +142,25 @@ class _RoundCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  _formatTimestamp(round.completedAt),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color:
-                        theme.colorScheme.onSurface.withValues(alpha: 0.45),
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      _formatTimestamp(round.completedAt),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                      ),
+                    ),
+                    if (round.courseName != null)
+                      Text(
+                        round.courseName!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary.withValues(alpha: 0.7),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
                 ),
               ),
               Column(

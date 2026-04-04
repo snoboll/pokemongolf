@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/first_gen_pokemon.dart';
+import '../data/preset_courses.dart';
 import '../services/supabase_service.dart';
 
 class TrainersScreen extends StatefulWidget {
@@ -154,6 +155,16 @@ class _TrainerCard extends StatelessWidget {
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (_courseNameFor(trainer.homeCourseId) != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        _courseNameFor(trainer.homeCourseId)!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 6),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
@@ -191,6 +202,14 @@ class _TrainerCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static String? _courseNameFor(String? id) {
+    if (id == null) return null;
+    for (final c in presetCourses) {
+      if (c.id == id) return c.name;
+    }
+    return null;
   }
 
   Color _rankColor(int rank) {

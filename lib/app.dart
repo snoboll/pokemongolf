@@ -8,6 +8,7 @@ import 'screens/collection_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/round_screen.dart';
+import 'screens/courses_screen.dart';
 import 'screens/trainers_screen.dart';
 import 'services/supabase_service.dart';
 import 'state/pokemon_golf_store.dart';
@@ -123,6 +124,15 @@ class _PokemonGolfAppState extends State<PokemonGolfApp> {
           ),
         ),
       ),
+      builder: (BuildContext context, Widget? child) {
+        if (_store != null) {
+          return PokemonGolfScope(
+            notifier: _store!,
+            child: child!,
+          );
+        }
+        return child!;
+      },
       home: _buildHome(),
     );
   }
@@ -138,10 +148,7 @@ class _PokemonGolfAppState extends State<PokemonGolfApp> {
       return const AuthScreen();
     }
 
-    return PokemonGolfScope(
-      notifier: _store!,
-      child: const PokemonGolfShell(),
-    );
+    return const PokemonGolfShell();
   }
 }
 
@@ -170,9 +177,9 @@ class PokemonGolfShell extends StatefulWidget {
 class _PokemonGolfShellState extends State<PokemonGolfShell> {
   int _selectedIndex = 2;
 
-  void _startRound(BuildContext context, int holeCount) {
+  void _startRound(BuildContext context, int holeCount, {List<int>? holePars, String? courseName}) {
     final store = PokemonGolfScope.of(context);
-    store.startRound(holeCount);
+    store.startRound(holeCount, holePars: holePars, courseName: courseName);
 
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -200,9 +207,11 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
       const CollectionScreen(),
       const TrainersScreen(),
       HomeScreen(
-        onStartRound: (int holeCount) => _startRound(context, holeCount),
+        onStartRound: ({required int holeCount, List<int>? holePars, String? courseName}) =>
+            _startRound(context, holeCount, holePars: holePars, courseName: courseName),
         onResumeRound: () => _resumeRound(context),
       ),
+      const CoursesScreen(),
       const HistoryScreen(),
     ];
 
@@ -228,6 +237,11 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
             icon: Icon(Icons.golf_course_outlined),
             selectedIcon: Icon(Icons.golf_course),
             label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.map_outlined),
+            selectedIcon: Icon(Icons.map),
+            label: 'Courses',
           ),
           NavigationDestination(
             icon: Icon(Icons.scoreboard_outlined),

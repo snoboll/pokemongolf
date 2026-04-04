@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../app.dart';
 import '../data/first_gen_pokemon.dart';
+import '../data/preset_courses.dart';
+import '../models/golf_course.dart';
+import '../services/supabase_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -10,7 +14,7 @@ class HomeScreen extends StatelessWidget {
     required this.onResumeRound,
   });
 
-  final ValueChanged<int> onStartRound;
+  final void Function({required int holeCount, List<int>? holePars, String? courseName}) onStartRound;
   final VoidCallback onResumeRound;
 
   @override
@@ -41,15 +45,40 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  if (store.trainerName != null)
+                  if (store.trainerName != null) ...<Widget>[
                     Text(
                       'Trainer ${store.trainerName}',
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: theme.colorScheme.primary,
                         fontWeight: FontWeight.w600,
                       ),
-                    )
-                  else
+                    ),
+                    if (store.homeCourseId != null)
+                      Builder(builder: (context) {
+                        final name = presetCourses
+                            .where((c) => c.id == store.homeCourseId)
+                            .map((c) => c.name)
+                            .firstOrNull;
+                        if (name == null) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Icon(Icons.home, size: 14,
+                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                              const SizedBox(width: 4),
+                              Text(
+                                name,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                  ] else
                     Text(
                       'Catch them on the course',
                       style: theme.textTheme.bodyLarge?.copyWith(
@@ -61,7 +90,7 @@ class HomeScreen extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: () => onStartRound(18),
+                      onPressed: () => _showCourseSelection(context, 18),
                       icon: const Icon(Icons.golf_course, size: 24),
                       label: const Text('18 Holes'),
                     ),
@@ -70,7 +99,7 @@ class HomeScreen extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.tonalIcon(
-                      onPressed: () => onStartRound(9),
+                      onPressed: () => _showCourseSelection(context, 9),
                       icon: const Icon(Icons.flag, size: 24),
                       label: const Text('9 Holes'),
                     ),
@@ -151,6 +180,27 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  void _showCourseSelection(BuildContext context, int holeCount) {
+    final store = PokemonGolfScope.of(context);
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _CoursePickerSheet(
+        holeCount: holeCount,
+        homeCourseId: store.homeCourseId,
+        onStart: ({List<int>? holePars, String? courseName}) {
+          Navigator.of(context).pop();
+          onStartRound(holeCount: holeCount, holePars: holePars, courseName: courseName);
+        },
+      ),
+    );
+  }
+
   void _confirmSignOut(BuildContext context) {
     showDialog<void>(
       context: context,
@@ -165,7 +215,7 @@ class HomeScreen extends StatelessWidget {
           FilledButton(
             onPressed: () {
               Navigator.of(ctx).pop();
-              PokemonGolfScope.of(context).signOut();
+              Supabase.instance.client.auth.signOut();
             },
             child: const Text('Sign out'),
           ),
@@ -383,6 +433,233 @@ class _InfoSheet extends StatelessWidget {
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 )),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CoursePickerSheet extends StatefulWidget {
+  const _CoursePickerSheet({
+    required this.holeCount,
+    required this.homeCourseId,
+    required this.onStart,
+  });
+
+  final int holeCount;
+  final String? homeCourseId;
+  final void Function({List<int>? holePars, String? courseName}) onStart;
+
+  @override
+  State<_CoursePickerSheet> createState() => _CoursePickerSheetState();
+}
+
+class _CoursePickerSheetState extends State<_CoursePickerSheet> {
+  List<GolfCourse> _allCourses = <GolfCourse>[];
+  GolfCourse? _selectedCourse;
+  final List<CoursePart> _selectedParts = <CoursePart>[];
+  bool _loading = true;
+
+  int get _requiredParts => widget.holeCount == 18 ? 2 : 1;
+
+  bool get _canStart {
+    if (_selectedCourse == null) return true;
+    if (!_selectedCourse!.hasParts) return true;
+    return _selectedParts.length == _requiredParts;
+  }
+
+  List<int>? get _holePars {
+    if (_selectedCourse == null) return null;
+    if (_selectedCourse!.hasParts) {
+      return _selectedCourse!.parsForParts(_selectedParts);
+    }
+    if (_selectedCourse!.pars != null) {
+      if (widget.holeCount == 9) {
+        return _selectedCourse!.pars!.sublist(0, 9);
+      }
+      return _selectedCourse!.pars;
+    }
+    return null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCourses();
+  }
+
+  Future<void> _loadCourses() async {
+    try {
+      final service = SupabaseService();
+      final userCourses = await service.fetchUserCourses();
+      final all = <GolfCourse>[...presetCourses, ...userCourses];
+
+      GolfCourse? home;
+      if (widget.homeCourseId != null) {
+        for (final c in all) {
+          if (c.id == widget.homeCourseId) {
+            home = c;
+            break;
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _allCourses = all;
+          _selectedCourse = home;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _allCourses = <GolfCourse>[...presetCourses];
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  void _togglePart(CoursePart part) {
+    setState(() {
+      if (_selectedParts.contains(part)) {
+        _selectedParts.remove(part);
+      } else {
+        if (_selectedParts.length < _requiredParts) {
+          _selectedParts.add(part);
+        } else {
+          _selectedParts
+            ..removeAt(0)
+            ..add(part);
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '${widget.holeCount} Holes',
+            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 16),
+          Text('Course', style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+          )),
+          const SizedBox(height: 8),
+          if (_loading)
+            const Center(child: Padding(
+              padding: EdgeInsets.all(12),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ))
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: <Widget>[
+                if (widget.homeCourseId != null)
+                  ChoiceChip(
+                    avatar: const Icon(Icons.home, size: 16),
+                    label: Text(_allCourses
+                        .where((c) => c.id == widget.homeCourseId)
+                        .map((c) => c.name)
+                        .firstOrNull ?? 'Home'),
+                    selected: _selectedCourse?.id == widget.homeCourseId,
+                    onSelected: (_) {
+                      final home = _allCourses.where((c) => c.id == widget.homeCourseId).firstOrNull;
+                      if (home != null) {
+                        setState(() {
+                          _selectedCourse = home;
+                          _selectedParts.clear();
+                        });
+                      }
+                    },
+                  ),
+                ChoiceChip(
+                  label: const Text('No course'),
+                  selected: _selectedCourse == null,
+                  onSelected: (_) => setState(() {
+                    _selectedCourse = null;
+                    _selectedParts.clear();
+                  }),
+                ),
+                for (final course in _allCourses)
+                  if (course.id != widget.homeCourseId)
+                    ChoiceChip(
+                      label: Text(course.name),
+                      selected: _selectedCourse?.id == course.id,
+                      onSelected: (_) => setState(() {
+                        _selectedCourse = course;
+                        _selectedParts.clear();
+                      }),
+                    ),
+              ],
+            ),
+          if (_selectedCourse != null && _selectedCourse!.hasParts) ...<Widget>[
+            const SizedBox(height: 16),
+            Text(
+              'Select $_requiredParts part${_requiredParts > 1 ? "s" : ""}',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: <Widget>[
+                for (final part in _selectedCourse!.parts!)
+                  FilterChip(
+                    label: Text(part.name),
+                    selected: _selectedParts.contains(part),
+                    onSelected: (_) => _togglePart(part),
+                  ),
+              ],
+            ),
+            if (_selectedParts.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 8),
+              Text(
+                _selectedParts.map((p) => '${p.name} (par ${p.pars.fold<int>(0, (a, b) => a + b)})').join(' + '),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ],
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _canStart
+                  ? () => widget.onStart(
+                        holePars: _holePars,
+                        courseName: _selectedCourse?.name,
+                      )
+                  : null,
+              child: const Text('Start Round'),
+            ),
           ),
         ],
       ),

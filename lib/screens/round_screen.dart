@@ -82,12 +82,24 @@ class _RoundScreenState extends State<RoundScreen> {
   }
 
   void _resetForNextHole() {
+    final store = PokemonGolfScope.of(context);
+    final nextPar = store.activeRound?.currentHolePar;
     setState(() {
-      _par = 4;
+      _par = nextPar ?? 4;
       _selectedScore = GolfScore.par;
       _holeStats = const HoleStats();
       _resolution = null;
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final store = PokemonGolfScope.of(context);
+    final coursePar = store.activeRound?.currentHolePar;
+    if (coursePar != null && _resolution == null) {
+      _par = coursePar;
+    }
   }
 
   @override
@@ -156,6 +168,17 @@ class _RoundScreenState extends State<RoundScreen> {
                 Text('${activeRound.caughtCount}',
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.w700)),
+                if (activeRound.parOrBetterStreak >= 2) ...<Widget>[
+                  const SizedBox(width: 12),
+                  Icon(Icons.local_fire_department,
+                      size: 16, color: const Color(0xFFFFB300)),
+                  const SizedBox(width: 2),
+                  Text('${activeRound.parOrBetterStreak}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFFFFB300),
+                      )),
+                ],
               ],
             ),
           ),
@@ -253,17 +276,36 @@ class _RoundScreenState extends State<RoundScreen> {
                     ],
                   ),
                   const SizedBox(height: 28),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('Hole par',
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700)),
-                  ),
-                  const SizedBox(height: 10),
-                  _ParSelector(
-                    selected: _par,
-                    onChanged: (v) => setState(() => _par = v),
-                  ),
+                  if (activeRound.currentHolePar != null) ...<Widget>[
+                    Row(
+                      children: <Widget>[
+                        Text('Par ${activeRound.currentHolePar}',
+                            style: theme.textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w700)),
+                        if (activeRound.courseName != null) ...<Widget>[
+                          const SizedBox(width: 8),
+                          Text(
+                            activeRound.courseName!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ] else ...<Widget>[
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('Hole par',
+                          style: theme.textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700)),
+                    ),
+                    const SizedBox(height: 10),
+                    _ParSelector(
+                      selected: _par,
+                      onChanged: (v) => setState(() => _par = v),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   Align(
                     alignment: Alignment.centerLeft,

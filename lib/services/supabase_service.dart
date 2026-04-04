@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/first_gen_pokemon.dart';
 import '../models/golf_score.dart';
 import '../models/hole_stats.dart';
+import '../models/golf_course.dart';
 import '../models/round_models.dart';
 
 class TrainerProfile {
@@ -10,11 +11,13 @@ class TrainerProfile {
     required this.userId,
     required this.trainerName,
     required this.caughtCount,
+    this.homeCourseId,
   });
 
   final String userId;
   final String trainerName;
   final int caughtCount;
+  final String? homeCourseId;
 }
 
 class SupabaseService {
@@ -68,10 +71,30 @@ class SupabaseService {
     );
   }
 
+  Future<String?> fetchHomeCourseId() async {
+    final uid = currentUserId;
+    if (uid == null) return null;
+
+    final List<Map<String, dynamic>> rows = await _client
+        .from('profiles')
+        .select('home_course_id')
+        .eq('user_id', uid)
+        .limit(1);
+
+    if (rows.isEmpty) return null;
+    return rows.first['home_course_id'] as String?;
+  }
+
+  Future<void> setHomeCourse(String courseId) async {
+    await _client.from('profiles').update(
+      {'home_course_id': courseId},
+    ).eq('user_id', currentUserId!);
+  }
+
   Future<List<TrainerProfile>> fetchAllTrainers() async {
     final List<Map<String, dynamic>> profiles = await _client
         .from('profiles')
-        .select('user_id, trainer_name')
+        .select('user_id, trainer_name, home_course_id')
         .order('created_at');
 
     if (profiles.isEmpty) return <TrainerProfile>[];
@@ -90,8 +113,36 @@ class SupabaseService {
         userId: uid,
         trainerName: p['trainer_name'] as String,
         caughtCount: countMap[uid] ?? 0,
+        homeCourseId: p['home_course_id'] as String?,
       );
     }).toList(growable: false);
+  }
+
+  // ── User Courses ─────────────────────────────────────────────────
+
+  Future<List<GolfCourse>> fetchUserCourses() async {
+    final List<Map<String, dynamic>> rows = await _client
+        .from('user_courses')
+        .select()
+        .order('created_at');
+
+    return rows.map((row) {
+      final List<dynamic> parsRaw = row['pars'] as List<dynamic>;
+      final List<int> pars = parsRaw.map((e) => (e as num).toInt()).toList();
+
+      return GolfCourse(
+        id: row['id'] as String,
+        name: row['name'] as String,
+        pars: pars,
+      );
+    }).toList(growable: false);
+  }
+
+  Future<void> insertUserCourse(String name, List<int> pars) async {
+    await _client.from('user_courses').insert({
+      'name': name,
+      'pars': pars,
+    });
   }
 
   // ── Caught Pokemon ──────────────────────────────────────────────────

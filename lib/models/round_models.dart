@@ -31,12 +31,21 @@ class ActiveRound {
     required this.currentHoleNumber,
     required this.currentEncounter,
     required this.completedHoles,
+    this.holePars,
+    this.courseName,
   });
 
   final int holeCount;
   final int currentHoleNumber;
   final PokemonSpecies currentEncounter;
   final List<HoleResult> completedHoles;
+  final List<int>? holePars;
+  final String? courseName;
+
+  int? get currentHolePar {
+    if (holePars == null || currentHoleNumber > holePars!.length) return null;
+    return holePars![currentHoleNumber - 1];
+  }
 
   int get caughtCount => completedHoles.where((hole) => hole.caught).length;
 
@@ -70,11 +79,13 @@ class GolfRoundSummary {
     required this.completedAt,
     required this.holeCount,
     required this.holes,
+    this.courseName,
   });
 
   final DateTime completedAt;
   final int holeCount;
   final List<HoleResult> holes;
+  final String? courseName;
 
   int get caughtCount => holes.where((hole) => hole.caught).length;
 
