@@ -41,13 +41,22 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'Catch them on the course',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color:
-                          theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  if (store.trainerName != null)
+                    Text(
+                      'Trainer ${store.trainerName}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )
+                  else
+                    Text(
+                      'Catch them on the course',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 48),
                   SizedBox(
                     width: double.infinity,
@@ -121,12 +130,44 @@ class HomeScreen extends StatelessWidget {
           ),
           Positioned(
             top: 8,
+            left: 8,
+            child: IconButton(
+              icon: const Icon(Icons.logout, size: 22),
+              tooltip: 'Sign out',
+              onPressed: () => _confirmSignOut(context),
+            ),
+          ),
+          Positioned(
+            top: 8,
             right: 8,
             child: IconButton(
               icon: const Icon(Icons.info_outline),
               tooltip: 'How it works',
               onPressed: () => _showInfoSheet(context),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmSignOut(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text('Your data is saved in the cloud.'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              PokemonGolfScope.of(context).signOut();
+            },
+            child: const Text('Sign out'),
           ),
         ],
       ),
@@ -204,7 +245,7 @@ class _InfoSheet extends StatelessWidget {
           _terrainRow(theme, 'Water', 'Water · Ice',
               const Color(0xFF42A5F5)),
           _terrainRow(theme, 'Rough', 'Grass · Poison · Bug',
-              const Color(0xFF8D6E63)),
+              const Color(0xFF66BB6A)),
           _terrainRow(theme, '1-Putt', 'Psychic · Ghost · Electric',
               const Color(0xFF7E57C2)),
           const SizedBox(height: 20),

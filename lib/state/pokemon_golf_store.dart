@@ -9,23 +9,29 @@ import '../models/pokemon_species.dart';
 import '../models/round_models.dart';
 import '../services/catch_service.dart';
 import '../services/encounter_service.dart';
+import '../services/supabase_service.dart';
 
 class PokemonGolfStore extends ChangeNotifier {
   PokemonGolfStore({
     EncounterService? encounterService,
     CatchService? catchService,
+    SupabaseService? supabaseService,
   })  : _encounterService = encounterService ?? EncounterService(),
-        _catchService = catchService ?? CatchService();
+        _catchService = catchService ?? CatchService(),
+        _supabaseService = supabaseService;
 
   final EncounterService _encounterService;
   final CatchService _catchService;
+  final SupabaseService? _supabaseService;
 
   final Set<int> _caughtDexNumbers = <int>{};
   final List<GolfRoundSummary> _completedRounds = <GolfRoundSummary>[];
 
   ActiveRound? _activeRound;
+  String? _trainerName;
 
   ActiveRound? get activeRound => _activeRound;
+  String? get trainerName => _trainerName;
 
   UnmodifiableSetView<int> get caughtDexNumbers =>
       UnmodifiableSetView<int>(_caughtDexNumbers);
@@ -35,6 +41,36 @@ class PokemonGolfStore extends ChangeNotifier {
 
   bool hasCaught(PokemonSpecies pokemon) {
     return _caughtDexNumbers.contains(pokemon.dexNumber);
+  }
+
+  Future<void> loadUserData() async {
+    final supa = _supabaseService;
+    if (supa == null) return;
+
+    try {
+      final results = await Future.wait([
+        supa.fetchCaughtDexNumbers(),
+        supa.fetchCompletedRounds(),
+        supa.fetchTrainerName(),
+      ]);
+
+      _caughtDexNumbers.addAll(results[0] as Set<int>);
+      _completedRounds.addAll(results[1] as List<GolfRoundSummary>);
+      _trainerName = results[2] as String?;
+
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Failed to load user data: $e');
+    }
+  }
+
+  Future<void> signOut() async {
+    _caughtDexNumbers.clear();
+    _completedRounds.clear();
+    _activeRound = null;
+    _trainerName = null;
+    notifyListeners();
+    await _supabaseService?.signOut();
   }
 
   void startRound(int holeCount) {
@@ -68,6 +104,9 @@ class PokemonGolfStore extends ChangeNotifier {
     _completedRounds.insert(0, summary);
     _activeRound = null;
     notifyListeners();
+
+    _persistRound(summary);
+
     return summary;
   }
 
@@ -97,6 +136,7 @@ class PokemonGolfStore extends ChangeNotifier {
 
     if (caught) {
       _caughtDexNumbers.add(round.currentEncounter.dexNumber);
+      _persistCatch(round.currentEncounter.dexNumber);
     }
 
     final List<HoleResult> updatedHoles = <HoleResult>[
@@ -115,6 +155,8 @@ class PokemonGolfStore extends ChangeNotifier {
       _activeRound = null;
       notifyListeners();
 
+      _persistRound(summary);
+
       return HoleResolution(
         holeResult: result,
         roundCompleted: true,
@@ -122,7 +164,6 @@ class PokemonGolfStore extends ChangeNotifier {
       );
     }
 
-    // Build modifiers for the next encounter based on this hole's stats/score
     int streak = round.parOrBetterStreak;
     if (score.relativeToPar <= 0) {
       streak++;
@@ -151,5 +192,19 @@ class PokemonGolfStore extends ChangeNotifier {
       roundCompleted: false,
       nextHoleNumber: round.currentHoleNumber + 1,
     );
+  }
+
+  // ── Private persistence helpers (fire-and-forget) ───────────────────
+
+  void _persistCatch(int dexNumber) {
+    _supabaseService?.insertCaughtPokemon(dexNumber).catchError((e) {
+      debugPrint('Failed to persist catch: $e');
+    });
+  }
+
+  void _persistRound(GolfRoundSummary summary) {
+    _supabaseService?.insertRound(summary).catchError((e) {
+      debugPrint('Failed to persist round: $e');
+    });
   }
 }

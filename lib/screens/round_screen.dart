@@ -323,7 +323,7 @@ class _RoundScreenState extends State<RoundScreen> {
                         label: 'Rough',
                         icon: Icons.grass,
                         active: _holeStats.rough,
-                        activeColor: const Color(0xFF8D6E63),
+                        activeColor: const Color(0xFF66BB6A),
                         onToggle: () => setState(() =>
                             _holeStats = _holeStats.copyWith(
                                 rough: !_holeStats.rough)),

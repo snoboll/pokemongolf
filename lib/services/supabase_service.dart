@@ -1,0 +1,196 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../data/first_gen_pokemon.dart';
+import '../models/golf_score.dart';
+import '../models/hole_stats.dart';
+import '../models/round_models.dart';
+
+class TrainerProfile {
+  const TrainerProfile({
+    required this.userId,
+    required this.trainerName,
+    required this.caughtCount,
+  });
+
+  final String userId;
+  final String trainerName;
+  final int caughtCount;
+}
+
+class SupabaseService {
+  SupabaseService() : _client = Supabase.instance.client;
+
+  final SupabaseClient _client;
+
+  String? get currentUserId => _client.auth.currentUser?.id;
+
+  // ── Auth ────────────────────────────────────────────────────────────
+
+  Future<AuthResponse> signUp({
+    required String email,
+    required String password,
+  }) {
+    return _client.auth.signUp(email: email, password: password);
+  }
+
+  Future<AuthResponse> signIn({
+    required String email,
+    required String password,
+  }) {
+    return _client.auth.signInWithPassword(email: email, password: password);
+  }
+
+  Future<void> signOut() => _client.auth.signOut();
+
+  Stream<AuthState> get onAuthStateChange =>
+      _client.auth.onAuthStateChange;
+
+  // ── Profiles ────────────────────────────────────────────────────────
+
+  Future<String?> fetchTrainerName() async {
+    final uid = currentUserId;
+    if (uid == null) return null;
+
+    final List<Map<String, dynamic>> rows = await _client
+        .from('profiles')
+        .select('trainer_name')
+        .eq('user_id', uid)
+        .limit(1);
+
+    if (rows.isEmpty) return null;
+    return rows.first['trainer_name'] as String;
+  }
+
+  Future<void> upsertTrainerName(String name) async {
+    await _client.from('profiles').upsert(
+      {'trainer_name': name},
+      onConflict: 'user_id',
+    );
+  }
+
+  Future<List<TrainerProfile>> fetchAllTrainers() async {
+    final List<Map<String, dynamic>> profiles = await _client
+        .from('profiles')
+        .select('user_id, trainer_name')
+        .order('created_at');
+
+    if (profiles.isEmpty) return <TrainerProfile>[];
+
+    final List<Map<String, dynamic>> catchCounts = await _client
+        .rpc('get_trainer_catch_counts');
+
+    final Map<String, int> countMap = <String, int>{};
+    for (final row in catchCounts) {
+      countMap[row['user_id'] as String] = (row['catch_count'] as num).toInt();
+    }
+
+    return profiles.map((p) {
+      final String uid = p['user_id'] as String;
+      return TrainerProfile(
+        userId: uid,
+        trainerName: p['trainer_name'] as String,
+        caughtCount: countMap[uid] ?? 0,
+      );
+    }).toList(growable: false);
+  }
+
+  // ── Caught Pokemon ──────────────────────────────────────────────────
+
+  Future<Set<int>> fetchCaughtDexNumbers() async {
+    final List<Map<String, dynamic>> rows = await _client
+        .from('caught_pokemon')
+        .select('dex_number')
+        .eq('user_id', currentUserId!)
+        .order('dex_number');
+
+    return rows.map<int>((row) => row['dex_number'] as int).toSet();
+  }
+
+  Future<void> insertCaughtPokemon(int dexNumber) async {
+    await _client.from('caught_pokemon').upsert(
+      {'dex_number': dexNumber},
+      onConflict: 'user_id,dex_number',
+    );
+  }
+
+  // ── Rounds ──────────────────────────────────────────────────────────
+
+  Future<List<GolfRoundSummary>> fetchCompletedRounds() async {
+    final List<Map<String, dynamic>> roundRows = await _client
+        .from('rounds')
+        .select()
+        .order('completed_at', ascending: false);
+
+    final List<GolfRoundSummary> summaries = <GolfRoundSummary>[];
+
+    for (final roundRow in roundRows) {
+      final String roundId = roundRow['id'] as String;
+      final List<Map<String, dynamic>> holeRows = await _client
+          .from('hole_results')
+          .select()
+          .eq('round_id', roundId)
+          .order('hole_number');
+
+      final List<HoleResult> holes = holeRows.map((h) {
+        final int dex = h['pokemon_dex'] as int;
+        final species = firstGenPokemon.firstWhere((p) => p.dexNumber == dex);
+
+        return HoleResult(
+          holeNumber: h['hole_number'] as int,
+          par: h['par'] as int,
+          strokes: h['strokes'] as int,
+          pokemon: species,
+          score: GolfScore.values.firstWhere(
+            (s) => s.name == h['score'],
+            orElse: () => GolfScore.par,
+          ),
+          catchChance: h['catch_chance'] as int,
+          caught: h['caught'] as bool,
+          stats: HoleStats(
+            onePutt: h['on_putt'] as bool,
+            bunker: h['bunker'] as bool,
+            water: h['water'] as bool,
+            rough: h['rough'] as bool,
+          ),
+        );
+      }).toList(growable: false);
+
+      summaries.add(GolfRoundSummary(
+        completedAt: DateTime.parse(roundRow['completed_at'] as String),
+        holeCount: roundRow['hole_count'] as int,
+        holes: holes,
+      ));
+    }
+
+    return summaries;
+  }
+
+  Future<void> insertRound(GolfRoundSummary summary) async {
+    final Map<String, dynamic> roundRow =
+        await _client.from('rounds').insert({
+      'hole_count': summary.holeCount,
+      'completed_at': summary.completedAt.toUtc().toIso8601String(),
+    }).select().single();
+
+    final String roundId = roundRow['id'] as String;
+
+    final List<Map<String, dynamic>> holeRows = summary.holes.map((h) {
+      return <String, dynamic>{
+        'round_id': roundId,
+        'hole_number': h.holeNumber,
+        'par': h.par,
+        'strokes': h.strokes,
+        'score': h.score.name,
+        'catch_chance': h.catchChance,
+        'caught': h.caught,
+        'pokemon_dex': h.pokemon.dexNumber,
+        'on_putt': h.stats.onePutt,
+        'bunker': h.stats.bunker,
+        'water': h.stats.water,
+        'rough': h.stats.rough,
+      };
+    }).toList(growable: false);
+
+    await _client.from('hole_results').insert(holeRows);
+  }
+}

@@ -1,9 +1,15 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'screens/auth_screen.dart';
 import 'screens/collection_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/round_screen.dart';
+import 'screens/trainers_screen.dart';
+import 'services/supabase_service.dart';
 import 'state/pokemon_golf_store.dart';
 
 class PokemonGolfApp extends StatefulWidget {
@@ -14,61 +20,127 @@ class PokemonGolfApp extends StatefulWidget {
 }
 
 class _PokemonGolfAppState extends State<PokemonGolfApp> {
-  final PokemonGolfStore _store = PokemonGolfStore();
+  PokemonGolfStore? _store;
+  late final StreamSubscription<AuthState> _authSub;
+  bool _isAuthenticated = false;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session != null) {
+      _isAuthenticated = true;
+      _initStore();
+    } else {
+      _loading = false;
+    }
+
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen(
+      (AuthState state) {
+        final bool wasAuthenticated = _isAuthenticated;
+        final bool nowAuthenticated = state.session != null;
+
+        if (!wasAuthenticated && nowAuthenticated) {
+          setState(() {
+            _isAuthenticated = true;
+            _loading = true;
+          });
+          _initStore();
+        } else if (wasAuthenticated && !nowAuthenticated) {
+          _store?.dispose();
+          setState(() {
+            _store = null;
+            _isAuthenticated = false;
+            _loading = false;
+          });
+        }
+      },
+    );
+  }
+
+  Future<void> _initStore() async {
+    final store = PokemonGolfStore(
+      supabaseService: SupabaseService(),
+    );
+    await store.loadUserData();
+    if (mounted) {
+      setState(() {
+        _store = store;
+        _loading = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
-    _store.dispose();
+    _authSub.cancel();
+    _store?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return PokemonGolfScope(
-      notifier: _store,
-      child: MaterialApp(
-        title: 'Pokemon Golf',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF2E7D32),
-            brightness: Brightness.dark,
+    return MaterialApp(
+      title: 'Pokemon Golf',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF2E7D32),
+          brightness: Brightness.dark,
+        ),
+        scaffoldBackgroundColor: const Color(0xFF0F1A0F),
+        cardTheme: CardThemeData(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          scaffoldBackgroundColor: const Color(0xFF0F1A0F),
-          cardTheme: CardThemeData(
-            elevation: 0,
+          color: const Color(0xFF1A2E1A),
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: const Color(0xFF0F1A0F),
+          indicatorColor: const Color(0xFF2E7D32).withValues(alpha: 0.3),
+          height: 68,
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          centerTitle: true,
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            color: const Color(0xFF1A2E1A),
-          ),
-          navigationBarTheme: NavigationBarThemeData(
-            backgroundColor: const Color(0xFF0F1A0F),
-            indicatorColor: const Color(0xFF2E7D32).withValues(alpha: 0.3),
-            height: 68,
-          ),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            centerTitle: true,
-          ),
-          filledButtonTheme: FilledButtonThemeData(
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              textStyle: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+            textStyle: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
-        home: const PokemonGolfShell(),
       ),
+      home: _buildHome(),
+    );
+  }
+
+  Widget _buildHome() {
+    if (_loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (!_isAuthenticated || _store == null) {
+      return const AuthScreen();
+    }
+
+    return PokemonGolfScope(
+      notifier: _store!,
+      child: const PokemonGolfShell(),
     );
   }
 }
@@ -96,7 +168,7 @@ class PokemonGolfShell extends StatefulWidget {
 }
 
 class _PokemonGolfShellState extends State<PokemonGolfShell> {
-  int _selectedIndex = 1;
+  int _selectedIndex = 2;
 
   void _startRound(BuildContext context, int holeCount) {
     final store = PokemonGolfScope.of(context);
@@ -126,6 +198,7 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
   Widget build(BuildContext context) {
     final List<Widget> pages = <Widget>[
       const CollectionScreen(),
+      const TrainersScreen(),
       HomeScreen(
         onStartRound: (int holeCount) => _startRound(context, holeCount),
         onResumeRound: () => _resumeRound(context),
@@ -145,6 +218,11 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
             icon: Icon(Icons.catching_pokemon_outlined),
             selectedIcon: Icon(Icons.catching_pokemon),
             label: 'Pokedex',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.people_outline),
+            selectedIcon: Icon(Icons.people),
+            label: 'Trainers',
           ),
           NavigationDestination(
             icon: Icon(Icons.golf_course_outlined),
