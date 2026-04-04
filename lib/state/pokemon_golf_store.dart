@@ -85,7 +85,11 @@ class PokemonGolfStore extends ChangeNotifier {
     await _supabaseService?.signOut();
   }
 
-  void startRound(int holeCount, {List<int>? holePars, String? courseName}) {
+  void startRound(int holeCount, {
+    List<int>? holePars,
+    String? courseName,
+    List<({double lat, double lng})>? greenCoords,
+  }) {
     _activeRound = ActiveRound(
       holeCount: holeCount,
       currentHoleNumber: 1,
@@ -93,6 +97,7 @@ class PokemonGolfStore extends ChangeNotifier {
       completedHoles: const <HoleResult>[],
       holePars: holePars,
       courseName: courseName,
+      greenCoords: greenCoords,
     );
     notifyListeners();
   }
@@ -202,6 +207,7 @@ class PokemonGolfStore extends ChangeNotifier {
       completedHoles: updatedHoles,
       holePars: round.holePars,
       courseName: round.courseName,
+      greenCoords: round.greenCoords,
     );
     notifyListeners();
 

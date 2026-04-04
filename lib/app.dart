@@ -177,9 +177,9 @@ class PokemonGolfShell extends StatefulWidget {
 class _PokemonGolfShellState extends State<PokemonGolfShell> {
   int _selectedIndex = 2;
 
-  void _startRound(BuildContext context, int holeCount, {List<int>? holePars, String? courseName}) {
+  void _startRound(BuildContext context, int holeCount, {List<int>? holePars, String? courseName, List<({double lat, double lng})>? greenCoords}) {
     final store = PokemonGolfScope.of(context);
-    store.startRound(holeCount, holePars: holePars, courseName: courseName);
+    store.startRound(holeCount, holePars: holePars, courseName: courseName, greenCoords: greenCoords);
 
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -207,8 +207,8 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
       const CollectionScreen(),
       const TrainersScreen(),
       HomeScreen(
-        onStartRound: ({required int holeCount, List<int>? holePars, String? courseName}) =>
-            _startRound(context, holeCount, holePars: holePars, courseName: courseName),
+        onStartRound: ({required int holeCount, List<int>? holePars, String? courseName, List<({double lat, double lng})>? greenCoords}) =>
+            _startRound(context, holeCount, holePars: holePars, courseName: courseName, greenCoords: greenCoords),
         onResumeRound: () => _resumeRound(context),
       ),
       const CoursesScreen(),

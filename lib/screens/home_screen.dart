@@ -14,7 +14,7 @@ class HomeScreen extends StatelessWidget {
     required this.onResumeRound,
   });
 
-  final void Function({required int holeCount, List<int>? holePars, String? courseName}) onStartRound;
+  final void Function({required int holeCount, List<int>? holePars, String? courseName, List<({double lat, double lng})>? greenCoords}) onStartRound;
   final VoidCallback onResumeRound;
 
   @override
@@ -193,9 +193,9 @@ class HomeScreen extends StatelessWidget {
       builder: (_) => _CoursePickerSheet(
         holeCount: holeCount,
         homeCourseId: store.homeCourseId,
-        onStart: ({List<int>? holePars, String? courseName}) {
+        onStart: ({List<int>? holePars, String? courseName, List<({double lat, double lng})>? greenCoords}) {
           Navigator.of(context).pop();
-          onStartRound(holeCount: holeCount, holePars: holePars, courseName: courseName);
+          onStartRound(holeCount: holeCount, holePars: holePars, courseName: courseName, greenCoords: greenCoords);
         },
       ),
     );
@@ -449,7 +449,7 @@ class _CoursePickerSheet extends StatefulWidget {
 
   final int holeCount;
   final String? homeCourseId;
-  final void Function({List<int>? holePars, String? courseName}) onStart;
+  final void Function({List<int>? holePars, String? courseName, List<({double lat, double lng})>? greenCoords}) onStart;
 
   @override
   State<_CoursePickerSheet> createState() => _CoursePickerSheetState();
@@ -481,6 +481,17 @@ class _CoursePickerSheetState extends State<_CoursePickerSheet> {
       return _selectedCourse!.pars;
     }
     return null;
+  }
+
+  List<({double lat, double lng})>? get _greenCoords {
+    if (_selectedCourse == null || !_selectedCourse!.hasParts) return null;
+    final coords = <({double lat, double lng})>[];
+    for (final part in _selectedParts) {
+      if (part.greenCoords != null) {
+        coords.addAll(part.greenCoords!);
+      }
+    }
+    return coords.isEmpty ? null : coords;
   }
 
   @override
@@ -656,6 +667,7 @@ class _CoursePickerSheetState extends State<_CoursePickerSheet> {
                   ? () => widget.onStart(
                         holePars: _holePars,
                         courseName: _selectedCourse?.name,
+                        greenCoords: _greenCoords,
                       )
                   : null,
               child: const Text('Start Round'),

@@ -1,8 +1,9 @@
 class CoursePart {
-  const CoursePart({required this.name, required this.pars});
+  const CoursePart({required this.name, required this.pars, this.greenCoords});
 
   final String name;
   final List<int> pars;
+  final List<({double lat, double lng})>? greenCoords;
 
   int get holeCount => pars.length;
 }

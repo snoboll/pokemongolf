@@ -7,6 +7,7 @@ import '../models/golf_score.dart';
 import '../models/hole_stats.dart';
 import '../models/pokemon_rarity.dart';
 import '../models/round_models.dart';
+import '../widgets/distance_to_green.dart';
 import '../widgets/pokemon_art.dart';
 import '../widgets/score_picker.dart';
 import 'scorecard_detail_screen.dart';
@@ -234,6 +235,11 @@ class _RoundScreenState extends State<RoundScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
+                  if (activeRound.currentGreenCoord != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: DistanceToGreen(target: activeRound.currentGreenCoord!),
+                    ),
                   PokemonArt(
                     imageUrl: activeRound.currentEncounter.imageUrl,
                     height: 180,

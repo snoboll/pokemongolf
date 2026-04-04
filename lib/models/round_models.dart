@@ -33,6 +33,7 @@ class ActiveRound {
     required this.completedHoles,
     this.holePars,
     this.courseName,
+    this.greenCoords,
   });
 
   final int holeCount;
@@ -41,10 +42,16 @@ class ActiveRound {
   final List<HoleResult> completedHoles;
   final List<int>? holePars;
   final String? courseName;
+  final List<({double lat, double lng})>? greenCoords;
 
   int? get currentHolePar {
     if (holePars == null || currentHoleNumber > holePars!.length) return null;
     return holePars![currentHoleNumber - 1];
+  }
+
+  ({double lat, double lng})? get currentGreenCoord {
+    if (greenCoords == null || currentHoleNumber > greenCoords!.length) return null;
+    return greenCoords![currentHoleNumber - 1];
   }
 
   int get caughtCount => completedHoles.where((hole) => hole.caught).length;

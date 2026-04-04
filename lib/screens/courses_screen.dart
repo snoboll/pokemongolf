@@ -70,9 +70,9 @@ class _CoursesScreenState extends State<CoursesScreen> {
         ),
         builder: (_) => _PartPickerSheet(
           course: course,
-          onStart: (int holeCount, List<int> pars) {
+          onStart: (int holeCount, List<int> pars, {List<({double lat, double lng})>? greenCoords}) {
             Navigator.of(context).pop();
-            store.startRound(holeCount, holePars: pars, courseName: course.name);
+            store.startRound(holeCount, holePars: pars, courseName: course.name, greenCoords: greenCoords);
             Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const RoundScreen()),
             );
@@ -413,7 +413,7 @@ class _PartPickerSheet extends StatefulWidget {
   const _PartPickerSheet({required this.course, required this.onStart});
 
   final GolfCourse course;
-  final void Function(int holeCount, List<int> pars) onStart;
+  final void Function(int holeCount, List<int> pars, {List<({double lat, double lng})>? greenCoords}) onStart;
 
   @override
   State<_PartPickerSheet> createState() => _PartPickerSheetState();
@@ -529,7 +529,12 @@ class _PartPickerSheetState extends State<_PartPickerSheet> {
                         ...widget.course.parts![sorted[0]].pars,
                         ...widget.course.parts![sorted[1]].pars,
                       ];
-                      widget.onStart(pars.length, pars);
+                      final coords = <({double lat, double lng})>[];
+                      for (final idx in sorted) {
+                        final partCoords = widget.course.parts![idx].greenCoords;
+                        if (partCoords != null) coords.addAll(partCoords);
+                      }
+                      widget.onStart(pars.length, pars, greenCoords: coords.isEmpty ? null : coords);
                     }
                   : null,
               icon: const Icon(Icons.play_arrow_rounded, size: 20),
