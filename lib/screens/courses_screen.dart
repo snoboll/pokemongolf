@@ -4,6 +4,7 @@ import '../app.dart';
 import '../data/preset_courses.dart';
 import '../models/golf_course.dart';
 import '../services/supabase_service.dart';
+import 'round_screen.dart';
 
 class CoursesScreen extends StatefulWidget {
   const CoursesScreen({super.key});
@@ -57,6 +58,36 @@ class _CoursesScreenState extends State<CoursesScreen> {
     );
   }
 
+  void _startRound(GolfCourse course) {
+    final store = PokemonGolfScope.of(context);
+
+    if (course.hasParts) {
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (_) => _PartPickerSheet(
+          course: course,
+          onStart: (int holeCount, List<int> pars) {
+            Navigator.of(context).pop();
+            store.startRound(holeCount, holePars: pars, courseName: course.name);
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const RoundScreen()),
+            );
+          },
+        ),
+      );
+      return;
+    }
+
+    store.startRound(18, holePars: course.pars, courseName: course.name);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const RoundScreen()),
+    );
+  }
+
   Future<void> _setHomeCourse(GolfCourse course) async {
     try {
       final service = SupabaseService();
@@ -81,7 +112,8 @@ class _CoursesScreenState extends State<CoursesScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final store = PokemonGolfScope.of(context);
-    final allCourses = <GolfCourse>[...presetCourses, ..._userCourses];
+    final allCourses = <GolfCourse>[...presetCourses, ..._userCourses]
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     return Scaffold(
       appBar: AppBar(
@@ -108,7 +140,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
               : ListView.separated(
                   padding: const EdgeInsets.all(16),
                   itemCount: allCourses.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final course = allCourses[index];
                     final isHome = store.homeCourseId == course.id;
@@ -116,6 +148,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                       course: course,
                       isHome: isHome,
                       onSetHome: () => _setHomeCourse(course),
+                      onPlay: () => _startRound(course),
                     );
                   },
                 ),
@@ -123,52 +156,85 @@ class _CoursesScreenState extends State<CoursesScreen> {
   }
 }
 
-class _CourseCard extends StatelessWidget {
+class _CourseCard extends StatefulWidget {
   const _CourseCard({
     required this.course,
     required this.isHome,
     required this.onSetHome,
+    required this.onPlay,
   });
 
   final GolfCourse course;
   final bool isHome;
   final VoidCallback onSetHome;
+  final VoidCallback onPlay;
+
+  @override
+  State<_CourseCard> createState() => _CourseCardState();
+}
+
+class _CourseCardState extends State<_CourseCard> {
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final int holeCount = course.hasParts
-        ? course.parts!.first.pars.length
-        : (course.pars?.length ?? 0);
+    final course = widget.course;
+    final dim = theme.colorScheme.onSurface.withValues(alpha: 0.5);
     final int? totalPar = course.hasParts
         ? null
         : course.pars?.fold<int>(0, (a, b) => a + b);
 
-    return Card(
-      shape: isHome
-          ? RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: theme.colorScheme.primary, width: 1.5),
-            )
-          : null,
-      child: Padding(
+    return GestureDetector(
+      onTap: () => setState(() => _expanded = !_expanded),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.cardTheme.color,
+          borderRadius: BorderRadius.circular(16),
+          border: widget.isHome
+              ? Border.all(color: theme.colorScheme.primary, width: 1.5)
+              : null,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Row(
               children: <Widget>[
+                Icon(
+                  Icons.golf_course,
+                  size: 20,
+                  color: widget.isHome
+                      ? theme.colorScheme.primary
+                      : dim,
+                ),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    course.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        course.name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        course.hasParts
+                            ? '${course.parts!.length} × 9 holes'
+                            : totalPar != null
+                                ? '18 holes  ·  Par $totalPar'
+                                : '',
+                        style: theme.textTheme.bodySmall?.copyWith(color: dim),
+                      ),
+                    ],
                   ),
                 ),
-                if (isHome)
+                if (widget.isHome)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primary.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
@@ -176,73 +242,308 @@ class _CourseCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        Icon(Icons.home, size: 14, color: theme.colorScheme.primary),
+                        Icon(Icons.home, size: 13, color: theme.colorScheme.primary),
                         const SizedBox(width: 4),
                         Text(
                           'Home',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
                     ),
-                  )
-                else
-                  IconButton(
-                    icon: Icon(Icons.home_outlined,
-                        size: 20,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
-                    tooltip: 'Set as home course',
-                    onPressed: onSetHome,
-                    visualDensity: VisualDensity.compact,
                   ),
+                const SizedBox(width: 4),
+                AnimatedRotation(
+                  turns: _expanded ? 0.5 : 0.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(Icons.expand_more, size: 22, color: dim),
+                ),
+              ],
+            ),
+            AnimatedCrossFade(
+              firstChild: const SizedBox.shrink(),
+              secondChild: _buildExpanded(theme, course, dim),
+              crossFadeState:
+                  _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 200),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpanded(ThemeData theme, GolfCourse course, Color dim) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (course.hasParts)
+            for (final part in course.parts!) ...[
+              Row(
+                children: <Widget>[
+                  Text(
+                    part.name,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Par ${part.pars.fold<int>(0, (a, b) => a + b)}',
+                    style: theme.textTheme.labelMedium?.copyWith(color: dim),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              _HoleParGrid(pars: part.pars, startHole: 1),
+              const SizedBox(height: 12),
+            ]
+          else if (course.pars != null) ...[
+            Row(
+              children: <Widget>[
+                Text('Front 9', style: theme.textTheme.labelMedium?.copyWith(color: dim)),
+                const Spacer(),
+                Text(
+                  'Par ${course.pars!.sublist(0, 9).fold<int>(0, (a, b) => a + b)}',
+                  style: theme.textTheme.labelMedium?.copyWith(color: dim),
+                ),
               ],
             ),
             const SizedBox(height: 4),
-            if (course.hasParts)
-              Text(
-                '${course.parts!.length} parts  ·  ${holeCount} holes each',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            _HoleParGrid(pars: course.pars!.sublist(0, 9), startHole: 1),
+            const SizedBox(height: 10),
+            Row(
+              children: <Widget>[
+                Text('Back 9', style: theme.textTheme.labelMedium?.copyWith(color: dim)),
+                const Spacer(),
+                Text(
+                  'Par ${course.pars!.sublist(9).fold<int>(0, (a, b) => a + b)}',
+                  style: theme.textTheme.labelMedium?.copyWith(color: dim),
                 ),
-              )
-            else if (totalPar != null)
-              Text(
-                '$holeCount holes  ·  Par $totalPar',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-            if (course.hasParts) ...[
-              const SizedBox(height: 8),
-              for (final part in course.parts!)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Row(
-                    children: <Widget>[
-                      SizedBox(
-                        width: 56,
-                        child: Text(
-                          part.name,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                          ),
-                        ),
-                      ),
-                      Text(
-                        'Par ${part.pars.fold<int>(0, (a, b) => a + b)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ],
+              ],
+            ),
+            const SizedBox(height: 4),
+            _HoleParGrid(pars: course.pars!.sublist(9), startHole: 10),
+          ],
+          const SizedBox(height: 14),
+          Row(
+            children: <Widget>[
+              if (!widget.isHome)
+                TextButton.icon(
+                  onPressed: widget.onSetHome,
+                  icon: const Icon(Icons.home_outlined, size: 18),
+                  label: const Text('Set as home'),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
                   ),
                 ),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: widget.onPlay,
+                icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                label: const Text('Play'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                ),
+              ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HoleParGrid extends StatelessWidget {
+  const _HoleParGrid({required this.pars, required this.startHole});
+
+  final List<int> pars;
+  final int startHole;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dim = theme.colorScheme.onSurface.withValues(alpha: 0.35);
+
+    return Row(
+      children: <Widget>[
+        for (int i = 0; i < pars.length; i++) ...[
+          if (i > 0) const SizedBox(width: 3),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    '${startHole + i}',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w500,
+                      color: dim,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    '${pars[i]}',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _PartPickerSheet extends StatefulWidget {
+  const _PartPickerSheet({required this.course, required this.onStart});
+
+  final GolfCourse course;
+  final void Function(int holeCount, List<int> pars) onStart;
+
+  @override
+  State<_PartPickerSheet> createState() => _PartPickerSheetState();
+}
+
+class _PartPickerSheetState extends State<_PartPickerSheet> {
+  final Set<int> _selectedIndices = <int>{};
+
+  int get _totalHoles =>
+      _selectedIndices.fold<int>(0, (sum, i) => sum + widget.course.parts![i].holeCount);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final parts = widget.course.parts!;
+    final dim = theme.colorScheme.onSurface.withValues(alpha: 0.5);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            widget.course.name,
+            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Pick 2 parts to play 18 holes',
+            style: theme.textTheme.bodySmall?.copyWith(color: dim),
+          ),
+          const SizedBox(height: 16),
+          for (int i = 0; i < parts.length; i++) ...[
+            if (i > 0) const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (_selectedIndices.contains(i)) {
+                    _selectedIndices.remove(i);
+                  } else {
+                    if (_selectedIndices.length >= 2) return;
+                    _selectedIndices.add(i);
+                  }
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: _selectedIndices.contains(i)
+                      ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                      : theme.colorScheme.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(12),
+                  border: _selectedIndices.contains(i)
+                      ? Border.all(color: theme.colorScheme.primary, width: 1.5)
+                      : Border.all(color: Colors.transparent, width: 1.5),
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Icon(
+                      _selectedIndices.contains(i)
+                          ? Icons.check_circle
+                          : Icons.circle_outlined,
+                      size: 22,
+                      color: _selectedIndices.contains(i)
+                          ? theme.colorScheme.primary
+                          : dim,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            parts[i].name,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${parts[i].holeCount} holes  ·  Par ${parts[i].pars.fold<int>(0, (a, b) => a + b)}',
+                            style: theme.textTheme.bodySmall?.copyWith(color: dim),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
-        ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _selectedIndices.length == 2
+                  ? () {
+                      final sorted = _selectedIndices.toList()..sort();
+                      final pars = <int>[
+                        ...widget.course.parts![sorted[0]].pars,
+                        ...widget.course.parts![sorted[1]].pars,
+                      ];
+                      widget.onStart(pars.length, pars);
+                    }
+                  : null,
+              icon: const Icon(Icons.play_arrow_rounded, size: 20),
+              label: Text(
+                _selectedIndices.length == 2
+                    ? 'Start $_totalHoles holes'
+                    : 'Select 2 parts',
+              ),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
