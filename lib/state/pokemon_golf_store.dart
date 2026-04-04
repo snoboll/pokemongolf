@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:flutter/foundation.dart';
 
 import '../models/encounter_modifiers.dart';
+import '../models/golf_course.dart';
 import '../models/golf_score.dart';
 import '../models/hole_stats.dart';
 import '../models/pokemon_species.dart';
@@ -28,15 +29,41 @@ class PokemonGolfStore extends ChangeNotifier {
   final List<GolfRoundSummary> _completedRounds = <GolfRoundSummary>[];
 
   ActiveRound? _activeRound;
+  final Set<int> _pendingCatches = <int>{};
   String? _trainerName;
   String? _homeCourseId;
+  List<GolfCourse> _catalogCourses = <GolfCourse>[];
+  List<GolfCourse> _userCourses = <GolfCourse>[];
 
   ActiveRound? get activeRound => _activeRound;
   String? get trainerName => _trainerName;
   String? get homeCourseId => _homeCourseId;
 
+  List<GolfCourse> get catalogCourses =>
+      List<GolfCourse>.unmodifiable(_catalogCourses);
+
+  List<GolfCourse> get userCourses =>
+      List<GolfCourse>.unmodifiable(_userCourses);
+
+  /// Resolves a course id from the Supabase catalog or user-created courses.
+  String? courseNameForId(String? id) {
+    if (id == null) return null;
+    for (final GolfCourse c in _catalogCourses) {
+      if (c.id == id) return c.name;
+    }
+    for (final GolfCourse c in _userCourses) {
+      if (c.id == id) return c.name;
+    }
+    return null;
+  }
+
   void setHomeCourseId(String id) {
     _homeCourseId = id;
+    notifyListeners();
+  }
+
+  void syncUserCourses(List<GolfCourse> courses) {
+    _userCourses = List<GolfCourse>.from(courses);
     notifyListeners();
   }
 
@@ -66,6 +93,19 @@ class PokemonGolfStore extends ChangeNotifier {
       _trainerName = results[2] as String?;
 
       try {
+        _catalogCourses = await supa.fetchCatalogCourses();
+      } catch (e) {
+        debugPrint('Failed to load catalog courses: $e');
+        _catalogCourses = <GolfCourse>[];
+      }
+      try {
+        _userCourses = await supa.fetchUserCourses();
+      } catch (e) {
+        debugPrint('Failed to load user courses: $e');
+        _userCourses = <GolfCourse>[];
+      }
+
+      try {
         _homeCourseId = await supa.fetchHomeCourseId();
       } catch (_) {}
 
@@ -75,12 +115,28 @@ class PokemonGolfStore extends ChangeNotifier {
     }
   }
 
+  Future<void> resetProgress() async {
+    try {
+      await _supabaseService?.resetAllProgress();
+    } catch (e) {
+      debugPrint('Failed to reset progress: $e');
+      rethrow;
+    }
+    _caughtDexNumbers.clear();
+    _completedRounds.clear();
+    _pendingCatches.clear();
+    _activeRound = null;
+    notifyListeners();
+  }
+
   Future<void> signOut() async {
     _caughtDexNumbers.clear();
     _completedRounds.clear();
     _activeRound = null;
     _trainerName = null;
     _homeCourseId = null;
+    _catalogCourses = <GolfCourse>[];
+    _userCourses = <GolfCourse>[];
     notifyListeners();
     await _supabaseService?.signOut();
   }
@@ -88,8 +144,9 @@ class PokemonGolfStore extends ChangeNotifier {
   void startRound(int holeCount, {
     List<int>? holePars,
     String? courseName,
-    List<({double lat, double lng})>? greenCoords,
+    List<({double lat, double lng})?>? greenCoords,
   }) {
+    _pendingCatches.clear();
     _activeRound = ActiveRound(
       holeCount: holeCount,
       currentHoleNumber: 1,
@@ -103,6 +160,8 @@ class PokemonGolfStore extends ChangeNotifier {
   }
 
   void discardRound() {
+    _caughtDexNumbers.removeAll(_pendingCatches);
+    _pendingCatches.clear();
     _activeRound = null;
     notifyListeners();
   }
@@ -122,6 +181,7 @@ class PokemonGolfStore extends ChangeNotifier {
       courseName: round.courseName,
     );
     _completedRounds.insert(0, summary);
+    _commitPendingCatches();
     _activeRound = null;
     notifyListeners();
 
@@ -156,7 +216,7 @@ class PokemonGolfStore extends ChangeNotifier {
 
     if (caught) {
       _caughtDexNumbers.add(round.currentEncounter.dexNumber);
-      _persistCatch(round.currentEncounter.dexNumber);
+      _pendingCatches.add(round.currentEncounter.dexNumber);
     }
 
     final List<HoleResult> updatedHoles = <HoleResult>[
@@ -173,6 +233,7 @@ class PokemonGolfStore extends ChangeNotifier {
         courseName: round.courseName,
       );
       _completedRounds.insert(0, summary);
+      _commitPendingCatches();
       _activeRound = null;
       notifyListeners();
 
@@ -219,6 +280,13 @@ class PokemonGolfStore extends ChangeNotifier {
   }
 
   // ── Private persistence helpers (fire-and-forget) ───────────────────
+
+  void _commitPendingCatches() {
+    for (final dex in _pendingCatches) {
+      _persistCatch(dex);
+    }
+    _pendingCatches.clear();
+  }
 
   void _persistCatch(int dexNumber) {
     _supabaseService?.insertCaughtPokemon(dexNumber).catchError((e) {

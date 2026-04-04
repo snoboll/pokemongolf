@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../app.dart';
 import '../data/first_gen_pokemon.dart';
-import '../data/preset_courses.dart';
 import '../services/supabase_service.dart';
 
 class TrainersScreen extends StatefulWidget {
@@ -94,6 +94,8 @@ class _TrainersScreenState extends State<TrainersScreen> {
                             trainer: trainer,
                             total: total,
                             progress: progress,
+                            homeCourseName: PokemonGolfScope.of(context)
+                                .courseNameForId(trainer.homeCourseId),
                           );
                         },
                       ),
@@ -108,12 +110,14 @@ class _TrainerCard extends StatelessWidget {
     required this.trainer,
     required this.total,
     required this.progress,
+    this.homeCourseName,
   });
 
   final int rank;
   final TrainerProfile trainer;
   final int total;
   final double progress;
+  final String? homeCourseName;
 
   @override
   Widget build(BuildContext context) {
@@ -155,11 +159,11 @@ class _TrainerCard extends StatelessWidget {
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (_courseNameFor(trainer.homeCourseId) != null)
+                  if (homeCourseName != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
-                        _courseNameFor(trainer.homeCourseId)!,
+                        homeCourseName!,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                         ),
@@ -202,14 +206,6 @@ class _TrainerCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static String? _courseNameFor(String? id) {
-    if (id == null) return null;
-    for (final c in presetCourses) {
-      if (c.id == id) return c.name;
-    }
-    return null;
   }
 
   Color _rankColor(int rank) {

@@ -42,7 +42,9 @@ class ActiveRound {
   final List<HoleResult> completedHoles;
   final List<int>? holePars;
   final String? courseName;
-  final List<({double lat, double lng})>? greenCoords;
+
+  /// Per hole, aligned with [holePars]. Null if no green coordinate for that hole.
+  final List<({double lat, double lng})?>? greenCoords;
 
   int? get currentHolePar {
     if (holePars == null || currentHoleNumber > holePars!.length) return null;
@@ -50,7 +52,9 @@ class ActiveRound {
   }
 
   ({double lat, double lng})? get currentGreenCoord {
-    if (greenCoords == null || currentHoleNumber > greenCoords!.length) return null;
+    if (greenCoords == null || currentHoleNumber > greenCoords!.length) {
+      return null;
+    }
     return greenCoords![currentHoleNumber - 1];
   }
 

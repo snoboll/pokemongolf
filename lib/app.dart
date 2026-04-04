@@ -177,7 +177,7 @@ class PokemonGolfShell extends StatefulWidget {
 class _PokemonGolfShellState extends State<PokemonGolfShell> {
   int _selectedIndex = 2;
 
-  void _startRound(BuildContext context, int holeCount, {List<int>? holePars, String? courseName, List<({double lat, double lng})>? greenCoords}) {
+  void _startRound(BuildContext context, int holeCount, {List<int>? holePars, String? courseName, List<({double lat, double lng})?>? greenCoords}) {
     final store = PokemonGolfScope.of(context);
     store.startRound(holeCount, holePars: holePars, courseName: courseName, greenCoords: greenCoords);
 
@@ -207,7 +207,7 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
       const CollectionScreen(),
       const TrainersScreen(),
       HomeScreen(
-        onStartRound: ({required int holeCount, List<int>? holePars, String? courseName, List<({double lat, double lng})>? greenCoords}) =>
+        onStartRound: ({required int holeCount, List<int>? holePars, String? courseName, List<({double lat, double lng})?>? greenCoords}) =>
             _startRound(context, holeCount, holePars: holePars, courseName: courseName, greenCoords: greenCoords),
         onResumeRound: () => _resumeRound(context),
       ),

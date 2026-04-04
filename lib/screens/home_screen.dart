@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../app.dart';
 import '../data/first_gen_pokemon.dart';
-import '../data/preset_courses.dart';
 import '../models/golf_course.dart';
 import '../services/supabase_service.dart';
 
@@ -14,7 +13,7 @@ class HomeScreen extends StatelessWidget {
     required this.onResumeRound,
   });
 
-  final void Function({required int holeCount, List<int>? holePars, String? courseName, List<({double lat, double lng})>? greenCoords}) onStartRound;
+  final void Function({required int holeCount, List<int>? holePars, String? courseName, List<({double lat, double lng})?>? greenCoords}) onStartRound;
   final VoidCallback onResumeRound;
 
   @override
@@ -55,10 +54,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     if (store.homeCourseId != null)
                       Builder(builder: (context) {
-                        final name = presetCourses
-                            .where((c) => c.id == store.homeCourseId)
-                            .map((c) => c.name)
-                            .firstOrNull;
+                        final name = store.courseNameForId(store.homeCourseId);
                         if (name == null) return const SizedBox.shrink();
                         return Padding(
                           padding: const EdgeInsets.only(top: 4),
@@ -160,10 +156,26 @@ class HomeScreen extends StatelessWidget {
           Positioned(
             top: 8,
             left: 8,
-            child: IconButton(
-              icon: const Icon(Icons.logout, size: 22),
-              tooltip: 'Sign out',
-              onPressed: () => _confirmSignOut(context),
+            child: PopupMenuButton<String>(
+              icon: const Icon(Icons.settings, size: 22),
+              tooltip: 'Settings',
+              onSelected: (value) {
+                if (value == 'reset') {
+                  _confirmResetProgress(context);
+                } else if (value == 'signout') {
+                  _confirmSignOut(context);
+                }
+              },
+              itemBuilder: (_) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'reset',
+                  child: Text('Reset all progress'),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'signout',
+                  child: Text('Sign out'),
+                ),
+              ],
             ),
           ),
           Positioned(
@@ -193,10 +205,52 @@ class HomeScreen extends StatelessWidget {
       builder: (_) => _CoursePickerSheet(
         holeCount: holeCount,
         homeCourseId: store.homeCourseId,
-        onStart: ({List<int>? holePars, String? courseName, List<({double lat, double lng})>? greenCoords}) {
+        onStart: ({List<int>? holePars, String? courseName, List<({double lat, double lng})?>? greenCoords}) {
           Navigator.of(context).pop();
           onStartRound(holeCount: holeCount, holePars: holePars, courseName: courseName, greenCoords: greenCoords);
         },
+      ),
+    );
+  }
+
+  void _confirmResetProgress(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset all progress?'),
+        content: const Text(
+          'This will permanently delete your entire Pokedex and all scorecards. This cannot be undone.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              final store = PokemonGolfScope.of(context);
+              try {
+                await store.resetProgress();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('All progress has been reset')),
+                  );
+                }
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Failed to reset progress')),
+                  );
+                }
+              }
+            },
+            child: const Text('Reset everything'),
+          ),
+        ],
       ),
     );
   }
@@ -449,7 +503,7 @@ class _CoursePickerSheet extends StatefulWidget {
 
   final int holeCount;
   final String? homeCourseId;
-  final void Function({List<int>? holePars, String? courseName, List<({double lat, double lng})>? greenCoords}) onStart;
+  final void Function({List<int>? holePars, String? courseName, List<({double lat, double lng})?>? greenCoords}) onStart;
 
   @override
   State<_CoursePickerSheet> createState() => _CoursePickerSheetState();
@@ -458,40 +512,49 @@ class _CoursePickerSheet extends StatefulWidget {
 class _CoursePickerSheetState extends State<_CoursePickerSheet> {
   List<GolfCourse> _allCourses = <GolfCourse>[];
   GolfCourse? _selectedCourse;
-  final List<CoursePart> _selectedParts = <CoursePart>[];
+  final List<CourseLoop> _selectedLoops = <CourseLoop>[];
   bool _loading = true;
 
   int get _requiredParts => widget.holeCount == 18 ? 2 : 1;
 
   bool get _canStart {
     if (_selectedCourse == null) return true;
-    if (!_selectedCourse!.hasParts) return true;
-    return _selectedParts.length == _requiredParts;
+    if (!_selectedCourse!.hasMultipleLoops) return true;
+    return _selectedLoops.length == _requiredParts;
   }
 
   List<int>? get _holePars {
-    if (_selectedCourse == null) return null;
-    if (_selectedCourse!.hasParts) {
-      return _selectedCourse!.parsForParts(_selectedParts);
+    final GolfCourse? c = _selectedCourse;
+    if (c == null) return null;
+    if (c.hasMultipleLoops) {
+      return c.parsForLoops(_selectedLoops);
     }
-    if (_selectedCourse!.pars != null) {
-      if (widget.holeCount == 9) {
-        return _selectedCourse!.pars!.sublist(0, 9);
+    if (c.isSingleLoop) {
+      final List<int> fp = c.flatPars;
+      if (widget.holeCount == 9 && fp.length >= 9) {
+        return fp.sublist(0, 9);
       }
-      return _selectedCourse!.pars;
+      return fp;
     }
     return null;
   }
 
-  List<({double lat, double lng})>? get _greenCoords {
-    if (_selectedCourse == null || !_selectedCourse!.hasParts) return null;
-    final coords = <({double lat, double lng})>[];
-    for (final part in _selectedParts) {
-      if (part.greenCoords != null) {
-        coords.addAll(part.greenCoords!);
-      }
+  List<({double lat, double lng})?>? get _greenCoordsForRound {
+    final GolfCourse? c = _selectedCourse;
+    if (c == null) return null;
+    if (c.hasMultipleLoops) {
+      if (_selectedLoops.length != _requiredParts) return null;
+      return c.greensNullableForLoops(_selectedLoops);
     }
-    return coords.isEmpty ? null : coords;
+    if (c.isSingleLoop) {
+      final List<({double lat, double lng})?>? g = c.singleLoopNullableGreens;
+      if (g == null) return null;
+      if (widget.holeCount == 9 && g.length >= 9) {
+        return g.sublist(0, 9);
+      }
+      return g;
+    }
+    return null;
   }
 
   @override
@@ -501,10 +564,12 @@ class _CoursePickerSheetState extends State<_CoursePickerSheet> {
   }
 
   Future<void> _loadCourses() async {
+    final store = PokemonGolfScope.of(context);
     try {
       final service = SupabaseService();
       final userCourses = await service.fetchUserCourses();
-      final all = <GolfCourse>[...presetCourses, ...userCourses];
+      store.syncUserCourses(userCourses);
+      final all = <GolfCourse>[...store.catalogCourses, ...userCourses];
 
       GolfCourse? home;
       if (widget.homeCourseId != null) {
@@ -526,24 +591,24 @@ class _CoursePickerSheetState extends State<_CoursePickerSheet> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          _allCourses = <GolfCourse>[...presetCourses];
+          _allCourses = <GolfCourse>[...store.catalogCourses];
           _loading = false;
         });
       }
     }
   }
 
-  void _togglePart(CoursePart part) {
+  void _toggleLoop(CourseLoop loop) {
     setState(() {
-      if (_selectedParts.contains(part)) {
-        _selectedParts.remove(part);
+      if (_selectedLoops.contains(loop)) {
+        _selectedLoops.remove(loop);
       } else {
-        if (_selectedParts.length < _requiredParts) {
-          _selectedParts.add(part);
+        if (_selectedLoops.length < _requiredParts) {
+          _selectedLoops.add(loop);
         } else {
-          _selectedParts
+          _selectedLoops
             ..removeAt(0)
-            ..add(part);
+            ..add(loop);
         }
       }
     });
@@ -603,7 +668,7 @@ class _CoursePickerSheetState extends State<_CoursePickerSheet> {
                       if (home != null) {
                         setState(() {
                           _selectedCourse = home;
-                          _selectedParts.clear();
+                          _selectedLoops.clear();
                         });
                       }
                     },
@@ -613,7 +678,7 @@ class _CoursePickerSheetState extends State<_CoursePickerSheet> {
                   selected: _selectedCourse == null,
                   onSelected: (_) => setState(() {
                     _selectedCourse = null;
-                    _selectedParts.clear();
+                    _selectedLoops.clear();
                   }),
                 ),
                 for (final course in _allCourses)
@@ -623,15 +688,15 @@ class _CoursePickerSheetState extends State<_CoursePickerSheet> {
                       selected: _selectedCourse?.id == course.id,
                       onSelected: (_) => setState(() {
                         _selectedCourse = course;
-                        _selectedParts.clear();
+                        _selectedLoops.clear();
                       }),
                     ),
               ],
             ),
-          if (_selectedCourse != null && _selectedCourse!.hasParts) ...<Widget>[
+          if (_selectedCourse != null && _selectedCourse!.hasMultipleLoops) ...<Widget>[
             const SizedBox(height: 16),
             Text(
-              'Select $_requiredParts part${_requiredParts > 1 ? "s" : ""}',
+              'Select $_requiredParts loop${_requiredParts > 1 ? "s" : ""}',
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
@@ -641,18 +706,22 @@ class _CoursePickerSheetState extends State<_CoursePickerSheet> {
             Wrap(
               spacing: 8,
               children: <Widget>[
-                for (final part in _selectedCourse!.parts!)
+                for (final CourseLoop loop in _selectedCourse!.loops)
                   FilterChip(
-                    label: Text(part.name),
-                    selected: _selectedParts.contains(part),
-                    onSelected: (_) => _togglePart(part),
+                    label: Text(loop.name.isEmpty ? '—' : loop.name),
+                    selected: _selectedLoops.contains(loop),
+                    onSelected: (_) => _toggleLoop(loop),
                   ),
               ],
             ),
-            if (_selectedParts.isNotEmpty) ...<Widget>[
+            if (_selectedLoops.isNotEmpty) ...<Widget>[
               const SizedBox(height: 8),
               Text(
-                _selectedParts.map((p) => '${p.name} (par ${p.pars.fold<int>(0, (a, b) => a + b)})').join(' + '),
+                _selectedLoops.map((CourseLoop l) {
+                  final int loopPar =
+                      l.holes.fold<int>(0, (int a, CourseHole h) => a + h.par);
+                  return '${l.name.isEmpty ? "Loop" : l.name} (par $loopPar)';
+                }).join(' + '),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
@@ -667,7 +736,7 @@ class _CoursePickerSheetState extends State<_CoursePickerSheet> {
                   ? () => widget.onStart(
                         holePars: _holePars,
                         courseName: _selectedCourse?.name,
-                        greenCoords: _greenCoords,
+                        greenCoords: _greenCoordsForRound,
                       )
                   : null,
               child: const Text('Start Round'),

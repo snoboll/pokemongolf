@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../app.dart';
-import '../data/preset_courses.dart';
 import '../models/golf_course.dart';
 import '../services/supabase_service.dart';
 import 'round_screen.dart';
@@ -20,15 +19,21 @@ class _CoursesScreenState extends State<CoursesScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUserCourses();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadUserCourses();
+    });
   }
 
   Future<void> _loadUserCourses() async {
+    if (!mounted) return;
+    final store = PokemonGolfScope.of(context);
     setState(() => _loading = true);
     try {
       final service = SupabaseService();
       final courses = await service.fetchUserCourses();
       if (mounted) {
+        store.syncUserCourses(courses);
         setState(() {
           _userCourses = courses;
           _loading = false;
@@ -61,16 +66,16 @@ class _CoursesScreenState extends State<CoursesScreen> {
   void _startRound(GolfCourse course) {
     final store = PokemonGolfScope.of(context);
 
-    if (course.hasParts) {
+    if (course.hasMultipleLoops) {
       showModalBottomSheet<void>(
         context: context,
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        builder: (_) => _PartPickerSheet(
+        builder: (_) => _LoopPickerSheet(
           course: course,
-          onStart: (int holeCount, List<int> pars, {List<({double lat, double lng})>? greenCoords}) {
+          onStart: (int holeCount, List<int> pars, {List<({double lat, double lng})?>? greenCoords}) {
             Navigator.of(context).pop();
             store.startRound(holeCount, holePars: pars, courseName: course.name, greenCoords: greenCoords);
             Navigator.of(context).push(
@@ -82,23 +87,27 @@ class _CoursesScreenState extends State<CoursesScreen> {
       return;
     }
 
-    store.startRound(18, holePars: course.pars, courseName: course.name);
+    store.startRound(
+      course.flatPars.length,
+      holePars: course.flatPars,
+      courseName: course.name,
+      greenCoords: course.singleLoopNullableGreens,
+    );
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const RoundScreen()),
     );
   }
 
   Future<void> _setHomeCourse(GolfCourse course) async {
+    final store = PokemonGolfScope.of(context);
     try {
       final service = SupabaseService();
       await service.setHomeCourse(course.id);
-      final store = PokemonGolfScope.of(context);
+      if (!mounted) return;
       store.setHomeCourseId(course.id);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${course.name} set as home course')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${course.name} set as home course')),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -112,8 +121,10 @@ class _CoursesScreenState extends State<CoursesScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final store = PokemonGolfScope.of(context);
-    final allCourses = <GolfCourse>[...presetCourses, ..._userCourses]
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final allCourses = <GolfCourse>[
+      ...store.catalogCourses,
+      ..._userCourses,
+    ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     return Scaffold(
       appBar: AppBar(
@@ -181,9 +192,7 @@ class _CourseCardState extends State<_CourseCard> {
     final theme = Theme.of(context);
     final course = widget.course;
     final dim = theme.colorScheme.onSurface.withValues(alpha: 0.5);
-    final int? totalPar = course.hasParts
-        ? null
-        : course.pars?.fold<int>(0, (a, b) => a + b);
+    final int totalParAll = course.flatPars.fold<int>(0, (int a, int b) => a + b);
 
     return GestureDetector(
       onTap: () => setState(() => _expanded = !_expanded),
@@ -222,11 +231,9 @@ class _CourseCardState extends State<_CourseCard> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        course.hasParts
-                            ? '${course.parts!.length} × 9 holes'
-                            : totalPar != null
-                                ? '18 holes  ·  Par $totalPar'
-                                : '',
+                        course.hasMultipleLoops
+                            ? '${course.loops.length} nine-hole loops'
+                            : '${course.flatPars.length} holes  ·  Par $totalParAll',
                         style: theme.textTheme.bodySmall?.copyWith(color: dim),
                       ),
                     ],
@@ -281,12 +288,12 @@ class _CourseCardState extends State<_CourseCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          if (course.hasParts)
-            for (final part in course.parts!) ...[
+          if (course.hasMultipleLoops)
+            for (final CourseLoop loop in course.loops) ...[
               Row(
                 children: <Widget>[
                   Text(
-                    part.name,
+                    loop.name.isEmpty ? 'Loop' : loop.name,
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
@@ -294,41 +301,62 @@ class _CourseCardState extends State<_CourseCard> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Par ${part.pars.fold<int>(0, (a, b) => a + b)}',
+                    'Par ${loop.holes.fold<int>(0, (int a, CourseHole h) => a + h.par)}',
                     style: theme.textTheme.labelMedium?.copyWith(color: dim),
                   ),
                 ],
               ),
               const SizedBox(height: 6),
-              _HoleParGrid(pars: part.pars, startHole: 1),
+              _HoleParGrid(
+                pars: loop.holes.map((CourseHole h) => h.par).toList(growable: false),
+                startHole: 1,
+              ),
               const SizedBox(height: 12),
             ]
-          else if (course.pars != null) ...[
-            Row(
-              children: <Widget>[
-                Text('Front 9', style: theme.textTheme.labelMedium?.copyWith(color: dim)),
-                const Spacer(),
-                Text(
-                  'Par ${course.pars!.sublist(0, 9).fold<int>(0, (a, b) => a + b)}',
-                  style: theme.textTheme.labelMedium?.copyWith(color: dim),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            _HoleParGrid(pars: course.pars!.sublist(0, 9), startHole: 1),
-            const SizedBox(height: 10),
-            Row(
-              children: <Widget>[
-                Text('Back 9', style: theme.textTheme.labelMedium?.copyWith(color: dim)),
-                const Spacer(),
-                Text(
-                  'Par ${course.pars!.sublist(9).fold<int>(0, (a, b) => a + b)}',
-                  style: theme.textTheme.labelMedium?.copyWith(color: dim),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            _HoleParGrid(pars: course.pars!.sublist(9), startHole: 10),
+          else ...[
+            if (course.flatPars.length >= 18) ...[
+              Row(
+                children: <Widget>[
+                  Text('Front 9', style: theme.textTheme.labelMedium?.copyWith(color: dim)),
+                  const Spacer(),
+                  Text(
+                    'Par ${course.flatPars.sublist(0, 9).fold<int>(0, (a, b) => a + b)}',
+                    style: theme.textTheme.labelMedium?.copyWith(color: dim),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              _HoleParGrid(pars: course.flatPars.sublist(0, 9), startHole: 1),
+              const SizedBox(height: 10),
+              Row(
+                children: <Widget>[
+                  Text('Back 9', style: theme.textTheme.labelMedium?.copyWith(color: dim)),
+                  const Spacer(),
+                  Text(
+                    'Par ${course.flatPars.sublist(9).fold<int>(0, (a, b) => a + b)}',
+                    style: theme.textTheme.labelMedium?.copyWith(color: dim),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              _HoleParGrid(pars: course.flatPars.sublist(9), startHole: 10),
+            ] else ...[
+              Row(
+                children: <Widget>[
+                  Text(
+                    '${course.flatPars.length} holes',
+                    style: theme.textTheme.labelMedium?.copyWith(color: dim),
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Par ${course.flatPars.fold<int>(0, (a, b) => a + b)}',
+                    style: theme.textTheme.labelMedium?.copyWith(color: dim),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              _HoleParGrid(pars: course.flatPars, startHole: 1),
+            ],
           ],
           const SizedBox(height: 14),
           Row(
@@ -370,13 +398,15 @@ class _HoleParGrid extends StatelessWidget {
     final theme = Theme.of(context);
     final dim = theme.colorScheme.onSurface.withValues(alpha: 0.35);
 
+    // Equal-width cells in one row — fixed pixel widths + Wrap left hole 9 alone on narrow screens.
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        for (int i = 0; i < pars.length; i++) ...[
+        for (int i = 0; i < pars.length; i++) ...<Widget>[
           if (i > 0) const SizedBox(width: 3),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 5),
+              padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 1),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(6),
@@ -393,10 +423,13 @@ class _HoleParGrid extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 1),
-                  Text(
-                    '${pars[i]}',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      '${pars[i]}',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ],
@@ -409,26 +442,26 @@ class _HoleParGrid extends StatelessWidget {
   }
 }
 
-class _PartPickerSheet extends StatefulWidget {
-  const _PartPickerSheet({required this.course, required this.onStart});
+class _LoopPickerSheet extends StatefulWidget {
+  const _LoopPickerSheet({required this.course, required this.onStart});
 
   final GolfCourse course;
-  final void Function(int holeCount, List<int> pars, {List<({double lat, double lng})>? greenCoords}) onStart;
+  final void Function(int holeCount, List<int> pars, {List<({double lat, double lng})?>? greenCoords}) onStart;
 
   @override
-  State<_PartPickerSheet> createState() => _PartPickerSheetState();
+  State<_LoopPickerSheet> createState() => _LoopPickerSheetState();
 }
 
-class _PartPickerSheetState extends State<_PartPickerSheet> {
+class _LoopPickerSheetState extends State<_LoopPickerSheet> {
   final Set<int> _selectedIndices = <int>{};
 
   int get _totalHoles =>
-      _selectedIndices.fold<int>(0, (sum, i) => sum + widget.course.parts![i].holeCount);
+      _selectedIndices.fold<int>(0, (int sum, int i) => sum + widget.course.loops[i].holeCount);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final parts = widget.course.parts!;
+    final List<CourseLoop> loops = widget.course.loops;
     final dim = theme.colorScheme.onSurface.withValues(alpha: 0.5);
 
     return Padding(
@@ -454,11 +487,11 @@ class _PartPickerSheetState extends State<_PartPickerSheet> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Pick 2 parts to play 18 holes',
+            'Pick 2 loops to play 18 holes',
             style: theme.textTheme.bodySmall?.copyWith(color: dim),
           ),
           const SizedBox(height: 16),
-          for (int i = 0; i < parts.length; i++) ...[
+          for (int i = 0; i < loops.length; i++) ...[
             if (i > 0) const SizedBox(height: 8),
             GestureDetector(
               onTap: () {
@@ -500,14 +533,14 @@ class _PartPickerSheetState extends State<_PartPickerSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(
-                            parts[i].name,
+                            loops[i].name.isEmpty ? 'Loop ${i + 1}' : loops[i].name,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '${parts[i].holeCount} holes  ·  Par ${parts[i].pars.fold<int>(0, (a, b) => a + b)}',
+                            '${loops[i].holeCount} holes  ·  Par ${loops[i].holes.fold<int>(0, (int a, CourseHole h) => a + h.par)}',
                             style: theme.textTheme.bodySmall?.copyWith(color: dim),
                           ),
                         ],
@@ -524,17 +557,20 @@ class _PartPickerSheetState extends State<_PartPickerSheet> {
             child: FilledButton.icon(
               onPressed: _selectedIndices.length == 2
                   ? () {
-                      final sorted = _selectedIndices.toList()..sort();
-                      final pars = <int>[
-                        ...widget.course.parts![sorted[0]].pars,
-                        ...widget.course.parts![sorted[1]].pars,
+                      final List<int> sorted = _selectedIndices.toList()..sort();
+                      final List<CourseLoop> picked = <CourseLoop>[
+                        widget.course.loops[sorted[0]],
+                        widget.course.loops[sorted[1]],
                       ];
-                      final coords = <({double lat, double lng})>[];
-                      for (final idx in sorted) {
-                        final partCoords = widget.course.parts![idx].greenCoords;
-                        if (partCoords != null) coords.addAll(partCoords);
-                      }
-                      widget.onStart(pars.length, pars, greenCoords: coords.isEmpty ? null : coords);
+                      final List<int> pars = widget.course.parsForLoops(picked);
+                      final List<({double lat, double lng})?> greens =
+                          widget.course.greensNullableForLoops(picked);
+                      final bool anyGreen = greens.any((e) => e != null);
+                      widget.onStart(
+                        pars.length,
+                        pars,
+                        greenCoords: anyGreen ? greens : null,
+                      );
                     }
                   : null,
               icon: const Icon(Icons.play_arrow_rounded, size: 20),

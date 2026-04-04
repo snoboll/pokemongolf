@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/first_gen_pokemon.dart';
@@ -118,6 +119,35 @@ class SupabaseService {
     }).toList(growable: false);
   }
 
+  // ── Catalog courses (pars, multi-loop parts, green centers) ─────────
+
+  Future<List<GolfCourse>> fetchCatalogCourses() async {
+    final List<Map<String, dynamic>> rows = await _client
+        .from('catalog_courses')
+        .select('id, name, layout')
+        .order('sort_order');
+
+    final List<GolfCourse> courses = <GolfCourse>[];
+    for (final Map<String, dynamic> row in rows) {
+      try {
+        final Object? rawLayout = row['layout'];
+        final Map<String, dynamic> layout = switch (rawLayout) {
+          final Map<String, dynamic> m => m,
+          final Map m => Map<String, dynamic>.from(m),
+          _ => throw FormatException('catalog_courses.layout must be a JSON object'),
+        };
+        courses.add(GolfCourse.fromCatalogRow(
+          id: row['id'] as String,
+          name: row['name'] as String,
+          layout: layout,
+        ));
+      } catch (e, st) {
+        debugPrint('Skipping catalog course row ${row['id']}: $e\n$st');
+      }
+    }
+    return courses;
+  }
+
   // ── User Courses ─────────────────────────────────────────────────
 
   Future<List<GolfCourse>> fetchUserCourses() async {
@@ -133,7 +163,12 @@ class SupabaseService {
       return GolfCourse(
         id: row['id'] as String,
         name: row['name'] as String,
-        pars: pars,
+        loops: <CourseLoop>[
+          CourseLoop(
+            name: '',
+            holes: pars.map((int p) => CourseHole(par: p)).toList(growable: false),
+          ),
+        ],
       );
     }).toList(growable: false);
   }
@@ -155,6 +190,19 @@ class SupabaseService {
         .order('dex_number');
 
     return rows.map<int>((row) => row['dex_number'] as int).toSet();
+  }
+
+  Future<void> resetAllProgress() async {
+    final uid = currentUserId;
+    if (uid == null) return;
+    await _client.from('hole_results').delete().inFilter(
+      'round_id',
+      (await _client.from('rounds').select('id').eq('user_id', uid))
+          .map((r) => r['id'])
+          .toList(),
+    );
+    await _client.from('rounds').delete().eq('user_id', uid);
+    await _client.from('caught_pokemon').delete().eq('user_id', uid);
   }
 
   Future<void> insertCaughtPokemon(int dexNumber) async {

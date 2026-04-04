@@ -2,7 +2,7 @@ import '../models/hole_map_center.dart';
 
 /// Google Maps satellite-style preview: green/course context per hole.
 /// [kCoursePartHoleCenters] — courses with nine-hole loops (e.g. Örestad Yellow/Red/Blue).
-/// Keys: preset [GolfCourse.id], then part name as in [CoursePart.name].
+/// Keys: preset [GolfCourse.id], then loop name as in [CourseLoop.name].
 const Map<String, Map<String, List<HoleMapCenter?>>> kCoursePartHoleCenters =
     <String, Map<String, List<HoleMapCenter?>>>{
   'orestad': <String, List<HoleMapCenter?>>{
