@@ -1,46 +1,68 @@
 # Pokemon Golf
 
-Pokemon Golf is a Flutter MVP where every hole on the course triggers a Pokemon
-encounter. Your score on that hole directly affects the catch rate, while the
-Pokemon's rarity pushes that rate back down.
+A Flutter app that combines golf scoring with Pokemon catching. Every hole on the course triggers a random Pokemon encounter, and your golf score determines the catch rate.
 
-## Game Loop
+## How It Works
 
-1. Start a 9-hole or 18-hole round.
-2. Encounter one Pokemon on each hole.
-3. Pick your result for that hole, from albatross through triple bogey or worse.
-4. Resolve a catch attempt using score bonus plus rarity penalty.
-5. Review your collection progress and completed round history.
+1. **Start a round** -- pick a course (or play without one) and choose 9 or 18 holes.
+2. **Play each hole** -- select the hole par and your score (eagle, birdie, par, bogey, etc.).
+3. **Encounter a Pokemon** -- a random Pokemon appears, weighted by rarity tier.
+4. **Catch attempt** -- your golf score drives the catch probability. Better score = higher catch rate.
+5. **Build your Pokedex** -- track your collection across all rounds.
 
-## Rarity Rules
+## Features
 
-- `Common`: most frequent and easiest to catch
-- `Rare`: less frequent with a moderate catch penalty
-- `Epic`: uncommon and noticeably tougher to catch
-- `Legendary`: rarest encounters and hardest catches
+- **23 preset courses** from Skane, Sweden (Orestad, Falsterbo, Barseback, PGA National, and more), plus the ability to add custom courses.
+- **Home course** -- set a favorite course for quick access.
+- **5 rarity tiers** -- Common, Uncommon, Rare, Epic, and Legendary, each with distinct encounter weights and catch rates.
+- **Terrain modifiers** -- toggle one-putt, bunker, water, and rough to boost encounter rates for matching Pokemon types.
+- **Legendary streak** -- consecutive par-or-better holes increase your legendary encounter chance.
+- **Scorecard history** -- review hole-by-hole results for every completed round.
+- **Pokedex** -- browse all 151 Gen 1 Pokemon with caught/uncaught filters and rarity badges.
+- **Trainers leaderboard** -- see other players' Pokedex progress and home courses.
+- **Cloud sync** -- Supabase-powered authentication and persistence across devices.
 
-The first 151 Pokemon are included in the local catalog for this version.
+## Rarity & Catch Rates
 
-## Image Source
+| Tier | Encounter Weight | Par catch % | Bogey | Double Bogey | Triple+ |
+|------|-----------------|-------------|-------|--------------|---------|
+| Common | 35% | 100% | 65% | 20% | 5% |
+| Uncommon | 25% | 95% | 50% | 12% | 3% |
+| Rare | 20% | 90% | 40% | 5% | 2% |
+| Epic | 14% | 70% | 25% | 3% | 1% |
+| Legendary | 6% | 40% | 10% | 1% | 0% |
 
-Pokemon art is loaded at runtime from the HybridShivam image set:
+Scoring eagle or better always gives 100% catch rate regardless of rarity.
 
-- Source browser: `https://github.com/HybridShivam/Pokemon/tree/master/assets/images`
-- Runtime format: `https://raw.githubusercontent.com/HybridShivam/Pokemon/master/assets/images/001.png`
+## Tech Stack
 
-The app builds image URLs from 3-digit dex numbers such as `001` through `151`.
+- **Flutter** (Dart)
+- **Supabase** -- auth, Postgres database, Row Level Security
+- **Pokemon art** -- loaded at runtime from [HybridShivam/Pokemon](https://github.com/HybridShivam/Pokemon/tree/master/assets/images)
 
-## Running The App
+## Getting Started
+
+### Prerequisites
+
+- Flutter SDK 3.10+
+- A Supabase project with the required tables and RLS policies (see `lib/services/supabase_service.dart` for the schema)
+
+### Run
 
 ```bash
 flutter pub get
 flutter run
 ```
 
-## Tests
+### Build for iOS
+
+1. Open `ios/Runner.xcworkspace` in Xcode.
+2. Under **Signing & Capabilities**, select your team and set a unique bundle ID.
+3. Connect your iPhone and run `flutter run` from the terminal.
+
+### Analyze & Test
 
 ```bash
-flutter analyze
+dart analyze
 flutter test
 ```
-# pokemongolf
