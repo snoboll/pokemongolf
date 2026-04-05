@@ -3,17 +3,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../app.dart';
 import '../data/first_gen_pokemon.dart';
-import '../models/golf_course.dart';
-import '../services/supabase_service.dart';
+import '../state/pokemon_golf_store.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
-    required this.onStartRound,
+    required this.onPlay,
     required this.onResumeRound,
   });
 
-  final void Function({required int holeCount, List<int>? holePars, String? courseName, List<({double lat, double lng})?>? greenCoords}) onStartRound;
+  final VoidCallback onPlay;
   final VoidCallback onResumeRound;
 
   @override
@@ -27,129 +26,130 @@ class HomeScreen extends StatelessWidget {
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 40),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Icon(
-                    Icons.catching_pokemon,
-                    size: 72,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Pokemon Golf',
-                    style: theme.textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (store.trainerName != null) ...<Widget>[
-                    Text(
-                      'Trainer ${store.trainerName}',
-                      style: theme.textTheme.titleMedium?.copyWith(
+              child: ListenableBuilder(
+                listenable: store,
+                builder: (BuildContext context, _) {
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Icon(
+                        Icons.catching_pokemon,
+                        size: 72,
                         color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w600,
                       ),
-                    ),
-                    if (store.homeCourseId != null)
-                      Builder(builder: (context) {
-                        final name = store.courseNameForId(store.homeCourseId);
-                        if (name == null) return const SizedBox.shrink();
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Icon(Icons.home, size: 14,
-                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-                              const SizedBox(width: 4),
-                              Text(
-                                name,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                  ] else
-                    Text(
-                      'Catch them on the course',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Pokemon Golf',
+                        style: theme.textTheme.headlineLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
                       ),
-                    ),
-                  const SizedBox(height: 48),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () => _showCourseSelection(context, 18),
-                      icon: const Icon(Icons.golf_course, size: 24),
-                      label: const Text('18 Holes'),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.tonalIcon(
-                      onPressed: () => _showCourseSelection(context, 9),
-                      icon: const Icon(Icons.flag, size: 24),
-                      label: const Text('9 Holes'),
-                    ),
-                  ),
-                  if (store.activeRound != null) ...<Widget>[
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: onResumeRound,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
-                            vertical: 20,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          textStyle: const TextStyle(
-                            fontSize: 18,
+                      const SizedBox(height: 8),
+                      if (store.trainerName != null) ...<Widget>[
+                        Text(
+                          'Trainer ${store.trainerName}',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.primary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        icon:
-                            const Icon(Icons.play_arrow_rounded, size: 24),
-                        label: Text(
-                          'Resume Hole ${store.activeRound!.currentHoleNumber}',
+                        if (store.homeCourseId != null)
+                          Builder(builder: (context) {
+                            final name =
+                                store.courseNameForId(store.homeCourseId);
+                            if (name == null) return const SizedBox.shrink();
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                                  Icon(Icons.home, size: 14,
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.5)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    name,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                      ] else
+                        Text(
+                          'Catch them on the course',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.6),
+                          ),
+                        ),
+                      const SizedBox(height: 48),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: onPlay,
+                          icon: const Icon(Icons.play_arrow_rounded, size: 26),
+                          label: const Text('Play'),
                         ),
                       ),
-                    ),
-                  ],
-                  const SizedBox(height: 48),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      _QuickStat(
-                        icon: Icons.catching_pokemon,
-                        value: '${store.caughtDexNumbers.length}',
-                        label: '/ ${firstGenPokemon.length}',
-                      ),
+                      if (store.activeRound != null) ...<Widget>[
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: onResumeRound,
+                            icon: const Icon(Icons.play_circle_outline_rounded, size: 22),
+                            label: Text(
+                              'Resume Hole ${store.activeRound!.currentHoleNumber}',
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 48),
                       Container(
-                        width: 1,
-                        height: 32,
-                        margin: const EdgeInsets.symmetric(horizontal: 24),
-                        color: theme.colorScheme.outlineVariant,
-                      ),
-                      _QuickStat(
-                        icon: Icons.sports_golf,
-                        value: '${store.completedRounds.length}',
-                        label: 'rounds',
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 28, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest
+                              .withValues(alpha: 0.45),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant
+                                .withValues(alpha: 0.6),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            _QuickStat(
+                              icon: Icons.catching_pokemon,
+                              value: '${store.caughtDexNumbers.length}',
+                              label: '/ ${firstGenPokemon.length}',
+                            ),
+                            Container(
+                              width: 1,
+                              height: 32,
+                              margin:
+                                  const EdgeInsets.symmetric(horizontal: 24),
+                              color: theme.colorScheme.outlineVariant
+                                  .withValues(alpha: 0.6),
+                            ),
+                            _QuickStat(
+                              icon: Icons.sports_golf,
+                              value: '${store.completedRounds.length}',
+                              label: 'rounds',
+                            ),
+                          ],
+                        ),
                       ),
                     ],
-                  ),
-                ],
+                  );
+                },
               ),
             ),
           ),
@@ -188,27 +188,6 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showCourseSelection(BuildContext context, int holeCount) {
-    final store = PokemonGolfScope.of(context);
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => _CoursePickerSheet(
-        holeCount: holeCount,
-        homeCourseId: store.homeCourseId,
-        onStart: ({List<int>? holePars, String? courseName, List<({double lat, double lng})?>? greenCoords}) {
-          Navigator.of(context).pop();
-          onStartRound(holeCount: holeCount, holePars: holePars, courseName: courseName, greenCoords: greenCoords);
-        },
       ),
     );
   }
@@ -493,261 +472,6 @@ class _InfoSheet extends StatelessWidget {
     );
   }
 }
-
-class _CoursePickerSheet extends StatefulWidget {
-  const _CoursePickerSheet({
-    required this.holeCount,
-    required this.homeCourseId,
-    required this.onStart,
-  });
-
-  final int holeCount;
-  final String? homeCourseId;
-  final void Function({List<int>? holePars, String? courseName, List<({double lat, double lng})?>? greenCoords}) onStart;
-
-  @override
-  State<_CoursePickerSheet> createState() => _CoursePickerSheetState();
-}
-
-class _CoursePickerSheetState extends State<_CoursePickerSheet> {
-  List<GolfCourse> _allCourses = <GolfCourse>[];
-  GolfCourse? _selectedCourse;
-  final List<CourseLoop> _selectedLoops = <CourseLoop>[];
-  bool _loading = true;
-
-  int get _requiredParts => widget.holeCount == 18 ? 2 : 1;
-
-  bool get _canStart {
-    if (_selectedCourse == null) return true;
-    if (!_selectedCourse!.hasMultipleLoops) return true;
-    return _selectedLoops.length == _requiredParts;
-  }
-
-  List<int>? get _holePars {
-    final GolfCourse? c = _selectedCourse;
-    if (c == null) return null;
-    if (c.hasMultipleLoops) {
-      return c.parsForLoops(_selectedLoops);
-    }
-    if (c.isSingleLoop) {
-      final List<int> fp = c.flatPars;
-      if (widget.holeCount == 9 && fp.length >= 9) {
-        return fp.sublist(0, 9);
-      }
-      return fp;
-    }
-    return null;
-  }
-
-  List<({double lat, double lng})?>? get _greenCoordsForRound {
-    final GolfCourse? c = _selectedCourse;
-    if (c == null) return null;
-    if (c.hasMultipleLoops) {
-      if (_selectedLoops.length != _requiredParts) return null;
-      return c.greensNullableForLoops(_selectedLoops);
-    }
-    if (c.isSingleLoop) {
-      final List<({double lat, double lng})?>? g = c.singleLoopNullableGreens;
-      if (g == null) return null;
-      if (widget.holeCount == 9 && g.length >= 9) {
-        return g.sublist(0, 9);
-      }
-      return g;
-    }
-    return null;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCourses();
-  }
-
-  Future<void> _loadCourses() async {
-    final store = PokemonGolfScope.of(context);
-    try {
-      final service = SupabaseService();
-      final userCourses = await service.fetchUserCourses();
-      store.syncUserCourses(userCourses);
-      final all = <GolfCourse>[...store.catalogCourses, ...userCourses];
-
-      GolfCourse? home;
-      if (widget.homeCourseId != null) {
-        for (final c in all) {
-          if (c.id == widget.homeCourseId) {
-            home = c;
-            break;
-          }
-        }
-      }
-
-      if (mounted) {
-        setState(() {
-          _allCourses = all;
-          _selectedCourse = home;
-          _loading = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _allCourses = <GolfCourse>[...store.catalogCourses];
-          _loading = false;
-        });
-      }
-    }
-  }
-
-  void _toggleLoop(CourseLoop loop) {
-    setState(() {
-      if (_selectedLoops.contains(loop)) {
-        _selectedLoops.remove(loop);
-      } else {
-        if (_selectedLoops.length < _requiredParts) {
-          _selectedLoops.add(loop);
-        } else {
-          _selectedLoops
-            ..removeAt(0)
-            ..add(loop);
-        }
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '${widget.holeCount} Holes',
-            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 16),
-          Text('Course', style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-          )),
-          const SizedBox(height: 8),
-          if (_loading)
-            const Center(child: Padding(
-              padding: EdgeInsets.all(12),
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ))
-          else
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: <Widget>[
-                if (widget.homeCourseId != null)
-                  ChoiceChip(
-                    avatar: const Icon(Icons.home, size: 16),
-                    label: Text(_allCourses
-                        .where((c) => c.id == widget.homeCourseId)
-                        .map((c) => c.name)
-                        .firstOrNull ?? 'Home'),
-                    selected: _selectedCourse?.id == widget.homeCourseId,
-                    onSelected: (_) {
-                      final home = _allCourses.where((c) => c.id == widget.homeCourseId).firstOrNull;
-                      if (home != null) {
-                        setState(() {
-                          _selectedCourse = home;
-                          _selectedLoops.clear();
-                        });
-                      }
-                    },
-                  ),
-                ChoiceChip(
-                  label: const Text('No course'),
-                  selected: _selectedCourse == null,
-                  onSelected: (_) => setState(() {
-                    _selectedCourse = null;
-                    _selectedLoops.clear();
-                  }),
-                ),
-                for (final course in _allCourses)
-                  if (course.id != widget.homeCourseId)
-                    ChoiceChip(
-                      label: Text(course.name),
-                      selected: _selectedCourse?.id == course.id,
-                      onSelected: (_) => setState(() {
-                        _selectedCourse = course;
-                        _selectedLoops.clear();
-                      }),
-                    ),
-              ],
-            ),
-          if (_selectedCourse != null && _selectedCourse!.hasMultipleLoops) ...<Widget>[
-            const SizedBox(height: 16),
-            Text(
-              'Select $_requiredParts loop${_requiredParts > 1 ? "s" : ""}',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: <Widget>[
-                for (final CourseLoop loop in _selectedCourse!.loops)
-                  FilterChip(
-                    label: Text(loop.name.isEmpty ? '—' : loop.name),
-                    selected: _selectedLoops.contains(loop),
-                    onSelected: (_) => _toggleLoop(loop),
-                  ),
-              ],
-            ),
-            if (_selectedLoops.isNotEmpty) ...<Widget>[
-              const SizedBox(height: 8),
-              Text(
-                _selectedLoops.map((CourseLoop l) {
-                  final int loopPar =
-                      l.holes.fold<int>(0, (int a, CourseHole h) => a + h.par);
-                  return '${l.name.isEmpty ? "Loop" : l.name} (par $loopPar)';
-                }).join(' + '),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
-            ],
-          ],
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _canStart
-                  ? () => widget.onStart(
-                        holePars: _holePars,
-                        courseName: _selectedCourse?.name,
-                        greenCoords: _greenCoordsForRound,
-                      )
-                  : null,
-              child: const Text('Start Round'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _QuickStat extends StatelessWidget {
   const _QuickStat({
     required this.icon,

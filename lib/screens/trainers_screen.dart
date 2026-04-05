@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app.dart';
 import '../data/first_gen_pokemon.dart';
 import '../services/supabase_service.dart';
+import '../state/pokemon_golf_store.dart';
 
 class TrainersScreen extends StatefulWidget {
   const TrainersScreen({super.key});
@@ -16,13 +17,48 @@ class _TrainersScreenState extends State<TrainersScreen> {
   bool _loading = true;
   String? _error;
 
+  /// Dismisses in-flight fetches so an older response cannot overwrite newer data (e.g. after reset).
+  int _fetchGeneration = 0;
+
+  PokemonGolfStore? _store;
+  int? _lastLocalCaughtCount;
+
   @override
   void initState() {
     super.initState();
     _loadTrainers();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final PokemonGolfStore store = PokemonGolfScope.of(context);
+    if (!identical(_store, store)) {
+      _store?.removeListener(_onStoreChanged);
+      _store = store;
+      _lastLocalCaughtCount = store.caughtDexNumbers.length;
+      _store?.addListener(_onStoreChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    _store?.removeListener(_onStoreChanged);
+    super.dispose();
+  }
+
+  void _onStoreChanged() {
+    final PokemonGolfStore? store = _store;
+    if (store == null) return;
+    final int n = store.caughtDexNumbers.length;
+    if (_lastLocalCaughtCount == n) return;
+    _lastLocalCaughtCount = n;
+    _loadTrainers();
+  }
+
   Future<void> _loadTrainers() async {
+    final int generation = ++_fetchGeneration;
+
     setState(() {
       _loading = true;
       _error = null;
@@ -31,19 +67,21 @@ class _TrainersScreenState extends State<TrainersScreen> {
     try {
       final service = SupabaseService();
       final trainers = await service.fetchAllTrainers();
-      if (mounted) {
-        setState(() {
-          _trainers = trainers;
-          _loading = false;
-        });
+      if (!mounted || generation != _fetchGeneration) {
+        return;
       }
+      setState(() {
+        _trainers = trainers;
+        _loading = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = 'Failed to load trainers.';
-          _loading = false;
-        });
+      if (!mounted || generation != _fetchGeneration) {
+        return;
       }
+      setState(() {
+        _error = 'Failed to load trainers.';
+        _loading = false;
+      });
     }
   }
 
@@ -84,7 +122,7 @@ class _TrainersScreenState extends State<TrainersScreen> {
                       child: ListView.separated(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         itemCount: _trainers!.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        separatorBuilder: (context, _) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final trainer = _trainers![index];
                           final progress = trainer.caughtCount / total;

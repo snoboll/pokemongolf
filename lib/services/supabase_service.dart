@@ -195,12 +195,23 @@ class SupabaseService {
   Future<void> resetAllProgress() async {
     final uid = currentUserId;
     if (uid == null) return;
-    await _client.from('hole_results').delete().inFilter(
-      'round_id',
-      (await _client.from('rounds').select('id').eq('user_id', uid))
-          .map((r) => r['id'])
-          .toList(),
-    );
+
+    final List<Map<String, dynamic>> roundRows = await _client
+        .from('rounds')
+        .select('id')
+        .eq('user_id', uid);
+
+    final List<dynamic> roundIds =
+        roundRows.map((Map<String, dynamic> r) => r['id']).toList();
+
+    // PostgREST `in.()` with an empty list is invalid; skip when there are no rounds.
+    if (roundIds.isNotEmpty) {
+      await _client
+          .from('hole_results')
+          .delete()
+          .inFilter('round_id', roundIds);
+    }
+
     await _client.from('rounds').delete().eq('user_id', uid);
     await _client.from('caught_pokemon').delete().eq('user_id', uid);
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app.dart';
+import '../state/pokemon_golf_store.dart';
 import '../data/first_gen_pokemon.dart';
 import '../models/pokemon_rarity.dart';
 import '../models/pokemon_species.dart';
@@ -20,92 +21,99 @@ class _CollectionScreenState extends State<CollectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final store = PokemonGolfScope.of(context);
-    final theme = Theme.of(context);
-    final List<PokemonSpecies> filteredPokemon =
-        firstGenPokemon.where((pokemon) {
-      final bool caught = store.hasCaught(pokemon);
-      return switch (_filter) {
-        _CatchFilter.all => true,
-        _CatchFilter.caught => caught,
-        _CatchFilter.notCaught => !caught,
-      };
-    }).toList(growable: false);
+    final PokemonGolfStore store = PokemonGolfScope.of(context);
+    final ThemeData theme = Theme.of(context);
 
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    'Pokedex',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
+    return ListenableBuilder(
+      listenable: store,
+      builder: (BuildContext context, _) {
+        final List<PokemonSpecies> filteredPokemon =
+            firstGenPokemon.where((PokemonSpecies pokemon) {
+          final bool caught = store.hasCaught(pokemon);
+          return switch (_filter) {
+            _CatchFilter.all => true,
+            _CatchFilter.caught => caught,
+            _CatchFilter.notCaught => !caught,
+          };
+        }).toList(growable: false);
+
+        return SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        'Pokedex',
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
-                  ),
+                    Text(
+                      '${store.caughtDexNumbers.length} / ${firstGenPokemon.length}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  '${store.caughtDexNumbers.length} / ${firstGenPokemon.length}',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: <Widget>[
-                _FilterChipButton(
-                  label: 'All',
-                  selected: _filter == _CatchFilter.all,
-                  onSelected: () => setState(() => _filter = _CatchFilter.all),
-                ),
-                const SizedBox(width: 8),
-                _FilterChipButton(
-                  label: 'Not caught',
-                  selected: _filter == _CatchFilter.notCaught,
-                  onSelected: () =>
-                      setState(() => _filter = _CatchFilter.notCaught),
-                ),
-                const SizedBox(width: 8),
-                _FilterChipButton(
-                  label: 'Caught',
-                  selected: _filter == _CatchFilter.caught,
-                  onSelected: () =>
-                      setState(() => _filter = _CatchFilter.caught),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                childAspectRatio: 0.8,
               ),
-              itemCount: filteredPokemon.length,
-              itemBuilder: (BuildContext context, int index) {
-                final PokemonSpecies pokemon = filteredPokemon[index];
-                final bool caught = store.hasCaught(pokemon);
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: <Widget>[
+                    _FilterChipButton(
+                      label: 'All',
+                      selected: _filter == _CatchFilter.all,
+                      onSelected: () =>
+                          setState(() => _filter = _CatchFilter.all),
+                    ),
+                    const SizedBox(width: 8),
+                    _FilterChipButton(
+                      label: 'Not caught',
+                      selected: _filter == _CatchFilter.notCaught,
+                      onSelected: () =>
+                          setState(() => _filter = _CatchFilter.notCaught),
+                    ),
+                    const SizedBox(width: 8),
+                    _FilterChipButton(
+                      label: 'Caught',
+                      selected: _filter == _CatchFilter.caught,
+                      onSelected: () =>
+                          setState(() => _filter = _CatchFilter.caught),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
+                    childAspectRatio: 0.8,
+                  ),
+                  itemCount: filteredPokemon.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final PokemonSpecies pokemon = filteredPokemon[index];
+                    final bool caught = store.hasCaught(pokemon);
 
-                return _PokedexTile(pokemon: pokemon, caught: caught);
-              },
-            ),
+                    return _PokedexTile(pokemon: pokemon, caught: caught);
+                  },
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

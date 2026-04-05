@@ -15,6 +15,7 @@ class CoursesScreen extends StatefulWidget {
 class _CoursesScreenState extends State<CoursesScreen> {
   List<GolfCourse> _userCourses = <GolfCourse>[];
   bool _loading = true;
+  String _query = '';
 
   @override
   void initState() {
@@ -66,6 +67,13 @@ class _CoursesScreenState extends State<CoursesScreen> {
   void _startRound(GolfCourse course) {
     final store = PokemonGolfScope.of(context);
 
+    void launch(List<int> pars, {List<({double lat, double lng})?>? greenCoords}) {
+      store.startRound(pars.length, holePars: pars, courseName: course.name, greenCoords: greenCoords);
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const RoundScreen()),
+      );
+    }
+
     if (course.hasMultipleLoops) {
       showModalBottomSheet<void>(
         context: context,
@@ -75,27 +83,36 @@ class _CoursesScreenState extends State<CoursesScreen> {
         ),
         builder: (_) => _LoopPickerSheet(
           course: course,
-          onStart: (int holeCount, List<int> pars, {List<({double lat, double lng})?>? greenCoords}) {
+          onStart: (List<int> pars, {List<({double lat, double lng})?>? greenCoords}) {
             Navigator.of(context).pop();
-            store.startRound(holeCount, holePars: pars, courseName: course.name, greenCoords: greenCoords);
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const RoundScreen()),
-            );
+            launch(pars, greenCoords: greenCoords);
           },
         ),
       );
       return;
     }
 
-    store.startRound(
-      course.flatPars.length,
-      holePars: course.flatPars,
-      courseName: course.name,
-      greenCoords: course.singleLoopNullableGreens,
-    );
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const RoundScreen()),
-    );
+    final pars = course.flatPars;
+    if (pars.length >= 18) {
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (_) => _HoleCountSheet(
+          course: course,
+          onStart: (List<int> selectedPars, {List<({double lat, double lng})?>? greenCoords}) {
+            Navigator.of(context).pop();
+            launch(selectedPars, greenCoords: greenCoords);
+          },
+        ),
+      );
+      return;
+    }
+
+    // 9-hole or shorter: start directly
+    launch(pars, greenCoords: course.singleLoopNullableGreens);
   }
 
   Future<void> _setHomeCourse(GolfCourse course) async {
@@ -121,10 +138,24 @@ class _CoursesScreenState extends State<CoursesScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final store = PokemonGolfScope.of(context);
+
     final allCourses = <GolfCourse>[
       ...store.catalogCourses,
       ..._userCourses,
     ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
+    final homeCourse = store.homeCourseId != null
+        ? allCourses.where((c) => c.id == store.homeCourseId).firstOrNull
+        : null;
+
+    final q = _query.toLowerCase();
+    final filtered = q.isEmpty
+        ? allCourses.where((c) => c.id != store.homeCourseId).toList()
+        : allCourses
+            .where((c) =>
+                c.id != store.homeCourseId &&
+                c.name.toLowerCase().contains(q))
+            .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -139,30 +170,98 @@ class _CoursesScreenState extends State<CoursesScreen> {
       ),
       body: _loading && _userCourses.isEmpty
           ? const Center(child: CircularProgressIndicator())
-          : allCourses.isEmpty
-              ? Center(
-                  child: Text(
-                    'No courses yet',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+          : CustomScrollView(
+              slivers: <Widget>[
+                // Home course (pinned)
+                if (homeCourse != null)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4, bottom: 8),
+                            child: Row(
+                              children: <Widget>[
+                                Icon(Icons.home_rounded,
+                                    size: 14,
+                                    color: theme.colorScheme.secondary),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Home Course',
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: theme.colorScheme.secondary,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          _CourseCard(
+                            course: homeCourse,
+                            isHome: true,
+                            onSetHome: () {},
+                            onPlay: () => _startRound(homeCourse),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: allCourses.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final course = allCourses[index];
-                    final isHome = store.homeCourseId == course.id;
-                    return _CourseCard(
-                      course: course,
-                      isHome: isHome,
-                      onSetHome: () => _setHomeCourse(course),
-                      onPlay: () => _startRound(course),
-                    );
-                  },
+                // Search bar
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: TextField(
+                      onChanged: (v) => setState(() => _query = v),
+                      decoration: InputDecoration(
+                        hintText: 'Search courses…',
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        suffixIcon: _query.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.close, size: 18),
+                                onPressed: () => setState(() => _query = ''),
+                              )
+                            : null,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                  ),
                 ),
+                // Course list
+                if (filtered.isEmpty)
+                  SliverFillRemaining(
+                    child: Center(
+                      child: Text(
+                        _query.isEmpty ? 'No courses yet' : 'No results',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color:
+                              theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    sliver: SliverList.separated(
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final course = filtered[index];
+                        return _CourseCard(
+                          course: course,
+                          isHome: false,
+                          onSetHome: () => _setHomeCourse(course),
+                          onPlay: () => _startRound(course),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
     );
   }
 }
@@ -446,7 +545,7 @@ class _LoopPickerSheet extends StatefulWidget {
   const _LoopPickerSheet({required this.course, required this.onStart});
 
   final GolfCourse course;
-  final void Function(int holeCount, List<int> pars, {List<({double lat, double lng})?>? greenCoords}) onStart;
+  final void Function(List<int> pars, {List<({double lat, double lng})?>? greenCoords}) onStart;
 
   @override
   State<_LoopPickerSheet> createState() => _LoopPickerSheetState();
@@ -457,6 +556,8 @@ class _LoopPickerSheetState extends State<_LoopPickerSheet> {
 
   int get _totalHoles =>
       _selectedIndices.fold<int>(0, (int sum, int i) => sum + widget.course.loops[i].holeCount);
+
+  bool get _canStart => _selectedIndices.isNotEmpty && _selectedIndices.length <= 2;
 
   @override
   Widget build(BuildContext context) {
@@ -487,7 +588,7 @@ class _LoopPickerSheetState extends State<_LoopPickerSheet> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Pick 2 loops to play 18 holes',
+            'Select 1 loop (9 holes) or 2 loops (18 holes)',
             style: theme.textTheme.bodySmall?.copyWith(color: dim),
           ),
           const SizedBox(height: 16),
@@ -499,7 +600,7 @@ class _LoopPickerSheetState extends State<_LoopPickerSheet> {
                   if (_selectedIndices.contains(i)) {
                     _selectedIndices.remove(i);
                   } else {
-                    if (_selectedIndices.length >= 2) return;
+                    if (_selectedIndices.length >= 2) _selectedIndices.remove(_selectedIndices.first);
                     _selectedIndices.add(i);
                   }
                 });
@@ -555,29 +656,21 @@ class _LoopPickerSheetState extends State<_LoopPickerSheet> {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: _selectedIndices.length == 2
+              onPressed: _canStart
                   ? () {
                       final List<int> sorted = _selectedIndices.toList()..sort();
-                      final List<CourseLoop> picked = <CourseLoop>[
-                        widget.course.loops[sorted[0]],
-                        widget.course.loops[sorted[1]],
-                      ];
+                      final List<CourseLoop> picked =
+                          sorted.map((i) => widget.course.loops[i]).toList();
                       final List<int> pars = widget.course.parsForLoops(picked);
                       final List<({double lat, double lng})?> greens =
                           widget.course.greensNullableForLoops(picked);
                       final bool anyGreen = greens.any((e) => e != null);
-                      widget.onStart(
-                        pars.length,
-                        pars,
-                        greenCoords: anyGreen ? greens : null,
-                      );
+                      widget.onStart(pars, greenCoords: anyGreen ? greens : null);
                     }
                   : null,
               icon: const Icon(Icons.play_arrow_rounded, size: 20),
               label: Text(
-                _selectedIndices.length == 2
-                    ? 'Start $_totalHoles holes'
-                    : 'Select 2 parts',
+                _canStart ? 'Start $_totalHoles holes' : 'Select loops',
               ),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -585,6 +678,138 @@ class _LoopPickerSheetState extends State<_LoopPickerSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HoleCountSheet extends StatelessWidget {
+  const _HoleCountSheet({required this.course, required this.onStart});
+
+  final GolfCourse course;
+  final void Function(List<int> pars, {List<({double lat, double lng})?>? greenCoords}) onStart;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dim = theme.colorScheme.onSurface.withValues(alpha: 0.5);
+    final allPars = course.flatPars;
+    final allGreens = course.singleLoopNullableGreens;
+    final frontPars = allPars.sublist(0, 9);
+    final backPars = allPars.sublist(9);
+    final frontGreens = allGreens?.sublist(0, 9);
+    final backGreens = allGreens?.sublist(9);
+    final frontPar = frontPars.fold<int>(0, (a, b) => a + b);
+    final backPar = backPars.fold<int>(0, (a, b) => a + b);
+    final totalPar = allPars.fold<int>(0, (a, b) => a + b);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            course.name,
+            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          Text('How many holes?', style: theme.textTheme.bodySmall?.copyWith(color: dim)),
+          const SizedBox(height: 16),
+          _HoleOption(
+            title: 'Front 9',
+            subtitle: 'Holes 1–9  ·  Par $frontPar',
+            icon: Icons.looks_one_outlined,
+            onTap: () => onStart(frontPars, greenCoords: frontGreens),
+          ),
+          const SizedBox(height: 8),
+          _HoleOption(
+            title: 'Back 9',
+            subtitle: 'Holes 10–18  ·  Par $backPar',
+            icon: Icons.looks_two_outlined,
+            onTap: () => onStart(backPars, greenCoords: backGreens),
+          ),
+          const SizedBox(height: 8),
+          _HoleOption(
+            title: 'Full 18',
+            subtitle: 'All holes  ·  Par $totalPar',
+            icon: Icons.golf_course,
+            isPrimary: true,
+            onTap: () => onStart(allPars, greenCoords: allGreens),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HoleOption extends StatelessWidget {
+  const _HoleOption({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+    this.isPrimary = false,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isPrimary
+              ? cs.primary.withValues(alpha: 0.12)
+              : cs.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isPrimary ? cs.primary : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(icon, size: 22,
+                color: isPrimary ? cs.primary : cs.onSurface.withValues(alpha: 0.6)),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(title,
+                      style: theme.textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                          color: cs.onSurface.withValues(alpha: 0.5))),
+                ],
+              ),
+            ),
+            Icon(Icons.play_arrow_rounded, size: 22,
+                color: isPrimary ? cs.primary : cs.onSurface.withValues(alpha: 0.4)),
+          ],
+        ),
       ),
     );
   }

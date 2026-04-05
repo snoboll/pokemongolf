@@ -89,21 +89,41 @@ class _PokemonGolfAppState extends State<PokemonGolfApp> {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2E7D32),
+          seedColor: const Color(0xFF00A651),
           brightness: Brightness.dark,
+        ).copyWith(
+          primary: const Color(0xFF57F287),
+          onPrimary: const Color(0xFF003915),
+          primaryContainer: const Color(0xFF00531F),
+          onPrimaryContainer: const Color(0xFF7EFFA8),
+          secondary: const Color(0xFFFFD700),
+          onSecondary: const Color(0xFF3B2F00),
+          surface: const Color(0xFF141F14),
+          onSurface: const Color(0xFFDCEEDC),
+          surfaceContainerHighest: const Color(0xFF263226),
+          outline: const Color(0xFF4A5E4A),
+          outlineVariant: const Color(0xFF2C3C2C),
         ),
-        scaffoldBackgroundColor: const Color(0xFF0F1A0F),
+        scaffoldBackgroundColor: const Color(0xFF0C150C),
         cardTheme: CardThemeData(
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFF243024), width: 1),
           ),
-          color: const Color(0xFF1A2E1A),
+          color: const Color(0xFF172417),
         ),
         navigationBarTheme: NavigationBarThemeData(
-          backgroundColor: const Color(0xFF0F1A0F),
-          indicatorColor: const Color(0xFF2E7D32).withValues(alpha: 0.3),
+          backgroundColor: const Color(0xFF0C150C),
+          indicatorColor: const Color(0xFF57F287).withValues(alpha: 0.2),
+          surfaceTintColor: Colors.transparent,
           height: 68,
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF57F287));
+            }
+            return const TextStyle(fontSize: 12, fontWeight: FontWeight.w500);
+          }),
         ),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.transparent,
@@ -113,15 +133,45 @@ class _PokemonGolfAppState extends State<PokemonGolfApp> {
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
             ),
             textStyle: const TextStyle(
-              fontSize: 18,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 17,
               fontWeight: FontWeight.w600,
             ),
           ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: const Color(0xFF1C2C1C),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF2C3C2C), width: 1),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF2C3C2C), width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF57F287), width: 1.5),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
       ),
       builder: (BuildContext context, Widget? child) {
@@ -177,17 +227,6 @@ class PokemonGolfShell extends StatefulWidget {
 class _PokemonGolfShellState extends State<PokemonGolfShell> {
   int _selectedIndex = 2;
 
-  void _startRound(BuildContext context, int holeCount, {List<int>? holePars, String? courseName, List<({double lat, double lng})?>? greenCoords}) {
-    final store = PokemonGolfScope.of(context);
-    store.startRound(holeCount, holePars: holePars, courseName: courseName, greenCoords: greenCoords);
-
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (BuildContext context) => const RoundScreen(),
-      ),
-    );
-  }
-
   void _resumeRound(BuildContext context) {
     final store = PokemonGolfScope.of(context);
     if (store.activeRound == null) {
@@ -207,8 +246,7 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
       const CollectionScreen(),
       const TrainersScreen(),
       HomeScreen(
-        onStartRound: ({required int holeCount, List<int>? holePars, String? courseName, List<({double lat, double lng})?>? greenCoords}) =>
-            _startRound(context, holeCount, holePars: holePars, courseName: courseName, greenCoords: greenCoords),
+        onPlay: () => setState(() => _selectedIndex = 3),
         onResumeRound: () => _resumeRound(context),
       ),
       const CoursesScreen(),

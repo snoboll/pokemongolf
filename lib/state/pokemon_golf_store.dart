@@ -88,8 +88,12 @@ class PokemonGolfStore extends ChangeNotifier {
         supa.fetchTrainerName(),
       ]);
 
-      _caughtDexNumbers.addAll(results[0] as Set<int>);
-      _completedRounds.addAll(results[1] as List<GolfRoundSummary>);
+      _caughtDexNumbers
+        ..clear()
+        ..addAll(results[0] as Set<int>);
+      _completedRounds
+        ..clear()
+        ..addAll(results[1] as List<GolfRoundSummary>);
       _trainerName = results[2] as String?;
 
       try {
@@ -116,14 +120,29 @@ class PokemonGolfStore extends ChangeNotifier {
   }
 
   Future<void> resetProgress() async {
+    final SupabaseService? supa = _supabaseService;
     try {
-      await _supabaseService?.resetAllProgress();
+      if (supa != null) {
+        await supa.resetAllProgress();
+        // Reload from Supabase so local state matches the DB (and IndexedStack tabs refresh via [notifyListeners]).
+        final List<Object?> results = await Future.wait(<Future<Object?>>[
+          supa.fetchCaughtDexNumbers(),
+          supa.fetchCompletedRounds(),
+        ]);
+        _caughtDexNumbers
+          ..clear()
+          ..addAll(results[0]! as Set<int>);
+        _completedRounds
+          ..clear()
+          ..addAll(results[1]! as List<GolfRoundSummary>);
+      } else {
+        _caughtDexNumbers.clear();
+        _completedRounds.clear();
+      }
     } catch (e) {
       debugPrint('Failed to reset progress: $e');
       rethrow;
     }
-    _caughtDexNumbers.clear();
-    _completedRounds.clear();
     _pendingCatches.clear();
     _activeRound = null;
     notifyListeners();
