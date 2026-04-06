@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../app.dart';
 import '../data/first_gen_pokemon.dart';
 import '../state/pokemon_golf_store.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.onPlay,
@@ -14,6 +15,21 @@ class HomeScreen extends StatelessWidget {
 
   final VoidCallback onPlay;
   final VoidCallback onResumeRound;
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String _version = '';
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform().then((info) {
+      if (mounted) setState(() => _version = info.version);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +107,7 @@ class HomeScreen extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
-                          onPressed: onPlay,
+                          onPressed: widget.onPlay,
                           icon: const Icon(Icons.play_arrow_rounded, size: 26),
                           label: const Text('Play'),
                         ),
@@ -101,7 +117,7 @@ class HomeScreen extends StatelessWidget {
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
-                            onPressed: onResumeRound,
+                            onPressed: widget.onResumeRound,
                             icon: const Icon(Icons.play_circle_outline_rounded, size: 22),
                             label: Text(
                               'Resume Hole ${store.activeRound!.currentHoleNumber}',
@@ -145,6 +161,13 @@ class HomeScreen extends StatelessWidget {
                               label: 'rounds',
                             ),
                           ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        _version.isEmpty ? '' : 'v$_version',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.25),
                         ),
                       ),
                     ],

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../app.dart';
 import '../data/first_gen_pokemon.dart';
+import '../models/pokemon_rarity.dart';
+import '../models/pokemon_species.dart';
 import '../services/supabase_service.dart';
 import '../state/pokemon_golf_store.dart';
+import '../widgets/pokemon_art.dart';
 
 class TrainersScreen extends StatefulWidget {
   const TrainersScreen({super.key});
@@ -163,7 +166,14 @@ class _TrainerCard extends StatelessWidget {
     final isComplete = trainer.caughtCount == total;
 
     return Card(
-      child: Padding(
+      clipBehavior: Clip.hardEdge,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => TrainerPokedexScreen(trainer: trainer),
+          ),
+        ),
+        child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: <Widget>[
@@ -243,6 +253,7 @@ class _TrainerCard extends StatelessWidget {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -253,5 +264,160 @@ class _TrainerCard extends StatelessWidget {
       3 => const Color(0xFF8D6E63),
       _ => const Color(0xFF78909C),
     };
+  }
+}
+
+class TrainerPokedexScreen extends StatefulWidget {
+  const TrainerPokedexScreen({super.key, required this.trainer});
+
+  final TrainerProfile trainer;
+
+  @override
+  State<TrainerPokedexScreen> createState() => _TrainerPokedexScreenState();
+}
+
+class _TrainerPokedexScreenState extends State<TrainerPokedexScreen> {
+  Set<int>? _caughtDexNumbers;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    SupabaseService()
+        .fetchTrainerCaughtDexNumbers(widget.trainer.userId)
+        .then((numbers) {
+      if (mounted) setState(() { _caughtDexNumbers = numbers; _loading = false; });
+    }).catchError((_) {
+      if (mounted) setState(() { _caughtDexNumbers = {}; _loading = false; });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final total = firstGenPokemon.length;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${widget.trainer.trainerName}\'s Pokédex'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(24),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              '${widget.trainer.caughtCount} / $total caught',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.8,
+              ),
+              itemCount: firstGenPokemon.length,
+              itemBuilder: (context, index) {
+                final PokemonSpecies pokemon = firstGenPokemon[index];
+                final bool caught = _caughtDexNumbers!.contains(pokemon.dexNumber);
+                return _TrainerPokedexTile(pokemon: pokemon, caught: caught);
+              },
+            ),
+    );
+  }
+}
+
+class _TrainerPokedexTile extends StatelessWidget {
+  const _TrainerPokedexTile({required this.pokemon, required this.caught});
+
+  final PokemonSpecies pokemon;
+  final bool caught;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Stack(
+        children: <Widget>[
+          Positioned(
+            top: 8,
+            left: 10,
+            child: Text(
+              '#${pokemon.paddedDexNumber}',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (caught)
+            Positioned(
+              top: 6,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: pokemon.rarity.color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  pokemon.rarity.label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: pokemon.rarity.color,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ),
+          Column(
+            children: <Widget>[
+              const SizedBox(height: 28),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: caught
+                      ? PokemonArt(imageUrl: pokemon.imageUrl, height: 100)
+                      : Center(
+                          child: Icon(
+                            Icons.catching_pokemon,
+                            size: 48,
+                            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                          ),
+                        ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
+                child: Text(
+                  caught ? pokemon.name : '???',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: caught
+                        ? theme.colorScheme.onSurface
+                        : theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

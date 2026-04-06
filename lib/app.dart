@@ -1,6 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'screens/auth_screen.dart';
@@ -226,6 +230,39 @@ class PokemonGolfShell extends StatefulWidget {
 
 class _PokemonGolfShellState extends State<PokemonGolfShell> {
   int _selectedIndex = 2;
+  bool _hasUpdate = false;
+  String _currentVersion = '';
+
+  static const String _versionUrl =
+      'https://cuwcunjtervjelgomeil.supabase.co/storage/v1/object/public/app-distribution/version.json';
+  static const String _installUrl =
+      'https://cuwcunjtervjelgomeil.supabase.co/storage/v1/object/public/app-distribution/index.html';
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform().then((info) {
+      _currentVersion = info.version;
+      _checkForUpdate();
+    });
+  }
+
+  Future<void> _checkForUpdate() async {
+    try {
+      final client = HttpClient();
+      final request = await client.getUrl(Uri.parse(_versionUrl));
+      final response = await request.close();
+      if (response.statusCode == 200) {
+        final body = await response.transform(utf8.decoder).join();
+        final data = jsonDecode(body) as Map<String, dynamic>;
+        final remote = data['version'] as String? ?? _currentVersion;
+        if (remote != _currentVersion) {
+          if (mounted) setState(() => _hasUpdate = true);
+        }
+      }
+      client.close();
+    } catch (_) {}
+  }
 
   void _resumeRound(BuildContext context) {
     final store = PokemonGolfScope.of(context);
@@ -254,9 +291,42 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: pages,
+      body: Column(
+        children: [
+          if (_hasUpdate)
+            GestureDetector(
+              onTap: () => launchUrl(Uri.parse(_installUrl), mode: LaunchMode.externalApplication),
+              child: Container(
+                width: double.infinity,
+                color: const Color(0xFFFFD700),
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                child: const SafeArea(
+                  bottom: false,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.system_update, size: 16, color: Color(0xFF3B2F00)),
+                      SizedBox(width: 8),
+                      Text(
+                        'Update available — tap to install',
+                        style: TextStyle(
+                          color: Color(0xFF3B2F00),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          Expanded(
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: pages,
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,

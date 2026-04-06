@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../app.dart';
 import '../models/golf_course.dart';
@@ -16,6 +18,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
   List<GolfCourse> _userCourses = <GolfCourse>[];
   bool _loading = true;
   String _query = '';
+  bool _mapMode = false;
 
   @override
   void initState() {
@@ -162,15 +165,26 @@ class _CoursesScreenState extends State<CoursesScreen> {
         title: const Text('Courses'),
         actions: <Widget>[
           IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'Add course',
-            onPressed: _showAddCourse,
+            icon: Icon(_mapMode ? Icons.list : Icons.map_outlined),
+            tooltip: _mapMode ? 'List view' : 'Map view',
+            onPressed: () => setState(() => _mapMode = !_mapMode),
           ),
+          if (!_mapMode)
+            IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: 'Add course',
+              onPressed: _showAddCourse,
+            ),
         ],
       ),
       body: _loading && _userCourses.isEmpty
           ? const Center(child: CircularProgressIndicator())
-          : CustomScrollView(
+          : _mapMode
+              ? _CourseMap(
+                  courses: [...store.catalogCourses, ..._userCourses],
+                  onStartRound: _startRound,
+                )
+              : CustomScrollView(
               slivers: <Widget>[
                 // Home course (pinned)
                 if (homeCourse != null)
@@ -265,6 +279,196 @@ class _CoursesScreenState extends State<CoursesScreen> {
     );
   }
 }
+
+// ── Map view ──────────────────────────────────────────────────────────────────
+
+class _CourseMap extends StatefulWidget {
+  const _CourseMap({required this.courses, required this.onStartRound});
+
+  final List<GolfCourse> courses;
+  final void Function(GolfCourse) onStartRound;
+
+  @override
+  State<_CourseMap> createState() => _CourseMapState();
+}
+
+class _CourseMapState extends State<_CourseMap> {
+  final MapController _mapController = MapController();
+  double _zoom = 9.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final courses = widget.courses.where((c) => c.lat != null && c.lng != null).toList();
+
+    return FlutterMap(
+      mapController: _mapController,
+      options: MapOptions(
+        initialCenter: const LatLng(55.9, 13.4),
+        initialZoom: 9.0,
+        minZoom: 7.0,
+        maxZoom: 16.0,
+        onMapEvent: (event) {
+          if (event is MapEventMove || event is MapEventScrollWheelZoom) {
+            final newZoom = _mapController.camera.zoom;
+            if ((newZoom - _zoom).abs() > 0.3) {
+              setState(() => _zoom = newZoom);
+            }
+          }
+        },
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+          subdomains: const ['a', 'b', 'c'],
+          userAgentPackageName: 'com.rootpi.golf',
+          retinaMode: true,
+        ),
+        MarkerLayer(
+          markers: courses.map((course) {
+            final showLabel = _zoom >= 11;
+            final showDetail = _zoom >= 13;
+            final totalPar = course.flatPars.isEmpty ? null : course.flatPars.reduce((a, b) => a + b);
+            final holeCount = course.flatPars.length;
+
+            return Marker(
+              point: LatLng(course.lat!, course.lng!),
+              width: showDetail ? 160 : showLabel ? 140 : 16,
+              height: showDetail ? 80 : showLabel ? 40 : 16,
+              alignment: showLabel ? Alignment.topCenter : Alignment.center,
+              child: GestureDetector(
+                onTap: () => widget.onStartRound(course),
+                child: showDetail
+                    ? _DetailMarker(course: course, totalPar: totalPar, holeCount: holeCount, theme: theme)
+                    : showLabel
+                        ? _LabelMarker(name: course.name, theme: theme)
+                        : _DotMarker(theme: theme),
+              ),
+            );
+          }).toList(),
+        ),
+        const RichAttributionWidget(
+          attributions: [TextSourceAttribution('© OpenStreetMap © CARTO')],
+          showFlutterMapAttribution: false,
+        ),
+      ],
+    );
+  }
+}
+
+class _DotMarker extends StatelessWidget {
+  const _DotMarker({required this.theme});
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 10,
+      height: 10,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: theme.colorScheme.primary,
+        boxShadow: [BoxShadow(color: theme.colorScheme.primary.withValues(alpha: 0.5), blurRadius: 6)],
+      ),
+    );
+  }
+}
+
+class _LabelMarker extends StatelessWidget {
+  const _LabelMarker({required this.name, required this.theme});
+  final String name;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF172417),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.6)),
+          ),
+          child: Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: theme.colorScheme.primary,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        Container(
+          width: 2,
+          height: 6,
+          color: theme.colorScheme.primary.withValues(alpha: 0.6),
+        ),
+      ],
+    );
+  }
+}
+
+class _DetailMarker extends StatelessWidget {
+  const _DetailMarker({required this.course, required this.totalPar, required this.holeCount, required this.theme});
+  final GolfCourse course;
+  final int? totalPar;
+  final int holeCount;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF172417),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.7)),
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 8)],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                course.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              if (totalPar != null)
+                Text(
+                  '$holeCount holes · par $totalPar',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Container(
+          width: 2,
+          height: 6,
+          color: theme.colorScheme.primary.withValues(alpha: 0.6),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Course card ───────────────────────────────────────────────────────────────
 
 class _CourseCard extends StatefulWidget {
   const _CourseCard({
@@ -552,149 +756,86 @@ class _LoopPickerSheet extends StatefulWidget {
 }
 
 class _LoopPickerSheetState extends State<_LoopPickerSheet> {
-  final Set<int> _selectedIndices = <int>{};
+  late int _selected; // index into _options
 
-  int get _totalHoles =>
-      _selectedIndices.fold<int>(0, (int sum, int i) => sum + widget.course.loops[i].holeCount);
+  // Each option is either a single loop index or all loops combined (-1)
+  late final List<_LoopOption> _options;
 
-  bool get _canStart => _selectedIndices.isNotEmpty && _selectedIndices.length <= 2;
+  @override
+  void initState() {
+    super.initState();
+    final loops = widget.course.loops;
+    _options = [
+      for (int i = 0; i < loops.length; i++)
+        _LoopOption(
+          label: loops[i].name.isEmpty ? 'Loop ${i + 1}' : loops[i].name,
+          subtitle: '${loops[i].holeCount} holes  ·  Par ${loops[i].holes.fold<int>(0, (a, h) => a + h.par)}',
+          loopIndices: [i],
+        ),
+      if (loops.length == 2)
+        _LoopOption(
+          label: 'Full round',
+          subtitle: '${loops.fold<int>(0, (s, l) => s + l.holeCount)} holes  ·  Par ${loops.expand((l) => l.holes).fold<int>(0, (a, h) => a + h.par)}',
+          loopIndices: [0, 1],
+        ),
+    ];
+    _selected = _options.length - 1; // default: full round or last loop
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final List<CourseLoop> loops = widget.course.loops;
-    final dim = theme.colorScheme.onSurface.withValues(alpha: 0.5);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            widget.course.name,
-            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Select 1 loop (9 holes) or 2 loops (18 holes)',
-            style: theme.textTheme.bodySmall?.copyWith(color: dim),
-          ),
-          const SizedBox(height: 16),
-          for (int i = 0; i < loops.length; i++) ...[
-            if (i > 0) const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  if (_selectedIndices.contains(i)) {
-                    _selectedIndices.remove(i);
-                  } else {
-                    if (_selectedIndices.length >= 2) _selectedIndices.remove(_selectedIndices.first);
-                    _selectedIndices.add(i);
-                  }
-                });
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: _selectedIndices.contains(i)
-                      ? theme.colorScheme.primary.withValues(alpha: 0.12)
-                      : theme.colorScheme.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(12),
-                  border: _selectedIndices.contains(i)
-                      ? Border.all(color: theme.colorScheme.primary, width: 1.5)
-                      : Border.all(color: Colors.transparent, width: 1.5),
-                ),
-                child: Row(
-                  children: <Widget>[
-                    Icon(
-                      _selectedIndices.contains(i)
-                          ? Icons.check_circle
-                          : Icons.circle_outlined,
-                      size: 22,
-                      color: _selectedIndices.contains(i)
-                          ? theme.colorScheme.primary
-                          : dim,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            loops[i].name.isEmpty ? 'Loop ${i + 1}' : loops[i].name,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${loops[i].holeCount} holes  ·  Par ${loops[i].holes.fold<int>(0, (int a, CourseHole h) => a + h.par)}',
-                            style: theme.textTheme.bodySmall?.copyWith(color: dim),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: _canStart
-                  ? () {
-                      final List<int> sorted = _selectedIndices.toList()..sort();
-                      final List<CourseLoop> picked =
-                          sorted.map((i) => widget.course.loops[i]).toList();
-                      final List<int> pars = widget.course.parsForLoops(picked);
-                      final List<({double lat, double lng})?> greens =
-                          widget.course.greensNullableForLoops(picked);
-                      final bool anyGreen = greens.any((e) => e != null);
-                      widget.onStart(pars, greenCoords: anyGreen ? greens : null);
-                    }
-                  : null,
-              icon: const Icon(Icons.play_arrow_rounded, size: 20),
-              label: Text(
-                _canStart ? 'Start $_totalHoles holes' : 'Select loops',
-              ),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
+    return _RoundPickerShell(
+      courseName: widget.course.name,
+      onPlay: () {
+        final indices = _options[_selected].loopIndices;
+        final picked = indices.map((i) => widget.course.loops[i]).toList();
+        final pars = widget.course.parsForLoops(picked);
+        final greens = widget.course.greensNullableForLoops(picked);
+        widget.onStart(pars, greenCoords: greens.any((e) => e != null) ? greens : null);
+      },
+      children: [
+        for (int i = 0; i < _options.length; i++) ...[
+          if (i > 0) const SizedBox(height: 8),
+          _RadioRow(
+            label: _options[i].label,
+            subtitle: _options[i].subtitle,
+            selected: _selected == i,
+            onTap: () => setState(() => _selected = i),
+            theme: theme,
           ),
         ],
-      ),
+      ],
     );
   }
 }
 
-class _HoleCountSheet extends StatelessWidget {
+class _LoopOption {
+  const _LoopOption({required this.label, required this.subtitle, required this.loopIndices});
+  final String label;
+  final String subtitle;
+  final List<int> loopIndices;
+}
+
+class _HoleCountSheet extends StatefulWidget {
   const _HoleCountSheet({required this.course, required this.onStart});
 
   final GolfCourse course;
   final void Function(List<int> pars, {List<({double lat, double lng})?>? greenCoords}) onStart;
 
   @override
+  State<_HoleCountSheet> createState() => _HoleCountSheetState();
+}
+
+class _HoleCountSheetState extends State<_HoleCountSheet> {
+  int _selected = 2; // 0=front9, 1=back9, 2=full18
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dim = theme.colorScheme.onSurface.withValues(alpha: 0.5);
-    final allPars = course.flatPars;
-    final allGreens = course.singleLoopNullableGreens;
+    final allPars = widget.course.flatPars;
+    final allGreens = widget.course.singleLoopNullableGreens;
     final frontPars = allPars.sublist(0, 9);
     final backPars = allPars.sublist(9);
     final frontGreens = allGreens?.sublist(0, 9);
@@ -703,50 +844,63 @@ class _HoleCountSheet extends StatelessWidget {
     final backPar = backPars.fold<int>(0, (a, b) => a + b);
     final totalPar = allPars.fold<int>(0, (a, b) => a + b);
 
+    return _RoundPickerShell(
+      courseName: widget.course.name,
+      onPlay: () {
+        switch (_selected) {
+          case 0: widget.onStart(frontPars, greenCoords: frontGreens);
+          case 1: widget.onStart(backPars, greenCoords: backGreens);
+          case _: widget.onStart(allPars, greenCoords: allGreens);
+        }
+      },
+      children: [
+        _RadioRow(label: 'Front 9', subtitle: 'Holes 1–9  ·  Par $frontPar', selected: _selected == 0, onTap: () => setState(() => _selected = 0), theme: theme),
+        const SizedBox(height: 8),
+        _RadioRow(label: 'Back 9', subtitle: 'Holes 10–18  ·  Par $backPar', selected: _selected == 1, onTap: () => setState(() => _selected = 1), theme: theme),
+        const SizedBox(height: 8),
+        _RadioRow(label: 'Full 18', subtitle: 'All holes  ·  Par $totalPar', selected: _selected == 2, onTap: () => setState(() => _selected = 2), theme: theme),
+      ],
+    );
+  }
+}
+
+// ── Shared picker widgets ─────────────────────────────────────────────────────
+
+class _RoundPickerShell extends StatelessWidget {
+  const _RoundPickerShell({required this.courseName, required this.onPlay, required this.children});
+
+  final String courseName;
+  final VoidCallback onPlay;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+      padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).viewInsets.bottom + 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
+        children: [
           Center(
             child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
+              width: 40, height: 4,
+              decoration: BoxDecoration(color: theme.colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2)),
             ),
           ),
+          const SizedBox(height: 20),
+          Text(courseName, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
           const SizedBox(height: 16),
-          Text(
-            course.name,
-            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 4),
-          Text('How many holes?', style: theme.textTheme.bodySmall?.copyWith(color: dim)),
-          const SizedBox(height: 16),
-          _HoleOption(
-            title: 'Front 9',
-            subtitle: 'Holes 1–9  ·  Par $frontPar',
-            icon: Icons.looks_one_outlined,
-            onTap: () => onStart(frontPars, greenCoords: frontGreens),
-          ),
-          const SizedBox(height: 8),
-          _HoleOption(
-            title: 'Back 9',
-            subtitle: 'Holes 10–18  ·  Par $backPar',
-            icon: Icons.looks_two_outlined,
-            onTap: () => onStart(backPars, greenCoords: backGreens),
-          ),
-          const SizedBox(height: 8),
-          _HoleOption(
-            title: 'Full 18',
-            subtitle: 'All holes  ·  Par $totalPar',
-            icon: Icons.golf_course,
-            isPrimary: true,
-            onTap: () => onStart(allPars, greenCoords: allGreens),
+          ...children,
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onPlay,
+              icon: const Icon(Icons.play_arrow_rounded, size: 22),
+              label: const Text('Play'),
+              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+            ),
           ),
         ],
       ),
@@ -754,60 +908,50 @@ class _HoleCountSheet extends StatelessWidget {
   }
 }
 
-class _HoleOption extends StatelessWidget {
-  const _HoleOption({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.onTap,
-    this.isPrimary = false,
-  });
+class _RadioRow extends StatelessWidget {
+  const _RadioRow({required this.label, required this.subtitle, required this.selected, required this.onTap, required this.theme});
 
-  final String title;
+  final String label;
   final String subtitle;
-  final IconData icon;
+  final bool selected;
   final VoidCallback onTap;
-  final bool isPrimary;
+  final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: isPrimary
-              ? cs.primary.withValues(alpha: 0.12)
-              : cs.surfaceContainerHigh,
+          color: selected ? theme.colorScheme.primary.withValues(alpha: 0.1) : theme.colorScheme.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isPrimary ? cs.primary : Colors.transparent,
+            color: selected ? theme.colorScheme.primary : Colors.transparent,
             width: 1.5,
           ),
         ),
         child: Row(
-          children: <Widget>[
-            Icon(icon, size: 22,
-                color: isPrimary ? cs.primary : cs.onSurface.withValues(alpha: 0.6)),
-            const SizedBox(width: 14),
+          children: [
+            Radio<bool>(
+              value: true,
+              groupValue: selected,
+              onChanged: (_) => onTap(),
+              activeColor: theme.colorScheme.primary,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(title,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w700)),
-                  Text(subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                          color: cs.onSurface.withValues(alpha: 0.5))),
+                children: [
+                  Text(label, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                  Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
                 ],
               ),
             ),
-            Icon(Icons.play_arrow_rounded, size: 22,
-                color: isPrimary ? cs.primary : cs.onSurface.withValues(alpha: 0.4)),
           ],
         ),
       ),

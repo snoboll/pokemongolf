@@ -41,12 +41,16 @@ class GolfCourse {
     required this.name,
     required this.loops,
     this.isPreset = false,
+    this.lat,
+    this.lng,
   });
 
   final String id;
   final String name;
   final List<CourseLoop> loops;
   final bool isPreset;
+  final double? lat;
+  final double? lng;
 
   bool get hasMultipleLoops => loops.length > 1;
 
@@ -94,6 +98,8 @@ class GolfCourse {
     required String id,
     required String name,
     required Map<String, dynamic> layout,
+    double? lat,
+    double? lng,
   }) {
     final List<dynamic>? loopsJson = layout['loops'] as List<dynamic>?;
     if (loopsJson != null && loopsJson.isNotEmpty) {
@@ -102,6 +108,8 @@ class GolfCourse {
         name: name,
         loops: loopsJson.map(_parseLoop).toList(growable: false),
         isPreset: true,
+        lat: lat,
+        lng: lng,
       );
     }
 
@@ -129,7 +137,7 @@ class GolfCourse {
         }
         return CourseLoop(name: m['name'] as String, holes: holes);
       }).toList();
-      return GolfCourse(id: id, name: name, loops: loops, isPreset: true);
+      return GolfCourse(id: id, name: name, loops: loops, isPreset: true, lat: lat, lng: lng);
     }
 
     final List<dynamic>? parsJson = layout['pars'] as List<dynamic>?;
@@ -144,6 +152,8 @@ class GolfCourse {
       name: name,
       loops: <CourseLoop>[CourseLoop(name: '', holes: holes)],
       isPreset: true,
+      lat: lat,
+      lng: lng,
     );
   }
 }

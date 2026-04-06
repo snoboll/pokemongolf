@@ -108,7 +108,7 @@ class SupabaseService {
       countMap[row['user_id'] as String] = (row['catch_count'] as num).toInt();
     }
 
-    return profiles.map((p) {
+    return (profiles.map((p) {
       final String uid = p['user_id'] as String;
       return TrainerProfile(
         userId: uid,
@@ -116,7 +116,16 @@ class SupabaseService {
         caughtCount: countMap[uid] ?? 0,
         homeCourseId: p['home_course_id'] as String?,
       );
-    }).toList(growable: false);
+    }).toList(growable: false)
+      ..sort((a, b) => b.caughtCount.compareTo(a.caughtCount)));
+  }
+
+  Future<Set<int>> fetchTrainerCaughtDexNumbers(String userId) async {
+    final List<Map<String, dynamic>> rows = await _client
+        .from('caught_pokemon')
+        .select('dex_number')
+        .eq('user_id', userId);
+    return rows.map((r) => (r['dex_number'] as num).toInt()).toSet();
   }
 
   // ── Catalog courses (pars, multi-loop parts, green centers) ─────────
@@ -124,7 +133,7 @@ class SupabaseService {
   Future<List<GolfCourse>> fetchCatalogCourses() async {
     final List<Map<String, dynamic>> rows = await _client
         .from('catalog_courses')
-        .select('id, name, layout')
+        .select('id, name, layout, lat, lng')
         .order('sort_order');
 
     final List<GolfCourse> courses = <GolfCourse>[];
@@ -140,6 +149,8 @@ class SupabaseService {
           id: row['id'] as String,
           name: row['name'] as String,
           layout: layout,
+          lat: (row['lat'] as num?)?.toDouble(),
+          lng: (row['lng'] as num?)?.toDouble(),
         ));
       } catch (e, st) {
         debugPrint('Skipping catalog course row ${row['id']}: $e\n$st');
