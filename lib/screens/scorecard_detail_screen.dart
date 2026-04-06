@@ -11,12 +11,14 @@ class ScorecardDetailScreen extends StatelessWidget {
     required this.holeCount,
     this.title = 'Scorecard',
     this.isActive = false,
+    this.isBattle = false,
   });
 
   final List<HoleResult> holes;
   final int holeCount;
   final String title;
   final bool isActive;
+  final bool isBattle;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +44,7 @@ class ScorecardDetailScreen extends StatelessWidget {
             caughtCount: caughtCount,
             holesPlayed: holes.length,
             holeCount: holeCount,
+            isBattle: isBattle,
           ),
           const SizedBox(height: 4),
           _TableHeader(theme: theme),
@@ -74,6 +77,7 @@ class _SummaryBar extends StatelessWidget {
     required this.caughtCount,
     required this.holesPlayed,
     required this.holeCount,
+    this.isBattle = false,
   });
 
   final int scoreToPar;
@@ -82,6 +86,7 @@ class _SummaryBar extends StatelessWidget {
   final int caughtCount;
   final int holesPlayed;
   final int holeCount;
+  final bool isBattle;
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +107,10 @@ class _SummaryBar extends StatelessWidget {
           ),
           _Stat(value: '$totalStrokes', label: 'Strokes'),
           _Stat(value: '$totalPar', label: 'Par'),
-          _Stat(value: '$caughtCount/$holesPlayed', label: 'Caught'),
+          if (isBattle)
+            const _Stat(value: '⚔️', label: 'Battle')
+          else
+            _Stat(value: '$caughtCount/$holesPlayed', label: 'Caught'),
           _Stat(value: '$holesPlayed/$holeCount', label: 'Thru'),
         ],
       ),
@@ -324,7 +332,11 @@ class _ScoreCell extends StatelessWidget {
       );
     }
 
-    return text;
+    return SizedBox(
+      width: 36,
+      height: 36,
+      child: Center(child: text),
+    );
   }
 }
 
@@ -336,6 +348,17 @@ class _PokemonCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // Battle sentinel (dex=0) — show swords emoji, no catch indicator
+    if (result.pokemon.dexNumber == 0) {
+      return const Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: <Widget>[
+          Text('⚔️', style: TextStyle(fontSize: 18)),
+          SizedBox(width: 4),
+        ],
+      );
+    }
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -358,7 +381,7 @@ class _PokemonCell extends StatelessWidget {
             child: Image.network(
               result.pokemon.imageUrl,
               fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => Icon(
+              errorBuilder: (context, error, stack) => Icon(
                 Icons.catching_pokemon,
                 size: 18,
                 color: result.pokemon.rarity.color,

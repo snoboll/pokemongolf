@@ -72,16 +72,36 @@ class ActiveRound {
   int get onePuttCount =>
       completedHoles.where((hole) => hole.stats.onePutt).length;
 
-  int get parOrBetterStreak {
-    int streak = 0;
+  /// Accumulated streak bonus for the next encounter.
+  /// +3 per par, +6 per birdie, +12 per eagle. Resets on bogey or worse.
+  int get streakBonus {
+    int bonus = 0;
     for (int i = completedHoles.length - 1; i >= 0; i--) {
-      if (completedHoles[i].score.relativeToPar <= 0) {
-        streak++;
+      final rel = completedHoles[i].score.relativeToPar;
+      if (rel <= -2) {
+        bonus += 12;
+      } else if (rel == -1) {
+        bonus += 6;
+      } else if (rel == 0) {
+        bonus += 3;
       } else {
         break;
       }
     }
-    return streak;
+    return bonus;
+  }
+
+  /// Number of consecutive holes at par or better (for display next to 🔥).
+  int get streakCount {
+    int count = 0;
+    for (int i = completedHoles.length - 1; i >= 0; i--) {
+      if (completedHoles[i].score.relativeToPar <= 0) {
+        count++;
+      } else {
+        break;
+      }
+    }
+    return count;
   }
 }
 
@@ -90,13 +110,18 @@ class GolfRoundSummary {
     required this.completedAt,
     required this.holeCount,
     required this.holes,
+    this.id,
     this.courseName,
+    this.isBattle = false,
   });
 
+  /// Supabase row id — null for locally-created rounds not yet persisted.
+  final String? id;
   final DateTime completedAt;
   final int holeCount;
   final List<HoleResult> holes;
   final String? courseName;
+  final bool isBattle;
 
   int get caughtCount => holes.where((hole) => hole.caught).length;
 

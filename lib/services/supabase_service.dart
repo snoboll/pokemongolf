@@ -5,6 +5,7 @@ import '../data/first_gen_pokemon.dart';
 import '../models/golf_score.dart';
 import '../models/hole_stats.dart';
 import '../models/golf_course.dart';
+import '../models/pokemon_species.dart';
 import '../models/round_models.dart';
 
 class TrainerProfile {
@@ -227,6 +228,14 @@ class SupabaseService {
     await _client.from('caught_pokemon').delete().eq('user_id', uid);
   }
 
+  Future<void> releasePokemon(int dexNumber) async {
+    await _client
+        .from('caught_pokemon')
+        .delete()
+        .eq('user_id', currentUserId!)
+        .eq('dex_number', dexNumber);
+  }
+
   Future<void> insertCaughtPokemon(int dexNumber) async {
     await _client.from('caught_pokemon').upsert(
       {'dex_number': dexNumber},
@@ -254,7 +263,9 @@ class SupabaseService {
 
       final List<HoleResult> holes = holeRows.map((h) {
         final int dex = h['pokemon_dex'] as int;
-        final species = firstGenPokemon.firstWhere((p) => p.dexNumber == dex);
+        final species = dex == 0
+            ? battleSentinelPokemon
+            : firstGenPokemon.firstWhere((p) => p.dexNumber == dex);
 
         return HoleResult(
           holeNumber: h['hole_number'] as int,
@@ -277,13 +288,21 @@ class SupabaseService {
       }).toList(growable: false);
 
       summaries.add(GolfRoundSummary(
+        id: roundId,
         completedAt: DateTime.parse(roundRow['completed_at'] as String),
         holeCount: roundRow['hole_count'] as int,
         holes: holes,
+        courseName: roundRow['course_name'] as String?,
+        isBattle: (roundRow['round_type'] as String?) == 'battle',
       ));
     }
 
     return summaries;
+  }
+
+  Future<void> deleteRound(String roundId) async {
+    await _client.from('hole_results').delete().eq('round_id', roundId);
+    await _client.from('rounds').delete().eq('id', roundId);
   }
 
   Future<void> insertRound(GolfRoundSummary summary) async {
@@ -291,6 +310,8 @@ class SupabaseService {
         await _client.from('rounds').insert({
       'hole_count': summary.holeCount,
       'completed_at': summary.completedAt.toUtc().toIso8601String(),
+      if (summary.isBattle) 'round_type': 'battle',
+      if (summary.courseName != null) 'course_name': summary.courseName,
     }).select().single();
 
     final String roundId = roundRow['id'] as String;

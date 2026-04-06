@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'screens/auth_screen.dart';
+import 'screens/battles_screen.dart';
 import 'screens/collection_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/home_screen.dart';
@@ -277,6 +278,14 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
     );
   }
 
+  void _openBattleMode(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => const BattleFlow(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = <Widget>[
@@ -285,6 +294,7 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
       HomeScreen(
         onPlay: () => setState(() => _selectedIndex = 3),
         onResumeRound: () => _resumeRound(context),
+        onBattleMode: () => _openBattleMode(context),
       ),
       const CoursesScreen(),
       const HistoryScreen(),

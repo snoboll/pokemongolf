@@ -37,19 +37,68 @@ class HistoryScreen extends StatelessWidget {
                     separatorBuilder: (_, _) => const SizedBox(height: 10),
                     itemBuilder: (BuildContext context, int index) {
                       final round = rounds[index];
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => ScorecardDetailScreen(
-                                holes: round.holes,
-                                holeCount: round.holeCount,
-                                title: round.courseName ?? '${round.holeCount}H · ${_formatDate(round.completedAt)}',
-                              ),
+                      return Dismissible(
+                        key: ValueKey(round.id ?? round.completedAt.toIso8601String()),
+                        direction: DismissDirection.endToStart,
+                        confirmDismiss: (_) async {
+                          return await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Delete scorecard?'),
+                              content: const Text(
+                                  'This round will be permanently removed.'),
+                              actions: <Widget>[
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(ctx, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(ctx, true),
+                                  child: Text(
+                                    'Delete',
+                                    style: TextStyle(
+                                      color: Theme.of(ctx).colorScheme.error,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          );
+                          ) ?? false;
                         },
-                        child: _RoundCard(round: round),
+                        onDismissed: (_) {
+                          PokemonGolfScope.of(context).deleteRound(round);
+                        },
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 24),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(
+                            Icons.delete_outline,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => ScorecardDetailScreen(
+                                  holes: round.holes,
+                                  holeCount: round.holeCount,
+                                  isBattle: round.isBattle,
+                                  title: round.courseName != null
+                                      ? '${round.isBattle ? '⚔️ ' : ''}${round.courseName}'
+                                      : '${round.holeCount}H · ${_formatDate(round.completedAt)}',
+                                ),
+                              ),
+                            );
+                          },
+                          child: _RoundCard(round: round),
+                        ),
                       );
                     },
                   ),
@@ -110,8 +159,8 @@ class _RoundCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final String caughtNames = round.caughtPokemon.isEmpty
-        ? 'No catches'
+    final String caughtNames = round.isBattle || round.caughtPokemon.isEmpty
+        ? ''
         : round.caughtPokemon.take(4).map((p) => p.name).join(', ');
 
     return Container(
@@ -187,66 +236,81 @@ class _RoundCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Row(
-            children: <Widget>[
-              Icon(
-                Icons.catching_pokemon,
-                size: 16,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '${round.caughtCount}/${round.holes.length} caught',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color:
-                      theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Icon(
-                Icons.flag,
-                size: 14,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${round.onePuttCount} 1-putt',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color:
-                      theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
-              if (round.highestRarityCaught != null) ...<Widget>[
-                const SizedBox(width: 16),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: round.highestRarityCaught!.color
-                        .withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    round.highestRarityCaught!.label,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: round.highestRarityCaught!.color,
-                      fontWeight: FontWeight.w700,
-                    ),
+          if (round.isBattle) ...<Widget>[
+            Row(
+              children: <Widget>[
+                const Text('⚔️', style: TextStyle(fontSize: 14)),
+                const SizedBox(width: 6),
+                Text(
+                  'Battle Mode · ${round.holes.length} holes',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ],
-            ],
-          ),
-          if (round.caughtPokemon.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 8),
-            Text(
-              caughtNames,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-              ),
             ),
+          ] else ...<Widget>[
+            Row(
+              children: <Widget>[
+                Icon(
+                  Icons.catching_pokemon,
+                  size: 16,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '${round.caughtCount}/${round.holes.length} caught',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color:
+                        theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Icon(
+                  Icons.flag,
+                  size: 14,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${round.onePuttCount} 1-putt',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color:
+                        theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                ),
+                if (round.highestRarityCaught != null) ...<Widget>[
+                  const SizedBox(width: 16),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: round.highestRarityCaught!.color
+                          .withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      round.highestRarityCaught!.label,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: round.highestRarityCaught!.color,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (round.caughtPokemon.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 8),
+              Text(
+                caughtNames,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+              ),
+            ],
           ],
         ],
       ),

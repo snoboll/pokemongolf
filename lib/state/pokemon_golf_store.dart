@@ -73,6 +73,16 @@ class PokemonGolfStore extends ChangeNotifier {
   List<GolfRoundSummary> get completedRounds =>
       List<GolfRoundSummary>.unmodifiable(_completedRounds);
 
+  Set<int> get seenDexNumbers {
+    final Set<int> seen = <int>{};
+    for (final GolfRoundSummary round in _completedRounds) {
+      for (final hole in round.holes) {
+        seen.add(hole.pokemon.dexNumber);
+      }
+    }
+    return seen;
+  }
+
   bool hasCaught(PokemonSpecies pokemon) {
     return _caughtDexNumbers.contains(pokemon.dexNumber);
   }
@@ -116,6 +126,24 @@ class PokemonGolfStore extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('Failed to load user data: $e');
+    }
+  }
+
+  Future<void> releasePokemon(PokemonSpecies pokemon) async {
+    _caughtDexNumbers.remove(pokemon.dexNumber);
+    notifyListeners();
+    _supabaseService?.releasePokemon(pokemon.dexNumber).catchError((e) {
+      debugPrint('Failed to release pokemon: $e');
+    });
+  }
+
+  Future<void> deleteRound(GolfRoundSummary round) async {
+    _completedRounds.remove(round);
+    notifyListeners();
+    if (round.id != null) {
+      _supabaseService?.deleteRound(round.id!).catchError((e) {
+        debugPrint('Failed to delete round: $e');
+      });
     }
   }
 
@@ -164,13 +192,15 @@ class PokemonGolfStore extends ChangeNotifier {
     List<int>? holePars,
     String? courseName,
     List<({double lat, double lng})?>? greenCoords,
+    int startingHoleNumber = 1,
+    List<HoleResult> prefilledHoles = const <HoleResult>[],
   }) {
     _pendingCatches.clear();
     _activeRound = ActiveRound(
       holeCount: holeCount,
-      currentHoleNumber: 1,
+      currentHoleNumber: startingHoleNumber,
       currentEncounter: _encounterService.generateEncounter(),
-      completedHoles: const <HoleResult>[],
+      completedHoles: prefilledHoles,
       holePars: holePars,
       courseName: courseName,
       greenCoords: greenCoords,
@@ -265,11 +295,15 @@ class PokemonGolfStore extends ChangeNotifier {
       );
     }
 
-    int streak = round.parOrBetterStreak;
-    if (score.relativeToPar <= 0) {
-      streak++;
+    int streak = round.streakBonus;
+    if (score.relativeToPar <= -2) {
+      streak += 12; // eagle
+    } else if (score.relativeToPar == -1) {
+      streak += 6; // birdie
+    } else if (score.relativeToPar == 0) {
+      streak += 3; // par
     } else {
-      streak = 0;
+      streak = 0; // bogey or worse resets
     }
 
     final EncounterModifiers modifiers = EncounterModifiers(
@@ -277,7 +311,7 @@ class PokemonGolfStore extends ChangeNotifier {
       water: stats.water,
       rough: stats.rough,
       onePutt: stats.onePutt,
-      parOrBetterStreak: streak,
+      streakBonus: streak,
     );
 
     _activeRound = ActiveRound(

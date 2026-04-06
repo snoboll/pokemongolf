@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../app.dart';
 import '../state/pokemon_golf_store.dart';
 import '../data/first_gen_pokemon.dart';
-import '../models/pokemon_rarity.dart';
 import '../models/pokemon_species.dart';
+import '../widgets/pokeball_badge.dart';
 import '../widgets/pokemon_art.dart';
 
 enum _CatchFilter { all, notCaught, caught }
@@ -18,6 +18,32 @@ class CollectionScreen extends StatefulWidget {
 
 class _CollectionScreenState extends State<CollectionScreen> {
   _CatchFilter _filter = _CatchFilter.all;
+
+  void _confirmRelease(
+      BuildContext context, PokemonGolfStore store, PokemonSpecies pokemon) {
+    showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Release ${pokemon.name}?'),
+        content: const Text('This Pokémon will be removed from your Pokédex.'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'Release',
+              style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    ).then((confirmed) {
+      if (confirmed == true) store.releasePokemon(pokemon);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,8 +131,16 @@ class _CollectionScreenState extends State<CollectionScreen> {
                   itemBuilder: (BuildContext context, int index) {
                     final PokemonSpecies pokemon = filteredPokemon[index];
                     final bool caught = store.hasCaught(pokemon);
+                    final bool seen = store.seenDexNumbers.contains(pokemon.dexNumber);
 
-                    return _PokedexTile(pokemon: pokemon, caught: caught);
+                    return _PokedexTile(
+                      pokemon: pokemon,
+                      caught: caught,
+                      seen: seen,
+                      onRelease: caught
+                          ? () => _confirmRelease(context, store, pokemon)
+                          : null,
+                    );
                   },
                 ),
               ),
@@ -167,89 +201,85 @@ class _PokedexTile extends StatelessWidget {
   const _PokedexTile({
     required this.pokemon,
     required this.caught,
+    required this.seen,
+    this.onRelease,
   });
 
   final PokemonSpecies pokemon;
   final bool caught;
+  final bool seen;
+  final VoidCallback? onRelease;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Stack(
-        children: <Widget>[
-          Positioned(
-            top: 8,
-            left: 10,
-            child: Text(
-              '#${pokemon.paddedDexNumber}',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          if (caught)
+    return GestureDetector(
+      onLongPress: onRelease,
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.cardTheme.color,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Stack(
+          children: <Widget>[
             Positioned(
-              top: 6,
-              right: 8,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: pokemon.rarity.color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  pokemon.rarity.label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: pokemon.rarity.color,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 10,
-                  ),
+              top: 8,
+              left: 10,
+              child: Text(
+                '#${pokemon.paddedDexNumber}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-          Column(
-            children: <Widget>[
-              const SizedBox(height: 28),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: caught
-                      ? PokemonArt(imageUrl: pokemon.imageUrl, height: 100)
-                      : Center(
-                          child: Icon(
-                            Icons.catching_pokemon,
-                            size: 48,
-                            color: theme.colorScheme.outlineVariant
-                                .withValues(alpha: 0.3),
-                          ),
-                        ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
-                child: Text(
-                  caught ? pokemon.name : '???',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: caught
-                        ? theme.colorScheme.onSurface
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.3),
+            Positioned(
+              top: 4,
+              right: 6,
+              child: PokeballCaughtBadge(caught: caught),
+            ),
+            Column(
+              children: <Widget>[
+                const SizedBox(height: 28),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: caught
+                        ? PokemonArt(imageUrl: pokemon.imageUrl, height: 100)
+                        : seen
+                            ? ColorFiltered(
+                                colorFilter: grayscaleColorFilter(1.0),
+                                child: PokemonArt(imageUrl: pokemon.imageUrl, height: 100),
+                              )
+                            : Center(
+                                child: Icon(
+                                  Icons.catching_pokemon,
+                                  size: 48,
+                                  color: theme.colorScheme.outlineVariant
+                                      .withValues(alpha: 0.3),
+                                ),
+                              ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
+                  child: Text(
+                    caught ? pokemon.name : '???',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: caught
+                          ? theme.colorScheme.onSurface
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

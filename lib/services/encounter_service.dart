@@ -36,11 +36,10 @@ class EncounterService {
       for (final r in PokemonRarity.values) r: r.encounterWeight,
     };
 
-    // Each par-or-better in the streak adds +3% legendary weight
-    if (modifiers.parOrBetterStreak >= 2) {
-      final int bonus = modifiers.parOrBetterStreak * 3;
+    // streakBonus: +3 per par, +6 per birdie, +12 per eagle. Resets on bogey.
+    if (modifiers.streakBonus > 0) {
       weights[PokemonRarity.legendary] =
-          weights[PokemonRarity.legendary]! + bonus;
+          weights[PokemonRarity.legendary]! + modifiers.streakBonus;
     }
 
     final int total = weights.values.fold<int>(0, (a, b) => a + b);

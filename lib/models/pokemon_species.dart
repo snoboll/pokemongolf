@@ -1,6 +1,14 @@
 import 'pokemon_rarity.dart';
 import 'pokemon_type.dart';
 
+/// Sentinel used for battle scorecards (no real Pokemon on each hole).
+const PokemonSpecies battleSentinelPokemon = PokemonSpecies(
+  dexNumber: 0,
+  name: 'Battle',
+  rarity: PokemonRarity.common,
+  types: [],
+);
+
 class PokemonSpecies {
   const PokemonSpecies({
     required this.dexNumber,

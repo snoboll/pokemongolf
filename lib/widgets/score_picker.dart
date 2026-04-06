@@ -51,7 +51,7 @@ String _pickerLabel(GolfScore score) {
     GolfScore.birdie => 'Birdie',
     GolfScore.par => 'Par',
     GolfScore.bogey => 'Bogey',
-    GolfScore.doubleBogey => 'Dbl\nBogey',
+    GolfScore.doubleBogey => 'Double',
     GolfScore.tripleOrWorse => 'Trpl+',
     GolfScore.albatross => 'Albt',
   };
@@ -118,10 +118,8 @@ class _ScoreButton extends StatelessWidget {
           Text(
             _pickerLabel(score),
             textAlign: TextAlign.center,
-            maxLines: 2,
             style: theme.textTheme.labelSmall?.copyWith(
               fontSize: 9,
-              height: 1.2,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               color: activeColor,
             ),
@@ -160,19 +158,23 @@ class _ScoreNotationPainter extends CustomPainter {
 
     if (rel < 0) {
       final int circleCount = rel.abs().clamp(1, 2);
-      const double baseRadius = 14;
+      // inner radius=12 (diam 24), outer radius=16 (diam 32) → 6px margin in 44px box
+      const double baseRadius = 12;
+      const double radiusStep = 4;
       for (int i = 0; i < circleCount; i++) {
         canvas.drawCircle(
           Offset(cx, cy),
-          baseRadius + (i * 5),
+          baseRadius + (i * radiusStep),
           borderPaint,
         );
       }
     } else if (rel > 0) {
       final int squareCount = rel.clamp(1, 2);
-      const double baseHalf = 13;
+      // inner half=11 (22px), outer half=15 (30px) → 7px margin in 44px box
+      const double baseHalf = 11;
+      const double halfStep = 4;
       for (int i = 0; i < squareCount; i++) {
-        final double half = baseHalf + (i * 5);
+        final double half = baseHalf + (i * halfStep);
         canvas.drawRRect(
           RRect.fromRectAndRadius(
             Rect.fromCenter(

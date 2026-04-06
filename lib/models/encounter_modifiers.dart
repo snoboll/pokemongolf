@@ -29,14 +29,16 @@ class EncounterModifiers {
     this.water = false,
     this.rough = false,
     this.onePutt = false,
-    this.parOrBetterStreak = 0,
+    this.streakBonus = 0,
   });
 
   final bool bunker;
   final bool water;
   final bool rough;
   final bool onePutt;
-  final int parOrBetterStreak;
+  /// Accumulated streak bonus points: +3 per par, +6 per birdie, +12 per eagle.
+  /// Resets to 0 on bogey or worse.
+  final int streakBonus;
 
   Set<PokemonType> get boostedTypes {
     final Set<PokemonType> types = <PokemonType>{};
@@ -48,5 +50,5 @@ class EncounterModifiers {
   }
 
   bool get hasTypeBoost => bunker || water || rough || onePutt;
-  bool get hasLegendaryBoost => parOrBetterStreak >= 2;
+  bool get hasLegendaryBoost => streakBonus > 0;
 }

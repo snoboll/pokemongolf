@@ -12,11 +12,11 @@ extension PokemonRarityX on PokemonRarity {
       };
 
   int get encounterWeight => switch (this) {
-        PokemonRarity.common => 35,
-        PokemonRarity.uncommon => 25,
-        PokemonRarity.rare => 20,
-        PokemonRarity.epic => 14,
-        PokemonRarity.legendary => 6,
+        PokemonRarity.common => 41,
+        PokemonRarity.uncommon => 28,
+        PokemonRarity.rare => 18,
+        PokemonRarity.epic => 8,
+        PokemonRarity.legendary => 5,
       };
 
   Color get color => switch (this) {

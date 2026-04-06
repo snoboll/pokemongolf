@@ -14,19 +14,30 @@ class CoursesScreen extends StatefulWidget {
   State<CoursesScreen> createState() => _CoursesScreenState();
 }
 
-class _CoursesScreenState extends State<CoursesScreen> {
+class _CoursesScreenState extends State<CoursesScreen>
+    with SingleTickerProviderStateMixin {
   List<GolfCourse> _userCourses = <GolfCourse>[];
   bool _loading = true;
   String _query = '';
-  bool _mapMode = false;
+  late final TabController _tabController;
+
+  bool get _mapMode => _tabController.index == 1;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() => setState(() {}));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _loadUserCourses();
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserCourses() async {
@@ -164,11 +175,6 @@ class _CoursesScreenState extends State<CoursesScreen> {
       appBar: AppBar(
         title: const Text('Courses'),
         actions: <Widget>[
-          IconButton(
-            icon: Icon(_mapMode ? Icons.list : Icons.map_outlined),
-            tooltip: _mapMode ? 'List view' : 'Map view',
-            onPressed: () => setState(() => _mapMode = !_mapMode),
-          ),
           if (!_mapMode)
             IconButton(
               icon: const Icon(Icons.add),
@@ -176,6 +182,13 @@ class _CoursesScreenState extends State<CoursesScreen> {
               onPressed: _showAddCourse,
             ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const <Tab>[
+            Tab(icon: Icon(Icons.list, size: 18), text: 'List'),
+            Tab(icon: Icon(Icons.map_outlined, size: 18), text: 'Map'),
+          ],
+        ),
       ),
       body: _loading && _userCourses.isEmpty
           ? const Center(child: CircularProgressIndicator())
@@ -308,6 +321,9 @@ class _CourseMapState extends State<_CourseMap> {
         initialZoom: 9.0,
         minZoom: 7.0,
         maxZoom: 16.0,
+        interactionOptions: const InteractionOptions(
+          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+        ),
         onMapEvent: (event) {
           if (event is MapEventMove || event is MapEventScrollWheelZoom) {
             final newZoom = _mapController.camera.zoom;

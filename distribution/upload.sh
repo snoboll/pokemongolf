@@ -14,11 +14,8 @@ if [ -z "$SUPABASE_KEY" ]; then
   exit 1
 fi
 
-# Find the most recently modified IPA in ~/Stuff
-IPA_PATH=$(find ~/Stuff -name "*.ipa" -newer /tmp 2>/dev/null | head -1)
-if [ -z "$IPA_PATH" ]; then
-  IPA_PATH=$(find ~/Stuff -name "*.ipa" 2>/dev/null | xargs ls -t 2>/dev/null | head -1)
-fi
+# Find the most recently modified IPA in ~/Stuff (recursive)
+IPA_PATH=$(find ~/Stuff -name "*.ipa" 2>/dev/null | while IFS= read -r f; do echo "$(stat -f '%m' "$f") $f"; done | sort -rn | head -1 | cut -d' ' -f2-)
 
 if [ -z "$IPA_PATH" ]; then
   echo "❌ No .ipa found in ~/Stuff. Export from Xcode Organizer first."

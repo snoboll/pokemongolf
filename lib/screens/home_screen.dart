@@ -11,10 +11,12 @@ class HomeScreen extends StatefulWidget {
     super.key,
     required this.onPlay,
     required this.onResumeRound,
+    required this.onBattleMode,
   });
 
   final VoidCallback onPlay;
   final VoidCallback onResumeRound;
+  final VoidCallback onBattleMode;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -125,6 +127,28 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ],
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: store.caughtDexNumbers.length >= 3
+                              ? widget.onBattleMode
+                              : null,
+                          icon: const Text('⚔️', style: TextStyle(fontSize: 20)),
+                          label: const Text('Battle Mode'),
+                        ),
+                      ),
+                      if (store.caughtDexNumbers.length < 3)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            'Catch ${3 - store.caughtDexNumbers.length} more Pokémon to unlock',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.4),
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 48),
                       Container(
                         padding: const EdgeInsets.symmetric(
