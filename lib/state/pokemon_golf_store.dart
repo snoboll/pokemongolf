@@ -35,6 +35,9 @@ class PokemonGolfStore extends ChangeNotifier {
   final Set<int> _pendingCatches = <int>{};
   String? _trainerName;
   String? _trainerSprite;
+  String? _trainerTeam;
+  DateTime? _teamChangedAt;
+  double? _hcpOverride;
   String? _homeCourseId;
   List<GolfCourse> _catalogCourses = <GolfCourse>[];
   List<GolfCourse> _userCourses = <GolfCourse>[];
@@ -45,7 +48,20 @@ class PokemonGolfStore extends ChangeNotifier {
   ActiveRound? get activeRound => _activeRound;
   String? get trainerName => _trainerName;
   String? get trainerSprite => _trainerSprite;
+  String? get trainerTeam => _trainerTeam;
+  DateTime? get teamChangedAt => _teamChangedAt;
   String? get homeCourseId => _homeCourseId;
+
+  bool get canChangeTeam {
+    if (_teamChangedAt == null) return true;
+    return DateTime.now().toUtc().difference(_teamChangedAt!).inDays >= 30;
+  }
+
+  int get daysUntilTeamChange {
+    if (_teamChangedAt == null) return 0;
+    final elapsed = DateTime.now().toUtc().difference(_teamChangedAt!).inDays;
+    return (30 - elapsed).clamp(0, 30);
+  }
 
   List<GolfCourse> get catalogCourses =>
       List<GolfCourse>.unmodifiable(_catalogCourses);
@@ -83,12 +99,15 @@ class PokemonGolfStore extends ChangeNotifier {
     _defaultLeaders = buildDefaultLeaders(allIds);
   }
 
-  int get playerHcp {
+  double? get hcpOverride => _hcpOverride;
+
+  double get playerHcp {
+    if (_hcpOverride != null) return _hcpOverride!;
     final qualifying = _completedRounds
         .where((r) => r.holes.length >= 9 && !r.isBattle)
         .take(10)
         .toList();
-    if (qualifying.isEmpty) return 36;
+    if (qualifying.isEmpty) return 36.0;
 
     int totalDiff = 0;
     int totalHoles = 0;
@@ -98,7 +117,26 @@ class PokemonGolfStore extends ChangeNotifier {
         totalHoles += 1;
       }
     }
-    return ((totalDiff / totalHoles) * 18).round().clamp(0, 54);
+    final raw = (totalDiff / totalHoles) * 18;
+    return (raw * 10).round() / 10.0;
+  }
+
+  String get playerHcpDisplay {
+    final hcp = playerHcp;
+    return hcp == hcp.truncateToDouble()
+        ? hcp.toInt().toString()
+        : hcp.toStringAsFixed(1);
+  }
+
+  void setHcpOverride(double? hcp) {
+    _hcpOverride = hcp?.clamp(0.0, 54.0);
+    notifyListeners();
+    _supabaseService?.updateHcpOverride(_hcpOverride).catchError((e) {
+      debugPrint('Failed to save HCP override: $e');
+    });
+    _supabaseService?.updateHcp(playerHcp.round()).catchError((e) {
+      debugPrint('Failed to sync HCP: $e');
+    });
   }
 
   void updateCourseLeader(CourseLeader leader) {
@@ -124,6 +162,16 @@ class PokemonGolfStore extends ChangeNotifier {
     notifyListeners();
     _supabaseService?.updateTrainerSprite(sprite).catchError((e) {
       debugPrint('Failed to update trainer sprite: $e');
+    });
+  }
+
+  void setTrainerTeam(String? team) {
+    if (!canChangeTeam) return;
+    _trainerTeam = team;
+    _teamChangedAt = DateTime.now().toUtc();
+    notifyListeners();
+    _supabaseService?.updateTrainerTeam(team).catchError((e) {
+      debugPrint('Failed to update trainer team: $e');
     });
   }
 
@@ -181,6 +229,20 @@ class PokemonGolfStore extends ChangeNotifier {
         _trainerSprite = await supa.fetchTrainerSprite();
       } catch (e) {
         debugPrint('Failed to load trainer sprite: $e');
+      }
+
+      try {
+        final teamData = await supa.fetchTrainerTeam();
+        _trainerTeam = teamData.team;
+        _teamChangedAt = teamData.changedAt;
+      } catch (e) {
+        debugPrint('Failed to load trainer team: $e');
+      }
+
+      try {
+        _hcpOverride = await supa.fetchHcpOverride();
+      } catch (e) {
+        debugPrint('Failed to load HCP override: $e');
       }
 
       try {
@@ -280,6 +342,9 @@ class PokemonGolfStore extends ChangeNotifier {
     _activeRound = null;
     _trainerName = null;
     _trainerSprite = null;
+    _trainerTeam = null;
+    _teamChangedAt = null;
+    _hcpOverride = null;
     _homeCourseId = null;
     _catalogCourses = <GolfCourse>[];
     _userCourses = <GolfCourse>[];
@@ -496,8 +561,7 @@ class PokemonGolfStore extends ChangeNotifier {
   }
 
   void _syncHcp(SupabaseService supa) {
-    final hcp = playerHcp;
-    supa.updateHcp(hcp).catchError((e) {
+    supa.updateHcp(playerHcp.round()).catchError((e) {
       debugPrint('Failed to sync HCP: $e');
     });
   }

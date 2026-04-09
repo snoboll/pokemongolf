@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app.dart';
 import '../data/trainer_tags.dart';
+import '../models/trainer_team.dart';
 import '../state/pokemon_golf_store.dart';
 import 'history_screen.dart';
 import 'my_bag_screen.dart';
@@ -38,6 +39,8 @@ class ProfileScreen extends StatelessWidget {
     final store = PokemonGolfScope.of(context);
     final theme = Theme.of(context);
     final String? tag = trainerTagForCaughtDex(store.caughtDexNumbers);
+    final TrainerTeam? currentTeam = TrainerTeam.fromDb(store.trainerTeam);
+    final Color accentColor = teamColor(currentTeam);
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -63,11 +66,11 @@ class ProfileScreen extends StatelessWidget {
                       width: 96,
                       height: 96,
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.10),
+                        color: accentColor.withValues(alpha: 0.10),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                          width: 2,
+                          color: accentColor.withValues(alpha: 0.5),
+                          width: 2.5,
                         ),
                       ),
                       child: store.trainerSprite != null
@@ -151,15 +154,39 @@ class ProfileScreen extends StatelessWidget {
               ),
             const SizedBox(height: 4),
             Center(
-              child: Text(
-                'HCP ${store.playerHcp}',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                  fontWeight: FontWeight.w600,
+              child: GestureDetector(
+                onTap: () => _showHcpEditor(context, store),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      'HCP ${store.playerHcpDisplay}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.edit,
+                      size: 12,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _TeamSelector(
+                current: currentTeam,
+                canChange: store.canChangeTeam,
+                daysLeft: store.daysUntilTeamChange,
+                onChanged: (team) => _confirmTeamChange(context, store, team),
+              ),
+            ),
+            const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
@@ -196,6 +223,144 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _confirmTeamChange(
+      BuildContext context, PokemonGolfStore store, TrainerTeam? team) async {
+    if (team == null) {
+      // Leaving a team — still confirm
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Leave team?'),
+          content: const Text(
+              'You won\'t be able to join another team for 30 days.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Leave')),
+          ],
+        ),
+      );
+      if (confirmed == true) {
+        store.setTrainerTeam(null);
+      }
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return AlertDialog(
+          title: Text('Join ${team.label}?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: team.color.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(team.icon, color: team.color, size: 28),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'You won\'t be able to switch teams for 30 days.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Cancel')),
+            FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: team.color),
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Join')),
+          ],
+        );
+      },
+    );
+    if (confirmed == true) {
+      store.setTrainerTeam(team.dbValue);
+    }
+  }
+
+  void _showHcpEditor(BuildContext context, PokemonGolfStore store) {
+    final controller = TextEditingController(
+      text: store.playerHcpDisplay,
+    );
+    final isOverride = store.hcpOverride != null;
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return AlertDialog(
+          title: const Text('Set Handicap'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'HCP (0.0–54.0)',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: isOverride
+                      ? IconButton(
+                          icon: const Icon(Icons.restart_alt),
+                          tooltip: 'Reset to auto',
+                          onPressed: () {
+                            store.setHcpOverride(null);
+                            Navigator.of(ctx).pop();
+                          },
+                        )
+                      : null,
+                ),
+              ),
+              if (isOverride)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Manually set. Tap ↻ to return to auto-calculated.',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final val = double.tryParse(controller.text);
+                if (val != null && val >= 0 && val <= 54) {
+                  store.setHcpOverride((val * 10).round() / 10.0);
+                }
+                Navigator.of(ctx).pop();
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -325,6 +490,118 @@ class _SpritePicker extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _TeamSelector extends StatelessWidget {
+  const _TeamSelector({
+    required this.current,
+    required this.canChange,
+    required this.daysLeft,
+    required this.onChanged,
+  });
+
+  final TrainerTeam? current;
+  final bool canChange;
+  final int daysLeft;
+  final ValueChanged<TrainerTeam?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final locked = !canChange;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Row(
+            children: <Widget>[
+              Text(
+                'Team',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (locked) ...<Widget>[
+                const SizedBox(width: 8),
+                Icon(Icons.lock_outline, size: 14,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.35)),
+                const SizedBox(width: 4),
+                Text(
+                  '$daysLeft days left',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        Row(
+          children: TrainerTeam.values.map((team) {
+            final selected = team == current;
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  right: team != TrainerTeam.values.last ? 8 : 0,
+                ),
+                child: GestureDetector(
+                  onTap: locked && !selected ? null : () => onChanged(selected ? null : team),
+                  child: Opacity(
+                    opacity: locked && !selected ? 0.35 : 1.0,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? team.color.withValues(alpha: 0.15)
+                            : theme.cardTheme.color,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: selected
+                              ? team.color
+                              : const Color(0xFF243024),
+                          width: selected ? 2 : 1,
+                        ),
+                      ),
+                      child: Column(
+                        children: <Widget>[
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: team.color.withValues(alpha: selected ? 0.3 : 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              team.icon,
+                              size: 16,
+                              color: team.color,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            team.label,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                              color: selected
+                                  ? team.color
+                                  : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }

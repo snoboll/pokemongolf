@@ -9,6 +9,7 @@ import '../app.dart';
 import '../data/first_gen_pokemon.dart';
 import '../models/course_leader.dart';
 import '../models/golf_course.dart';
+import '../models/trainer_team.dart';
 import '../state/pokemon_golf_store.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -616,20 +617,22 @@ class _GymChallengeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const amber = Color(0xFFFFD700);
+    final leaderColor = leader != null
+        ? teamColor(TrainerTeam.fromDb(leader!.trainerTeam))
+        : npcAmber;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: amber.withValues(alpha: 0.06),
+        color: leaderColor.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: amber.withValues(alpha: 0.25)),
+        border: Border.all(color: leaderColor.withValues(alpha: 0.25)),
       ),
       child: nearestCourse == null || leader == null
           ? Row(
               children: [
-                Icon(Icons.shield, size: 20, color: amber.withValues(alpha: 0.4)),
+                Icon(Icons.shield, size: 20, color: npcAmber.withValues(alpha: 0.4)),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -660,7 +663,7 @@ class _GymChallengeCard extends StatelessWidget {
                       Text(
                         '${leader!.leaderName}  ·  HCP ${leader!.hcp}',
                         style: theme.textTheme.titleSmall?.copyWith(
-                          color: amber,
+                          color: leaderColor,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -692,11 +695,11 @@ class _GymChallengeCard extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: canChallenge ? onChallenge : null,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: amber,
+                      foregroundColor: leaderColor,
                       side: BorderSide(
                         color: canChallenge
-                            ? amber.withValues(alpha: 0.5)
-                            : amber.withValues(alpha: 0.15),
+                            ? leaderColor.withValues(alpha: 0.5)
+                            : leaderColor.withValues(alpha: 0.15),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       shape: RoundedRectangleBorder(

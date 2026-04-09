@@ -243,7 +243,7 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
   static const String _versionUrl =
       'https://cuwcunjtervjelgomeil.supabase.co/storage/v1/object/public/app-distribution/version.json';
   static const String _installUrl =
-      'https://cuwcunjtervjelgomeil.supabase.co/storage/v1/object/public/app-distribution/index.html';
+      'https://luminous-dieffenbachia-a31fa5.netlify.app';
 
   @override
   void initState() {

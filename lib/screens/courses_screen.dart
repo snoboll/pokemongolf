@@ -7,6 +7,7 @@ import '../app.dart';
 import '../models/battle_models.dart';
 import '../models/course_leader.dart';
 import '../models/golf_course.dart';
+import '../models/trainer_team.dart';
 import '../services/battle_service.dart';
 import '../services/supabase_service.dart';
 import '../state/battle_store.dart';
@@ -495,17 +496,21 @@ class _CourseMapState extends State<_CourseMap> {
                         showLabel ? Alignment.topCenter : Alignment.center,
                     child: GestureDetector(
                       onTap: () => _openCourseActions(course),
-                      child: showDetail
+                      child: Builder(builder: (_) {
+                        final leader = widget.leaderForCourse(course.id);
+                        final dotColor = teamColor(TrainerTeam.fromDb(leader.trainerTeam));
+                        return showDetail
                           ? _DetailMarker(
                               course: course,
                               totalPar: totalPar,
                               holeCount: holeCount,
                               theme: theme,
-                              leader: widget.leaderForCourse(course.id),
+                              leader: leader,
                             )
                           : showLabel
-                              ? _LabelMarker(name: course.name, theme: theme)
-                              : _DotMarker(theme: theme),
+                              ? _LabelMarker(name: course.name, theme: theme, color: dotColor)
+                              : _DotMarker(color: dotColor);
+                      }),
                     ),
                   );
                 }),
@@ -543,7 +548,7 @@ class _CourseActionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const amber = Color(0xFFFFD700);
+    final leaderColor = teamColor(TrainerTeam.fromDb(leader.trainerTeam));
     final totalPar = course.flatPars.isEmpty
         ? null
         : course.flatPars.reduce((a, b) => a + b);
@@ -588,9 +593,9 @@ class _CourseActionSheet extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: amber.withValues(alpha: 0.06),
+              color: leaderColor.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: amber.withValues(alpha: 0.2)),
+              border: Border.all(color: leaderColor.withValues(alpha: 0.2)),
             ),
             child: Row(
               children: [
@@ -603,14 +608,14 @@ class _CourseActionSheet extends StatelessWidget {
                       Text(
                         leader.leaderName,
                         style: theme.textTheme.titleSmall?.copyWith(
-                          color: amber,
+                          color: leaderColor,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       Text(
                         'HCP ${leader.hcp}',
                         style: TextStyle(
-                          color: amber.withValues(alpha: 0.6),
+                          color: leaderColor.withValues(alpha: 0.6),
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
@@ -662,9 +667,9 @@ class _CourseActionSheet extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _ActionButton(
-                  icon: Icons.shield,
+                  icon: TrainerTeam.fromDb(leader.trainerTeam)?.icon ?? Icons.shield,
                   label: 'Gym',
-                  color: amber,
+                  color: leaderColor,
                   subtitle: 'Challenge leader',
                   onTap: onGym,
                 ),
@@ -737,8 +742,8 @@ class _ActionButton extends StatelessWidget {
 // ── Map markers ──────────────────────────────────────────────────────────────
 
 class _DotMarker extends StatelessWidget {
-  const _DotMarker({required this.theme});
-  final ThemeData theme;
+  const _DotMarker({required this.color});
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -747,10 +752,10 @@ class _DotMarker extends StatelessWidget {
       height: 10,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: theme.colorScheme.primary,
+        color: color,
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.primary.withValues(alpha: 0.5),
+            color: color.withValues(alpha: 0.5),
             blurRadius: 6,
           ),
         ],
@@ -760,9 +765,10 @@ class _DotMarker extends StatelessWidget {
 }
 
 class _LabelMarker extends StatelessWidget {
-  const _LabelMarker({required this.name, required this.theme});
+  const _LabelMarker({required this.name, required this.theme, required this.color});
   final String name;
   final ThemeData theme;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -775,14 +781,14 @@ class _LabelMarker extends StatelessWidget {
             color: const Color(0xFF172417),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-                color: theme.colorScheme.primary.withValues(alpha: 0.6)),
+                color: color.withValues(alpha: 0.6)),
           ),
           child: Text(
             name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: theme.colorScheme.primary,
+              color: color,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -791,7 +797,7 @@ class _LabelMarker extends StatelessWidget {
         Container(
           width: 2,
           height: 6,
-          color: theme.colorScheme.primary.withValues(alpha: 0.6),
+          color: color.withValues(alpha: 0.6),
         ),
       ],
     );
@@ -814,7 +820,7 @@ class _DetailMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const amber = Color(0xFFFFD700);
+    final leaderColor = teamColor(TrainerTeam.fromDb(leader.trainerTeam));
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -825,7 +831,7 @@ class _DetailMarker extends StatelessWidget {
             color: const Color(0xFF172417),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-                color: theme.colorScheme.primary.withValues(alpha: 0.7)),
+                color: leaderColor.withValues(alpha: 0.7)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.5),
@@ -869,8 +875,8 @@ class _DetailMarker extends StatelessWidget {
                       '${leader.leaderName}  ·  HCP ${leader.hcp}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: amber,
+                      style: TextStyle(
+                        color: leaderColor,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
@@ -1148,14 +1154,14 @@ class _LeaderSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const amber = Color(0xFFFFD700);
+    final leaderColor = teamColor(TrainerTeam.fromDb(leader.trainerTeam));
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: amber.withValues(alpha: 0.06),
+        color: leaderColor.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: amber.withValues(alpha: 0.25)),
+        border: Border.all(color: leaderColor.withValues(alpha: 0.25)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -1172,13 +1178,13 @@ class _LeaderSection extends StatelessWidget {
                     Icon(
                       leader.isNpc ? Icons.smart_toy_outlined : Icons.person,
                       size: 12,
-                      color: amber.withValues(alpha: 0.6),
+                      color: leaderColor.withValues(alpha: 0.6),
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Gym Leader',
+                      leader.isNpc ? 'Gym Leader' : (TrainerTeam.fromDb(leader.trainerTeam)?.label ?? 'Gym Leader'),
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: amber.withValues(alpha: 0.6),
+                        color: leaderColor.withValues(alpha: 0.6),
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.5,
                       ),
@@ -1239,8 +1245,8 @@ class _LeaderSection extends StatelessWidget {
             child: OutlinedButton(
               onPressed: onChallenge,
               style: OutlinedButton.styleFrom(
-                foregroundColor: amber,
-                side: BorderSide(color: amber.withValues(alpha: 0.5)),
+                foregroundColor: leaderColor,
+                side: BorderSide(color: leaderColor.withValues(alpha: 0.5)),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),

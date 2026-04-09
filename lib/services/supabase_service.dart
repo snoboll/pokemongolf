@@ -17,6 +17,7 @@ class TrainerProfile {
     required this.caughtCount,
     this.homeCourseId,
     this.trainerSprite,
+    this.trainerTeam,
   });
 
   final String userId;
@@ -24,6 +25,7 @@ class TrainerProfile {
   final int caughtCount;
   final String? homeCourseId;
   final String? trainerSprite;
+  final String? trainerTeam;
 }
 
 class SupabaseService {
@@ -97,6 +99,32 @@ class SupabaseService {
     ).eq('user_id', currentUserId!);
   }
 
+  Future<({String? team, DateTime? changedAt})> fetchTrainerTeam() async {
+    final uid = currentUserId;
+    if (uid == null) return (team: null, changedAt: null);
+
+    final List<Map<String, dynamic>> rows = await _client
+        .from('profiles')
+        .select('trainer_team, team_changed_at')
+        .eq('user_id', uid)
+        .limit(1);
+
+    if (rows.isEmpty) return (team: null, changedAt: null);
+    final raw = rows.first;
+    return (
+      team: raw['trainer_team'] as String?,
+      changedAt: raw['team_changed_at'] != null
+          ? DateTime.parse(raw['team_changed_at'] as String)
+          : null,
+    );
+  }
+
+  Future<void> updateTrainerTeam(String? team) async {
+    await _client.from('profiles').update(
+      {'trainer_team': team, 'team_changed_at': DateTime.now().toUtc().toIso8601String()},
+    ).eq('user_id', currentUserId!);
+  }
+
   Future<String?> fetchHomeCourseId() async {
     final uid = currentUserId;
     if (uid == null) return null;
@@ -120,7 +148,7 @@ class SupabaseService {
   Future<List<TrainerProfile>> fetchAllTrainers() async {
     final List<Map<String, dynamic>> profiles = await _client
         .from('profiles')
-        .select('user_id, trainer_name, home_course_id, trainer_sprite')
+        .select('user_id, trainer_name, home_course_id, trainer_sprite, trainer_team')
         .order('created_at');
 
     if (profiles.isEmpty) return <TrainerProfile>[];
@@ -141,6 +169,7 @@ class SupabaseService {
         caughtCount: countMap[uid] ?? 0,
         homeCourseId: p['home_course_id'] as String?,
         trainerSprite: p['trainer_sprite'] as String?,
+        trainerTeam: p['trainer_team'] as String?,
       );
     }).toList()
       ..sort((a, b) => b.caughtCount.compareTo(a.caughtCount)));
@@ -458,11 +487,46 @@ class SupabaseService {
     return map;
   }
 
+  Future<Map<String, int>> fetchGymOwnershipCounts() async {
+    final List<Map<String, dynamic>> rows = await _client
+        .from('course_leaders')
+        .select('user_id')
+        .not('user_id', 'is', null);
+
+    final Map<String, int> counts = <String, int>{};
+    for (final row in rows) {
+      final uid = row['user_id'] as String;
+      counts[uid] = (counts[uid] ?? 0) + 1;
+    }
+    return counts;
+  }
+
   // ── Player HCP ─────────────────────────────────────────────────────
 
   Future<void> updateHcp(int hcp) async {
     await _client.from('profiles').update(
       {'hcp': hcp},
+    ).eq('user_id', currentUserId!);
+  }
+
+  Future<double?> fetchHcpOverride() async {
+    final uid = currentUserId;
+    if (uid == null) return null;
+
+    final List<Map<String, dynamic>> rows = await _client
+        .from('profiles')
+        .select('hcp_override')
+        .eq('user_id', uid)
+        .limit(1);
+
+    if (rows.isEmpty) return null;
+    final val = rows.first['hcp_override'];
+    return val != null ? (val as num).toDouble() : null;
+  }
+
+  Future<void> updateHcpOverride(double? hcp) async {
+    await _client.from('profiles').update(
+      {'hcp_override': hcp},
     ).eq('user_id', currentUserId!);
   }
 }

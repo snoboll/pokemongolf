@@ -10,6 +10,7 @@ class CourseLeader {
     required this.isNpc,
     this.claimedAt,
     this.trainerSprite,
+    this.trainerTeam,
   });
 
   final String courseId;
@@ -20,6 +21,7 @@ class CourseLeader {
   final bool isNpc;
   final DateTime? claimedAt;
   final String? trainerSprite;
+  final String? trainerTeam;
 
   static CourseLeader fromJson(Map<String, dynamic> json) {
     List<BattlePokemon> parseTeam(dynamic raw) {
@@ -40,6 +42,7 @@ class CourseLeader {
           ? DateTime.parse(json['claimed_at'] as String)
           : null,
       trainerSprite: json['trainer_sprite'] as String?,
+      trainerTeam: json['trainer_team'] as String?,
     );
   }
 }

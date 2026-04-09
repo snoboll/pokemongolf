@@ -595,7 +595,7 @@ class _ClaimLeadershipSectionState extends State<_ClaimLeadershipSection> {
           courseId: widget.battle.courseId,
           userId: battleStore.currentUserId,
           leaderName: pokemonStore.trainerName ?? 'Trainer',
-          hcp: pokemonStore.playerHcp,
+          hcp: pokemonStore.playerHcp.round(),
           team: team,
           isNpc: false,
         ));

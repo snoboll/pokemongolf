@@ -5,6 +5,7 @@ import '../data/first_gen_pokemon.dart';
 import '../data/trainer_tags.dart';
 import '../models/pokemon_rarity.dart';
 import '../models/pokemon_species.dart';
+import '../models/trainer_team.dart';
 import '../services/supabase_service.dart';
 import '../state/pokemon_golf_store.dart';
 import '../widgets/pokemon_art.dart';
@@ -19,6 +20,7 @@ class TrainersScreen extends StatefulWidget {
 class _TrainersScreenState extends State<TrainersScreen> {
   List<TrainerProfile>? _trainers;
   Map<String, String> _trainerTags = <String, String>{};
+  Map<String, int> _gymCounts = <String, int>{};
   bool _loading = true;
   String? _error;
 
@@ -74,6 +76,7 @@ class _TrainersScreenState extends State<TrainersScreen> {
       final List<Object> results = await Future.wait(<Future<Object>>[
         service.fetchAllTrainers(),
         service.fetchAllCaughtDexNumbers(),
+        service.fetchGymOwnershipCounts(),
       ]);
       if (!mounted || generation != _fetchGeneration) {
         return;
@@ -82,6 +85,8 @@ class _TrainersScreenState extends State<TrainersScreen> {
           results[0] as List<TrainerProfile>;
       final Map<String, Set<int>> allCaught =
           results[1] as Map<String, Set<int>>;
+      final Map<String, int> gymCounts =
+          results[2] as Map<String, int>;
 
       final Map<String, String> tags = <String, String>{};
       for (final TrainerProfile trainer in trainers) {
@@ -97,6 +102,7 @@ class _TrainersScreenState extends State<TrainersScreen> {
       setState(() {
         _trainers = trainers;
         _trainerTags = tags;
+        _gymCounts = gymCounts;
         _loading = false;
       });
     } catch (e, st) {
@@ -161,6 +167,7 @@ class _TrainersScreenState extends State<TrainersScreen> {
                             homeCourseName: PokemonGolfScope.of(context)
                                 .courseNameForId(trainer.homeCourseId),
                             tag: _trainerTags[trainer.userId],
+                            gymCount: _gymCounts[trainer.userId] ?? 0,
                           );
                         },
                       ),
@@ -175,6 +182,7 @@ class _TrainerCard extends StatelessWidget {
     required this.trainer,
     required this.total,
     required this.progress,
+    required this.gymCount,
     this.homeCourseName,
     this.tag,
   });
@@ -183,6 +191,7 @@ class _TrainerCard extends StatelessWidget {
   final TrainerProfile trainer;
   final int total;
   final double progress;
+  final int gymCount;
   final String? homeCourseName;
   final String? tag;
 
@@ -190,6 +199,10 @@ class _TrainerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isComplete = trainer.caughtCount == total;
+    final TrainerTeam? tTeam = TrainerTeam.fromDb(trainer.trainerTeam);
+    final Color borderColor = isComplete
+        ? const Color(0xFFFFB300)
+        : tTeam?.color ?? theme.colorScheme.primary.withValues(alpha: 0.3);
 
     return Card(
       clipBehavior: Clip.hardEdge,
@@ -215,22 +228,18 @@ class _TrainerCard extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Container(
-              width: 40,
-              height: 40,
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.10),
+                color: (tTeam?.color ?? theme.colorScheme.primary).withValues(alpha: 0.10),
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: isComplete
-                      ? const Color(0xFFFFB300)
-                      : theme.colorScheme.primary.withValues(alpha: 0.3),
-                ),
+                border: Border.all(color: borderColor, width: 1.5),
               ),
               child: trainer.trainerSprite != null
                   ? ClipOval(
                       child: OverflowBox(
-                        maxWidth: 40 * 1.4,
-                        maxHeight: 40 * 1.4,
+                        maxWidth: 52 * 1.4,
+                        maxHeight: 52 * 1.4,
                         child: Image.asset(
                           trainer.trainerSprite!,
                           fit: BoxFit.contain,
@@ -239,7 +248,7 @@ class _TrainerCard extends StatelessWidget {
                             color: isComplete
                                 ? const Color(0xFFFFB300)
                                 : theme.colorScheme.primary,
-                            size: 20,
+                            size: 24,
                           ),
                         ),
                       ),
@@ -249,7 +258,7 @@ class _TrainerCard extends StatelessWidget {
                       color: isComplete
                           ? const Color(0xFFFFB300)
                           : theme.colorScheme.primary,
-                      size: 20,
+                      size: 24,
                     ),
             ),
             const SizedBox(width: 12),
@@ -257,37 +266,12 @@ class _TrainerCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Flexible(
-                        child: Text(
-                          trainer.trainerName,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (tag != null) ...<Widget>[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.secondary
-                                .withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            tag!,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.secondary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                  Text(
+                    trainer.trainerName,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                   if (homeCourseName != null)
                     Padding(
@@ -297,6 +281,75 @@ class _TrainerCard extends StatelessWidget {
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                         ),
+                      ),
+                    ),
+                  if (tTeam != null || tag != null || gymCount > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: <Widget>[
+                          if (tTeam != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: tTeam.color.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                tTeam.label,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: tTeam.color,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 9,
+                                ),
+                              ),
+                            ),
+                          if (gymCount > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFB300).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                                  const Icon(Icons.shield, size: 10, color: Color(0xFFFFB300)),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    '$gymCount ${gymCount == 1 ? 'gym' : 'gyms'}',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: const Color(0xFFFFB300),
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 9,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (tag != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.secondary
+                                    .withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                tag!,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.secondary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 9,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   const SizedBox(height: 6),
