@@ -1,9 +1,14 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../app.dart';
 import '../data/first_gen_pokemon.dart';
+import '../models/course_leader.dart';
+import '../models/golf_course.dart';
 import '../state/pokemon_golf_store.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -12,11 +17,13 @@ class HomeScreen extends StatefulWidget {
     required this.onPlay,
     required this.onResumeRound,
     required this.onBattleMode,
+    required this.onGymChallenge,
   });
 
   final VoidCallback onPlay;
   final VoidCallback onResumeRound;
   final VoidCallback onBattleMode;
+  final void Function(GolfCourse course) onGymChallenge;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -24,6 +31,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _version = '';
+  GolfCourse? _nearestCourse;
+  bool _locationDone = false;
+
+  static const double _nearbyRadiusKm = 5.0;
 
   @override
   void initState() {
@@ -31,7 +42,63 @@ class _HomeScreenState extends State<HomeScreen> {
     PackageInfo.fromPlatform().then((info) {
       if (mounted) setState(() => _version = info.version);
     });
+    _findNearestGym();
   }
+
+  Future<void> _findNearestGym() async {
+    try {
+      LocationPermission perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
+        if (mounted) setState(() => _locationDone = true);
+        return;
+      }
+
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+      );
+      if (!mounted) return;
+
+      final store = PokemonGolfScope.of(context);
+      final courses = store.catalogCourses
+          .where((c) => c.lat != null && c.lng != null)
+          .toList();
+
+      GolfCourse? nearest;
+      double bestDist = double.infinity;
+      for (final c in courses) {
+        final d = _haversineKm(pos.latitude, pos.longitude, c.lat!, c.lng!);
+        if (d < bestDist) {
+          bestDist = d;
+          nearest = c;
+        }
+      }
+
+      setState(() {
+        _nearestCourse = bestDist <= _nearbyRadiusKm ? nearest : null;
+        _locationDone = true;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _locationDone = true);
+    }
+  }
+
+  static double _haversineKm(double lat1, double lng1, double lat2, double lng2) {
+    const r = 6371.0;
+    final dLat = _deg2rad(lat2 - lat1);
+    final dLng = _deg2rad(lng2 - lng1);
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_deg2rad(lat1)) *
+            math.cos(_deg2rad(lat2)) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    return r * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+  }
+
+  static double _deg2rad(double deg) => deg * (math.pi / 180);
 
   @override
   Widget build(BuildContext context) {
@@ -149,6 +216,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
+                      const SizedBox(height: 16),
+                      _GymChallengeCard(
+                        nearestCourse: _nearestCourse,
+                        locationDone: _locationDone,
+                        leader: _nearestCourse != null
+                            ? store.leaderForCourse(_nearestCourse!.id)
+                            : null,
+                        canChallenge: store.caughtDexNumbers.length >= 3,
+                        onChallenge: _nearestCourse != null
+                            ? () => widget.onGymChallenge(_nearestCourse!)
+                            : null,
+                      ),
                       const SizedBox(height: 48),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -519,6 +598,157 @@ class _InfoSheet extends StatelessWidget {
     );
   }
 }
+class _GymChallengeCard extends StatelessWidget {
+  const _GymChallengeCard({
+    required this.nearestCourse,
+    required this.locationDone,
+    required this.leader,
+    required this.canChallenge,
+    required this.onChallenge,
+  });
+
+  final GolfCourse? nearestCourse;
+  final bool locationDone;
+  final CourseLeader? leader;
+  final bool canChallenge;
+  final VoidCallback? onChallenge;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const amber = Color(0xFFFFD700);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: amber.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: amber.withValues(alpha: 0.25)),
+      ),
+      child: nearestCourse == null || leader == null
+          ? Row(
+              children: [
+                Icon(Icons.shield, size: 20, color: amber.withValues(alpha: 0.4)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    !locationDone ? 'Finding nearby gym…' : 'No gym nearby',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                _TrainerSprite(sprite: leader!.trainerSprite, size: 48),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        nearestCourse!.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      Text(
+                        '${leader!.leaderName}  ·  HCP ${leader!.hcp}',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: amber,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          for (final p in leader!.team)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: Image.network(
+                                  p.imageUrl,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) =>
+                                      const SizedBox.shrink(),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  height: 48,
+                  child: OutlinedButton(
+                    onPressed: canChallenge ? onChallenge : null,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: amber,
+                      side: BorderSide(
+                        color: canChallenge
+                            ? amber.withValues(alpha: 0.5)
+                            : amber.withValues(alpha: 0.15),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('⚔️', style: TextStyle(fontSize: 16)),
+                        SizedBox(height: 2),
+                        Text('Gym', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+class _TrainerSprite extends StatelessWidget {
+  const _TrainerSprite({required this.sprite, this.size = 32});
+
+  final String? sprite;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    if (sprite == null) {
+      return Icon(Icons.person, size: size * 0.7, color: const Color(0xFFFFD700));
+    }
+    final inner = size * 1.5;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: OverflowBox(
+        maxWidth: inner,
+        maxHeight: inner,
+        child: Image.asset(
+          sprite!,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.medium,
+          errorBuilder: (_, __, ___) =>
+              Icon(Icons.person, size: size * 0.7, color: const Color(0xFFFFD700)),
+        ),
+      ),
+    );
+  }
+}
+
 class _QuickStat extends StatelessWidget {
   const _QuickStat({
     required this.icon,

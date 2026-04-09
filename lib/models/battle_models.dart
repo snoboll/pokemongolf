@@ -173,6 +173,8 @@ class Battle {
     this.winnerId,
     required this.createdAt,
     this.completedAt,
+    this.isLeaderChallenge = false,
+    this.leaderHcp,
   });
 
   final String id;
@@ -193,6 +195,8 @@ class Battle {
   final String? winnerId;
   final DateTime createdAt;
   final DateTime? completedAt;
+  final bool isLeaderChallenge;
+  final int? leaderHcp;
 
   bool get isCompleted => status == BattleStatus.completed;
   bool get isPending    => status == BattleStatus.pending;
@@ -275,6 +279,8 @@ class Battle {
       completedAt:      json['completed_at'] != null
                           ? DateTime.parse(json['completed_at'] as String)
                           : null,
+      isLeaderChallenge: json['is_leader_challenge'] as bool? ?? false,
+      leaderHcp:         (json['leader_hcp'] as num?)?.toInt(),
     );
   }
 }

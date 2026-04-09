@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app.dart';
 import '../data/first_gen_pokemon.dart';
+import '../data/trainer_tags.dart';
 import '../models/pokemon_rarity.dart';
 import '../models/pokemon_species.dart';
 import '../services/supabase_service.dart';
@@ -17,6 +18,7 @@ class TrainersScreen extends StatefulWidget {
 
 class _TrainersScreenState extends State<TrainersScreen> {
   List<TrainerProfile>? _trainers;
+  Map<String, String> _trainerTags = <String, String>{};
   bool _loading = true;
   String? _error;
 
@@ -69,15 +71,36 @@ class _TrainersScreenState extends State<TrainersScreen> {
 
     try {
       final service = SupabaseService();
-      final trainers = await service.fetchAllTrainers();
+      final List<Object> results = await Future.wait(<Future<Object>>[
+        service.fetchAllTrainers(),
+        service.fetchAllCaughtDexNumbers(),
+      ]);
       if (!mounted || generation != _fetchGeneration) {
         return;
       }
+      final List<TrainerProfile> trainers =
+          results[0] as List<TrainerProfile>;
+      final Map<String, Set<int>> allCaught =
+          results[1] as Map<String, Set<int>>;
+
+      final Map<String, String> tags = <String, String>{};
+      for (final TrainerProfile trainer in trainers) {
+        final Set<int>? caught = allCaught[trainer.userId];
+        if (caught != null) {
+          final String? tag = trainerTagForCaughtDex(caught);
+          if (tag != null) tags[trainer.userId] = tag;
+        }
+      }
+
+      trainers.removeWhere((t) => t.trainerName == 'Test');
+
       setState(() {
         _trainers = trainers;
+        _trainerTags = tags;
         _loading = false;
       });
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('Trainers load error: $e\n$st');
       if (!mounted || generation != _fetchGeneration) {
         return;
       }
@@ -137,6 +160,7 @@ class _TrainersScreenState extends State<TrainersScreen> {
                             progress: progress,
                             homeCourseName: PokemonGolfScope.of(context)
                                 .courseNameForId(trainer.homeCourseId),
+                            tag: _trainerTags[trainer.userId],
                           );
                         },
                       ),
@@ -152,6 +176,7 @@ class _TrainerCard extends StatelessWidget {
     required this.total,
     required this.progress,
     this.homeCourseName,
+    this.tag,
   });
 
   final int rank;
@@ -159,6 +184,7 @@ class _TrainerCard extends StatelessWidget {
   final int total;
   final double progress;
   final String? homeCourseName;
+  final String? tag;
 
   @override
   Widget build(BuildContext context) {
@@ -188,24 +214,80 @@ class _TrainerCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Icon(
-              Icons.catching_pokemon,
-              color: isComplete
-                  ? const Color(0xFFFFB300)
-                  : theme.colorScheme.primary,
-              size: 28,
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.10),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isComplete
+                      ? const Color(0xFFFFB300)
+                      : theme.colorScheme.primary.withValues(alpha: 0.3),
+                ),
+              ),
+              child: trainer.trainerSprite != null
+                  ? ClipOval(
+                      child: OverflowBox(
+                        maxWidth: 40 * 1.4,
+                        maxHeight: 40 * 1.4,
+                        child: Image.asset(
+                          trainer.trainerSprite!,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => Icon(
+                            Icons.catching_pokemon,
+                            color: isComplete
+                                ? const Color(0xFFFFB300)
+                                : theme.colorScheme.primary,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Icon(
+                      Icons.catching_pokemon,
+                      color: isComplete
+                          ? const Color(0xFFFFB300)
+                          : theme.colorScheme.primary,
+                      size: 20,
+                    ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    trainer.trainerName,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: <Widget>[
+                      Flexible(
+                        child: Text(
+                          trainer.trainerName,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (tag != null) ...<Widget>[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.secondary
+                                .withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            tag!,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.secondary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   if (homeCourseName != null)
                     Padding(
@@ -278,6 +360,7 @@ class TrainerPokedexScreen extends StatefulWidget {
 
 class _TrainerPokedexScreenState extends State<TrainerPokedexScreen> {
   Set<int>? _caughtDexNumbers;
+  String? _tag;
   bool _loading = true;
 
   @override
@@ -286,7 +369,13 @@ class _TrainerPokedexScreenState extends State<TrainerPokedexScreen> {
     SupabaseService()
         .fetchTrainerCaughtDexNumbers(widget.trainer.userId)
         .then((numbers) {
-      if (mounted) setState(() { _caughtDexNumbers = numbers; _loading = false; });
+      if (mounted) {
+        setState(() {
+          _caughtDexNumbers = numbers;
+          _tag = trainerTagForCaughtDex(numbers);
+          _loading = false;
+        });
+      }
     }).catchError((_) {
       if (mounted) setState(() { _caughtDexNumbers = {}; _loading = false; });
     });
@@ -304,12 +393,36 @@ class _TrainerPokedexScreenState extends State<TrainerPokedexScreen> {
           preferredSize: const Size.fromHeight(24),
           child: Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              '${widget.trainer.caughtCount} / $total caught',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  '${widget.trainer.caughtCount} / $total caught',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (_tag != null) ...<Widget>[
+                  const SizedBox(width: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.secondary
+                          .withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      _tag!,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.secondary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ),

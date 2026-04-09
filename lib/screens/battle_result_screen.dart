@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../app.dart';
 import '../models/battle_models.dart';
+import '../models/course_leader.dart';
 import '../models/golf_score.dart';
 import '../models/hole_stats.dart';
 import '../models/pokemon_species.dart';
 import '../models/round_models.dart';
 import '../state/battle_store.dart';
 import 'round_screen.dart';
+import 'team_select_screen.dart';
 
 class BattleResultScreen extends StatelessWidget {
   const BattleResultScreen({super.key, required this.battleId});
@@ -114,6 +116,10 @@ class BattleResultScreen extends StatelessWidget {
                   theirName:    theirName,
                 ),
                 const SizedBox(height: 32),
+
+                // ── Claim leadership if this was a leader challenge and player won ─
+                if (battle.isLeaderChallenge && won)
+                  _ClaimLeadershipSection(battle: battle),
 
                 // ── Continue to catch mode if holes remain ─────────────────
                 Builder(builder: (context) {
@@ -462,5 +468,149 @@ class _HoleSummaryRow extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// ── _ClaimLeadershipSection ──────────────────────────────────────────────────
+
+class _ClaimLeadershipSection extends StatefulWidget {
+  const _ClaimLeadershipSection({required this.battle});
+  final Battle battle;
+
+  @override
+  State<_ClaimLeadershipSection> createState() => _ClaimLeadershipSectionState();
+}
+
+class _ClaimLeadershipSectionState extends State<_ClaimLeadershipSection> {
+  bool _claimed = false;
+  bool _claiming = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const amber = Color(0xFFFFD700);
+
+    if (_claimed) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: amber.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: amber.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.emoji_events, color: amber, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'You are the new Course Leader!',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: amber,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: amber.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: amber.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.emoji_events, color: amber, size: 24),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Claim the course!',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: amber,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Pick 3 Pokemon to defend the course as Leader.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: _claiming ? null : _startClaim,
+            icon: _claiming
+                ? const SizedBox(width: 18, height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Text('⚔️', style: TextStyle(fontSize: 14)),
+            label: Text(_claiming ? 'Claiming...' : 'Assign Defenders'),
+            style: FilledButton.styleFrom(
+              backgroundColor: amber,
+              foregroundColor: Colors.black,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _startClaim() async {
+    final pokemonStore = PokemonGolfScope.of(context);
+    final battleStore = BattleScope.of(context);
+
+    final team = await Navigator.of(context).push<List<BattlePokemon>>(
+      MaterialPageRoute(
+        builder: (_) => TeamSelectScreen(
+          caughtDexNumbers: Set<int>.from(pokemonStore.caughtDexNumbers),
+          title: 'Pick defenders',
+        ),
+      ),
+    );
+    if (team == null || !mounted) return;
+
+    setState(() => _claiming = true);
+    try {
+      await battleStore.claimCourseLeadership(
+        courseId:     widget.battle.courseId,
+        battleId:     widget.battle.id,
+        defenderTeam: team,
+      );
+
+      if (mounted) {
+        pokemonStore.updateCourseLeader(CourseLeader(
+          courseId: widget.battle.courseId,
+          userId: battleStore.currentUserId,
+          leaderName: pokemonStore.trainerName ?? 'Trainer',
+          hcp: pokemonStore.playerHcp,
+          team: team,
+          isNpc: false,
+        ));
+        setState(() {
+          _claimed = true;
+          _claiming = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _claiming = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to claim: $e')),
+        );
+      }
+    }
   }
 }

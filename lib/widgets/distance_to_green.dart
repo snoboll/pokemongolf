@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../app.dart';
+import '../models/club.dart';
+
 enum _LocationState { checking, listening, serviceOff, denied, deniedForever }
 
 class DistanceToGreen extends StatefulWidget {
@@ -109,6 +112,31 @@ class _DistanceToGreenState extends State<DistanceToGreen> {
     super.dispose();
   }
 
+  static ({Club club, int distance, bool isCarry})? _recommendClub(
+      List<Club> clubs, double targetMeters) {
+    Club? best;
+    int? bestDist;
+    bool bestIsCarry = false;
+    double? bestDiff;
+
+    for (final Club club in clubs) {
+      final int? carry = club.carryDistance;
+      final int? total = club.totalDistance;
+      final int? d = carry ?? total;
+      if (d == null) continue;
+      final double diff = (d - targetMeters).abs();
+      if (bestDiff == null || diff < bestDiff) {
+        best = club;
+        bestDist = d;
+        bestIsCarry = carry != null;
+        bestDiff = diff;
+      }
+    }
+
+    if (best == null || bestDist == null) return null;
+    return (club: best, distance: bestDist, isCarry: bestIsCarry);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -127,24 +155,51 @@ class _DistanceToGreenState extends State<DistanceToGreen> {
         ),
     };
 
+    final clubs = PokemonGolfScope.of(context).clubs;
+    final recommendation = (_state == _LocationState.listening && _distanceMeters != null)
+        ? _recommendClub(clubs, _distanceMeters!)
+        : null;
+
     final chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 16, color: iconColor),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: tappable ? dim : theme.colorScheme.onSurface,
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(icon, size: 16, color: iconColor),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: tappable ? dim : theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
           ),
+          if (recommendation != null) ...<Widget>[
+            const SizedBox(height: 4),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(Icons.sports_golf, size: 14, color: theme.colorScheme.secondary),
+                const SizedBox(width: 4),
+                Text(
+                  '${recommendation.club.name} · ${recommendation.distance}m',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.secondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

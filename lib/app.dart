@@ -7,15 +7,21 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'models/battle_models.dart';
+import 'models/golf_course.dart';
 import 'screens/auth_screen.dart';
+import 'screens/battle_round_screen.dart';
 import 'screens/battles_screen.dart';
 import 'screens/collection_screen.dart';
-import 'screens/history_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/profile_screen.dart';
 import 'screens/round_screen.dart';
 import 'screens/courses_screen.dart';
+import 'screens/team_select_screen.dart';
 import 'screens/trainers_screen.dart';
+import 'services/battle_service.dart';
 import 'services/supabase_service.dart';
+import 'state/battle_store.dart';
 import 'state/pokemon_golf_store.dart';
 
 class PokemonGolfApp extends StatefulWidget {
@@ -286,6 +292,68 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
     );
   }
 
+  void _challengeLeader(BuildContext context, GolfCourse course) async {
+    final store = PokemonGolfScope.of(context);
+    final leader = store.leaderForCourse(course.id);
+
+    if (store.caughtDexNumbers.length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Catch at least 3 Pokémon to challenge a leader')),
+      );
+      return;
+    }
+
+    final team = await Navigator.of(context).push<List<BattlePokemon>>(
+      MaterialPageRoute(
+        builder: (_) => TeamSelectScreen(
+          caughtDexNumbers: Set<int>.from(store.caughtDexNumbers),
+          title: 'Challenge ${leader.leaderName}',
+        ),
+      ),
+    );
+    if (team == null || !context.mounted) return;
+
+    final pars = course.flatPars;
+    final holeCount = pars.length > 18 ? 18 : pars.length;
+    final selectedPars = pars.take(holeCount).toList();
+
+    try {
+      final battleStore = BattleStore(service: BattleService());
+      final battle = await battleStore.createLeaderChallenge(
+        courseId: course.id,
+        courseName: course.name,
+        holeCount: holeCount,
+        coursePars: selectedPars,
+        team: team,
+        challengerName: store.trainerName ?? 'Trainer',
+        leaderName: leader.leaderName,
+        leaderTeam: leader.team,
+        leaderHcp: leader.hcp,
+        leaderUserId: leader.userId,
+      );
+      if (!context.mounted) return;
+
+      battleStore.watchBattle(battle.id);
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => BattleScope(
+          notifier: battleStore,
+          child: BattleRoundScreen(battleId: battle.id),
+        ),
+      )).then((_) {
+        battleStore.stopWatching();
+        if (context.mounted) {
+          PokemonGolfScope.of(context).refreshCourseLeaders();
+        }
+      });
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = <Widget>[
@@ -295,9 +363,10 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
         onPlay: () => setState(() => _selectedIndex = 3),
         onResumeRound: () => _resumeRound(context),
         onBattleMode: () => _openBattleMode(context),
+        onGymChallenge: (course) => _challengeLeader(context, course),
       ),
       const CoursesScreen(),
-      const HistoryScreen(),
+      const ProfileScreen(),
     ];
 
     return Scaffold(
@@ -362,9 +431,9 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
             label: 'Courses',
           ),
           NavigationDestination(
-            icon: Icon(Icons.scoreboard_outlined),
-            selectedIcon: Icon(Icons.scoreboard),
-            label: 'Scorecards',
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ],
         onDestinationSelected: (int index) {

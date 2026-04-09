@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/first_gen_pokemon.dart';
+import '../models/club.dart';
+import '../models/course_leader.dart';
 import '../models/golf_score.dart';
 import '../models/hole_stats.dart';
 import '../models/golf_course.dart';
@@ -14,12 +16,14 @@ class TrainerProfile {
     required this.trainerName,
     required this.caughtCount,
     this.homeCourseId,
+    this.trainerSprite,
   });
 
   final String userId;
   final String trainerName;
   final int caughtCount;
   final String? homeCourseId;
+  final String? trainerSprite;
 }
 
 class SupabaseService {
@@ -73,6 +77,26 @@ class SupabaseService {
     );
   }
 
+  Future<String?> fetchTrainerSprite() async {
+    final uid = currentUserId;
+    if (uid == null) return null;
+
+    final List<Map<String, dynamic>> rows = await _client
+        .from('profiles')
+        .select('trainer_sprite')
+        .eq('user_id', uid)
+        .limit(1);
+
+    if (rows.isEmpty) return null;
+    return rows.first['trainer_sprite'] as String?;
+  }
+
+  Future<void> updateTrainerSprite(String? sprite) async {
+    await _client.from('profiles').update(
+      {'trainer_sprite': sprite},
+    ).eq('user_id', currentUserId!);
+  }
+
   Future<String?> fetchHomeCourseId() async {
     final uid = currentUserId;
     if (uid == null) return null;
@@ -96,7 +120,7 @@ class SupabaseService {
   Future<List<TrainerProfile>> fetchAllTrainers() async {
     final List<Map<String, dynamic>> profiles = await _client
         .from('profiles')
-        .select('user_id, trainer_name, home_course_id')
+        .select('user_id, trainer_name, home_course_id, trainer_sprite')
         .order('created_at');
 
     if (profiles.isEmpty) return <TrainerProfile>[];
@@ -116,8 +140,9 @@ class SupabaseService {
         trainerName: p['trainer_name'] as String,
         caughtCount: countMap[uid] ?? 0,
         homeCourseId: p['home_course_id'] as String?,
+        trainerSprite: p['trainer_sprite'] as String?,
       );
-    }).toList(growable: false)
+    }).toList()
       ..sort((a, b) => b.caughtCount.compareTo(a.caughtCount)));
   }
 
@@ -127,6 +152,20 @@ class SupabaseService {
         .select('dex_number')
         .eq('user_id', userId);
     return rows.map((r) => (r['dex_number'] as num).toInt()).toSet();
+  }
+
+  Future<Map<String, Set<int>>> fetchAllCaughtDexNumbers() async {
+    final List<Map<String, dynamic>> rows = await _client
+        .from('caught_pokemon')
+        .select('user_id, dex_number');
+
+    final Map<String, Set<int>> result = <String, Set<int>>{};
+    for (final Map<String, dynamic> row in rows) {
+      final String userId = row['user_id'] as String;
+      final int dex = (row['dex_number'] as num).toInt();
+      (result[userId] ??= <int>{}).add(dex);
+    }
+    return result;
   }
 
   // ── Catalog courses (pars, multi-loop parts, green centers) ─────────
@@ -243,6 +282,71 @@ class SupabaseService {
     );
   }
 
+  // ── Clubs (bag) ────────────────────────────────────────────────────
+
+  Future<List<Club>> fetchClubs() async {
+    final List<Map<String, dynamic>> rows = await _client
+        .from('clubs')
+        .select()
+        .order('sort_order');
+
+    return rows.map((Map<String, dynamic> r) => Club(
+      id: r['id'] as String,
+      name: r['name'] as String,
+      carryDistance: r['carry_distance'] as int?,
+      totalDistance: r['total_distance'] as int?,
+    )).toList();
+  }
+
+  Future<List<Club>> seedDefaultClubs() async {
+    final List<Club> defaults = Club.defaults;
+    final List<Map<String, dynamic>> rows = <Map<String, dynamic>>[];
+    for (int i = 0; i < defaults.length; i++) {
+      rows.add(<String, dynamic>{
+        'name': defaults[i].name,
+        'sort_order': i,
+      });
+    }
+    final List<Map<String, dynamic>> inserted =
+        await _client.from('clubs').insert(rows).select();
+
+    return inserted.map((Map<String, dynamic> r) => Club(
+      id: r['id'] as String,
+      name: r['name'] as String,
+      carryDistance: r['carry_distance'] as int?,
+      totalDistance: r['total_distance'] as int?,
+    )).toList();
+  }
+
+  Future<Club> insertClub(Club club, int sortOrder) async {
+    final Map<String, dynamic> row =
+        await _client.from('clubs').insert(<String, dynamic>{
+      'name': club.name,
+      'carry_distance': club.carryDistance,
+      'total_distance': club.totalDistance,
+      'sort_order': sortOrder,
+    }).select().single();
+
+    return Club(
+      id: row['id'] as String,
+      name: row['name'] as String,
+      carryDistance: row['carry_distance'] as int?,
+      totalDistance: row['total_distance'] as int?,
+    );
+  }
+
+  Future<void> updateClub(Club club) async {
+    await _client.from('clubs').update(<String, dynamic>{
+      'name': club.name,
+      'carry_distance': club.carryDistance,
+      'total_distance': club.totalDistance,
+    }).eq('id', club.id!);
+  }
+
+  Future<void> deleteClub(String clubId) async {
+    await _client.from('clubs').delete().eq('id', clubId);
+  }
+
   // ── Rounds ──────────────────────────────────────────────────────────
 
   Future<List<GolfRoundSummary>> fetchCompletedRounds() async {
@@ -334,5 +438,31 @@ class SupabaseService {
     }).toList(growable: false);
 
     await _client.from('hole_results').insert(holeRows);
+  }
+
+  // ── Course Leaders ───────────────────────────────────────────────────
+
+  Future<Map<String, CourseLeader>> fetchCourseLeaders() async {
+    final List<Map<String, dynamic>> rows =
+        await _client.from('course_leaders').select();
+
+    final Map<String, CourseLeader> map = {};
+    for (final row in rows) {
+      try {
+        final leader = CourseLeader.fromJson(row);
+        map[leader.courseId] = leader;
+      } catch (e) {
+        debugPrint('Skipping course_leaders row: $e');
+      }
+    }
+    return map;
+  }
+
+  // ── Player HCP ─────────────────────────────────────────────────────
+
+  Future<void> updateHcp(int hcp) async {
+    await _client.from('profiles').update(
+      {'hcp': hcp},
+    ).eq('user_id', currentUserId!);
   }
 }

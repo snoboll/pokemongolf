@@ -2,6 +2,9 @@ import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 
+import '../data/default_npc_leaders.dart';
+import '../models/club.dart';
+import '../models/course_leader.dart';
 import '../models/encounter_modifiers.dart';
 import '../models/golf_course.dart';
 import '../models/golf_score.dart';
@@ -31,12 +34,17 @@ class PokemonGolfStore extends ChangeNotifier {
   ActiveRound? _activeRound;
   final Set<int> _pendingCatches = <int>{};
   String? _trainerName;
+  String? _trainerSprite;
   String? _homeCourseId;
   List<GolfCourse> _catalogCourses = <GolfCourse>[];
   List<GolfCourse> _userCourses = <GolfCourse>[];
+  List<Club> _clubs = <Club>[];
+  Map<String, CourseLeader> _courseLeaders = {};
+  Map<String, CourseLeader> _defaultLeaders = {};
 
   ActiveRound? get activeRound => _activeRound;
   String? get trainerName => _trainerName;
+  String? get trainerSprite => _trainerSprite;
   String? get homeCourseId => _homeCourseId;
 
   List<GolfCourse> get catalogCourses =>
@@ -44,6 +52,60 @@ class PokemonGolfStore extends ChangeNotifier {
 
   List<GolfCourse> get userCourses =>
       List<GolfCourse>.unmodifiable(_userCourses);
+
+  List<Club> get clubs {
+    final sorted = List<Club>.from(_clubs)
+      ..sort((a, b) {
+        final int? da = a.carryDistance ?? a.totalDistance;
+        final int? db = b.carryDistance ?? b.totalDistance;
+        if (da == null && db == null) return 0;
+        if (da == null) return 1;
+        if (db == null) return -1;
+        return db.compareTo(da);
+      });
+    return List<Club>.unmodifiable(sorted);
+  }
+
+  Map<String, CourseLeader> get courseLeaders =>
+      Map<String, CourseLeader>.unmodifiable(_courseLeaders);
+
+  CourseLeader leaderForCourse(String courseId) {
+    return _courseLeaders[courseId]
+        ?? _defaultLeaders[courseId]
+        ?? defaultNpcForCourse(courseId);
+  }
+
+  void _rebuildDefaultLeaders() {
+    final allIds = <String>{
+      ..._catalogCourses.map((c) => c.id),
+      ..._userCourses.map((c) => c.id),
+    }.toList();
+    _defaultLeaders = buildDefaultLeaders(allIds);
+  }
+
+  int get playerHcp {
+    final qualifying = _completedRounds
+        .where((r) => r.holes.length >= 9 && !r.isBattle)
+        .take(10)
+        .toList();
+    if (qualifying.isEmpty) return 36;
+
+    int totalDiff = 0;
+    int totalHoles = 0;
+    for (final round in qualifying) {
+      for (final hole in round.holes) {
+        totalDiff += hole.strokes - hole.par;
+        totalHoles += 1;
+      }
+    }
+    return ((totalDiff / totalHoles) * 18).round().clamp(0, 54);
+  }
+
+  void updateCourseLeader(CourseLeader leader) {
+    _courseLeaders = Map<String, CourseLeader>.from(_courseLeaders)
+      ..[leader.courseId] = leader;
+    notifyListeners();
+  }
 
   /// Resolves a course id from the Supabase catalog or user-created courses.
   String? courseNameForId(String? id) {
@@ -57,6 +119,14 @@ class PokemonGolfStore extends ChangeNotifier {
     return null;
   }
 
+  void setTrainerSprite(String? sprite) {
+    _trainerSprite = sprite;
+    notifyListeners();
+    _supabaseService?.updateTrainerSprite(sprite).catchError((e) {
+      debugPrint('Failed to update trainer sprite: $e');
+    });
+  }
+
   void setHomeCourseId(String id) {
     _homeCourseId = id;
     notifyListeners();
@@ -64,6 +134,7 @@ class PokemonGolfStore extends ChangeNotifier {
 
   void syncUserCourses(List<GolfCourse> courses) {
     _userCourses = List<GolfCourse>.from(courses);
+    _rebuildDefaultLeaders();
     notifyListeners();
   }
 
@@ -107,6 +178,12 @@ class PokemonGolfStore extends ChangeNotifier {
       _trainerName = results[2] as String?;
 
       try {
+        _trainerSprite = await supa.fetchTrainerSprite();
+      } catch (e) {
+        debugPrint('Failed to load trainer sprite: $e');
+      }
+
+      try {
         _catalogCourses = await supa.fetchCatalogCourses();
       } catch (e) {
         debugPrint('Failed to load catalog courses: $e');
@@ -122,6 +199,27 @@ class PokemonGolfStore extends ChangeNotifier {
       try {
         _homeCourseId = await supa.fetchHomeCourseId();
       } catch (_) {}
+
+      try {
+        _clubs = await supa.fetchClubs();
+        if (_clubs.isEmpty) {
+          _clubs = await supa.seedDefaultClubs();
+        }
+      } catch (e) {
+        debugPrint('Failed to load clubs: $e');
+        if (_clubs.isEmpty) {
+          _clubs = List<Club>.from(Club.defaults);
+        }
+      }
+
+      try {
+        _courseLeaders = await supa.fetchCourseLeaders();
+      } catch (e) {
+        debugPrint('Failed to load course leaders: $e');
+      }
+
+      _rebuildDefaultLeaders();
+      _syncHcp(supa);
 
       notifyListeners();
     } catch (e) {
@@ -181,9 +279,13 @@ class PokemonGolfStore extends ChangeNotifier {
     _completedRounds.clear();
     _activeRound = null;
     _trainerName = null;
+    _trainerSprite = null;
     _homeCourseId = null;
     _catalogCourses = <GolfCourse>[];
     _userCourses = <GolfCourse>[];
+    _clubs = <Club>[];
+    _courseLeaders = {};
+    _defaultLeaders = {};
     notifyListeners();
     await _supabaseService?.signOut();
   }
@@ -332,6 +434,46 @@ class PokemonGolfStore extends ChangeNotifier {
     );
   }
 
+  // ── Club bag management ─────────────────────────────────────────────
+
+  void addClub(Club club) {
+    _clubs.add(club);
+    notifyListeners();
+    _supabaseService?.insertClub(club, _clubs.length - 1).then((saved) {
+      for (int i = 0; i < _clubs.length; i++) {
+        if (identical(_clubs[i], club)) {
+          _clubs[i] = saved;
+          break;
+        }
+      }
+    }).catchError((e) {
+      debugPrint('Failed to persist club: $e');
+    });
+  }
+
+  void updateClub(Club oldClub, Club newClub) {
+    final int i = _clubs.indexWhere((c) => identical(c, oldClub));
+    if (i == -1) return;
+    _clubs[i] = newClub;
+    notifyListeners();
+    if (newClub.id != null) {
+      _supabaseService?.updateClub(newClub).catchError((e) {
+        debugPrint('Failed to update club: $e');
+      });
+    }
+  }
+
+  void removeClub(Club club) {
+    final bool removed = _clubs.remove(club);
+    if (!removed) return;
+    notifyListeners();
+    if (club.id != null) {
+      _supabaseService?.deleteClub(club.id!).catchError((e) {
+        debugPrint('Failed to delete club: $e');
+      });
+    }
+  }
+
   // ── Private persistence helpers (fire-and-forget) ───────────────────
 
   void _commitPendingCatches() {
@@ -351,5 +493,23 @@ class PokemonGolfStore extends ChangeNotifier {
     _supabaseService?.insertRound(summary).catchError((e) {
       debugPrint('Failed to persist round: $e');
     });
+  }
+
+  void _syncHcp(SupabaseService supa) {
+    final hcp = playerHcp;
+    supa.updateHcp(hcp).catchError((e) {
+      debugPrint('Failed to sync HCP: $e');
+    });
+  }
+
+  Future<void> refreshCourseLeaders() async {
+    final supa = _supabaseService;
+    if (supa == null) return;
+    try {
+      _courseLeaders = await supa.fetchCourseLeaders();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Failed to refresh course leaders: $e');
+    }
   }
 }

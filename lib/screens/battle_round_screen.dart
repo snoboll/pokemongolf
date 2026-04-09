@@ -290,13 +290,21 @@ class _BattleRoundScreenState extends State<BattleRoundScreen>
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _submitting = true);
     try {
-      final updated = await store.submitHoleScore(
-        battleId: widget.battleId,
-        hole:     hole,
-        strokes:  strokes,
-      );
+      final Battle updated;
+      if (battle.isLeaderChallenge) {
+        updated = await store.submitLeaderChallengeScore(
+          battleId: widget.battleId,
+          hole:     hole,
+          strokes:  strokes,
+        );
+      } else {
+        updated = await store.submitHoleScore(
+          battleId: widget.battleId,
+          hole:     hole,
+          strokes:  strokes,
+        );
+      }
 
-      // If both players submitted and combat resolved, show the event
       if (updated.holeLog.isNotEmpty) {
         final lastEvent = updated.holeLog.last;
         if (lastEvent.hole == hole) {

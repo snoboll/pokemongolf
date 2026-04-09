@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../app.dart';
+import '../models/battle_models.dart';
+import '../models/course_leader.dart';
 import '../models/golf_course.dart';
+import '../services/battle_service.dart';
 import '../services/supabase_service.dart';
+import '../state/battle_store.dart';
+import 'battle_round_screen.dart';
+import 'battles_screen.dart';
 import 'round_screen.dart';
+import 'team_select_screen.dart';
 
 class CoursesScreen extends StatefulWidget {
   const CoursesScreen({super.key});
@@ -61,23 +69,6 @@ class _CoursesScreenState extends State<CoursesScreen>
     }
   }
 
-  void _showAddCourse() {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => _AddCourseSheet(
-        onSaved: () {
-          Navigator.of(context).pop();
-          _loadUserCourses();
-        },
-      ),
-    );
-  }
-
   void _startRound(GolfCourse course) {
     final store = PokemonGolfScope.of(context);
 
@@ -129,6 +120,68 @@ class _CoursesScreenState extends State<CoursesScreen>
     launch(pars, greenCoords: course.singleLoopNullableGreens);
   }
 
+  void _challengeLeader(GolfCourse course) async {
+    final store = PokemonGolfScope.of(context);
+    final leader = store.leaderForCourse(course.id);
+
+    if (store.caughtDexNumbers.length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Catch at least 3 Pokemon to challenge a leader')),
+      );
+      return;
+    }
+
+    final team = await Navigator.of(context).push<List<BattlePokemon>>(
+      MaterialPageRoute(
+        builder: (_) => TeamSelectScreen(
+          caughtDexNumbers: Set<int>.from(store.caughtDexNumbers),
+          title: 'Challenge ${leader.leaderName}',
+        ),
+      ),
+    );
+    if (team == null || !mounted) return;
+
+    final pars = course.flatPars;
+    final holeCount = pars.length > 18 ? 18 : pars.length;
+    final selectedPars = pars.take(holeCount).toList();
+
+    try {
+      final battleStore = BattleStore(service: BattleService());
+      final battle = await battleStore.createLeaderChallenge(
+        courseId:       course.id,
+        courseName:     course.name,
+        holeCount:      holeCount,
+        coursePars:     selectedPars,
+        team:           team,
+        challengerName: store.trainerName ?? 'Trainer',
+        leaderName:     leader.leaderName,
+        leaderTeam:     leader.team,
+        leaderHcp:      leader.hcp,
+        leaderUserId:   leader.userId,
+      );
+      if (!mounted) return;
+
+      battleStore.watchBattle(battle.id);
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => BattleScope(
+          notifier: battleStore,
+          child: BattleRoundScreen(battleId: battle.id),
+        ),
+      )).then((_) {
+        battleStore.stopWatching();
+        if (mounted) {
+          PokemonGolfScope.of(context).refreshCourseLeaders();
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _setHomeCourse(GolfCourse course) async {
     final store = PokemonGolfScope.of(context);
     try {
@@ -174,14 +227,7 @@ class _CoursesScreenState extends State<CoursesScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Courses'),
-        actions: <Widget>[
-          if (!_mapMode)
-            IconButton(
-              icon: const Icon(Icons.add),
-              tooltip: 'Add course',
-              onPressed: _showAddCourse,
-            ),
-        ],
+        actions: const <Widget>[],
         bottom: TabBar(
           controller: _tabController,
           tabs: const <Tab>[
@@ -196,6 +242,8 @@ class _CoursesScreenState extends State<CoursesScreen>
               ? _CourseMap(
                   courses: [...store.catalogCourses, ..._userCourses],
                   onStartRound: _startRound,
+                  onChallengeLeader: _challengeLeader,
+                  leaderForCourse: store.leaderForCourse,
                 )
               : CustomScrollView(
               slivers: <Widget>[
@@ -231,6 +279,8 @@ class _CoursesScreenState extends State<CoursesScreen>
                             isHome: true,
                             onSetHome: () {},
                             onPlay: () => _startRound(homeCourse),
+                            leader: store.leaderForCourse(homeCourse.id),
+                            onChallenge: () => _challengeLeader(homeCourse),
                           ),
                         ],
                       ),
@@ -283,6 +333,8 @@ class _CoursesScreenState extends State<CoursesScreen>
                           isHome: false,
                           onSetHome: () => _setHomeCourse(course),
                           onPlay: () => _startRound(course),
+                          leader: store.leaderForCourse(course.id),
+                          onChallenge: () => _challengeLeader(course),
                         );
                       },
                     ),
@@ -296,10 +348,17 @@ class _CoursesScreenState extends State<CoursesScreen>
 // ── Map view ──────────────────────────────────────────────────────────────────
 
 class _CourseMap extends StatefulWidget {
-  const _CourseMap({required this.courses, required this.onStartRound});
+  const _CourseMap({
+    required this.courses,
+    required this.onStartRound,
+    required this.onChallengeLeader,
+    required this.leaderForCourse,
+  });
 
   final List<GolfCourse> courses;
   final void Function(GolfCourse) onStartRound;
+  final void Function(GolfCourse) onChallengeLeader;
+  final CourseLeader Function(String courseId) leaderForCourse;
 
   @override
   State<_CourseMap> createState() => _CourseMapState();
@@ -308,69 +367,374 @@ class _CourseMap extends StatefulWidget {
 class _CourseMapState extends State<_CourseMap> {
   final MapController _mapController = MapController();
   double _zoom = 9.0;
+  Position? _userPos;
+
+  @override
+  void initState() {
+    super.initState();
+    _acquireLocation();
+  }
+
+  Future<void> _acquireLocation() async {
+    try {
+      LocationPermission perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
+        return;
+      }
+
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+      );
+      if (!mounted) return;
+      setState(() => _userPos = pos);
+    } catch (_) {}
+  }
+
+  void _openCourseActions(GolfCourse course) {
+    final leader = widget.leaderForCourse(course.id);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _CourseActionSheet(
+        course: course,
+        leader: leader,
+        onCatch: () {
+          Navigator.of(context).pop();
+          widget.onStartRound(course);
+        },
+        onBattle: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const BattleFlow()),
+          );
+        },
+        onGym: () {
+          Navigator.of(context).pop();
+          widget.onChallengeLeader(course);
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final courses = widget.courses.where((c) => c.lat != null && c.lng != null).toList();
+    final courses =
+        widget.courses.where((c) => c.lat != null && c.lng != null).toList();
 
-    return FlutterMap(
-      mapController: _mapController,
-      options: MapOptions(
-        initialCenter: const LatLng(55.9, 13.4),
-        initialZoom: 9.0,
-        minZoom: 7.0,
-        maxZoom: 16.0,
-        interactionOptions: const InteractionOptions(
-          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-        ),
-        onMapEvent: (event) {
-          if (event is MapEventMove || event is MapEventScrollWheelZoom) {
-            final newZoom = _mapController.camera.zoom;
-            if ((newZoom - _zoom).abs() > 0.3) {
-              setState(() => _zoom = newZoom);
-            }
-          }
-        },
-      ),
+    return Stack(
       children: [
-        TileLayer(
-          urlTemplate: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-          subdomains: const ['a', 'b', 'c'],
-          userAgentPackageName: 'com.rootpi.golf',
-          retinaMode: true,
-        ),
-        MarkerLayer(
-          markers: courses.map((course) {
-            final showLabel = _zoom >= 11;
-            final showDetail = _zoom >= 13;
-            final totalPar = course.flatPars.isEmpty ? null : course.flatPars.reduce((a, b) => a + b);
-            final holeCount = course.flatPars.length;
+        FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: const LatLng(55.9, 13.4),
+            initialZoom: 9.0,
+            minZoom: 7.0,
+            maxZoom: 16.0,
+            interactionOptions: const InteractionOptions(
+              flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+            ),
+            onMapEvent: (event) {
+              if (event is MapEventMove || event is MapEventScrollWheelZoom) {
+                final newZoom = _mapController.camera.zoom;
+                if ((newZoom - _zoom).abs() > 0.3) {
+                  setState(() => _zoom = newZoom);
+                }
+              }
+            },
+          ),
+          children: [
+            TileLayer(
+              urlTemplate:
+                  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+              subdomains: const ['a', 'b', 'c'],
+              userAgentPackageName: 'com.rootpi.golf',
+              retinaMode: true,
+            ),
+            MarkerLayer(
+              markers: [
+                if (_userPos != null)
+                  Marker(
+                    point: LatLng(_userPos!.latitude, _userPos!.longitude),
+                    width: 18,
+                    height: 18,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.blue,
+                        border: Border.all(color: Colors.white, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blue.withValues(alpha: 0.5),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ...courses.map((course) {
+                  final showLabel = _zoom >= 11;
+                  final showDetail = _zoom >= 13;
+                  final totalPar = course.flatPars.isEmpty
+                      ? null
+                      : course.flatPars.reduce((a, b) => a + b);
+                  final holeCount = course.flatPars.length;
 
-            return Marker(
-              point: LatLng(course.lat!, course.lng!),
-              width: showDetail ? 160 : showLabel ? 140 : 16,
-              height: showDetail ? 80 : showLabel ? 40 : 16,
-              alignment: showLabel ? Alignment.topCenter : Alignment.center,
-              child: GestureDetector(
-                onTap: () => widget.onStartRound(course),
-                child: showDetail
-                    ? _DetailMarker(course: course, totalPar: totalPar, holeCount: holeCount, theme: theme)
-                    : showLabel
-                        ? _LabelMarker(name: course.name, theme: theme)
-                        : _DotMarker(theme: theme),
-              ),
-            );
-          }).toList(),
+                  return Marker(
+                    point: LatLng(course.lat!, course.lng!),
+                    width: showDetail ? 300 : showLabel ? 140 : 16,
+                    height: showDetail ? 200 : showLabel ? 40 : 16,
+                    alignment:
+                        showLabel ? Alignment.topCenter : Alignment.center,
+                    child: GestureDetector(
+                      onTap: () => _openCourseActions(course),
+                      child: showDetail
+                          ? _DetailMarker(
+                              course: course,
+                              totalPar: totalPar,
+                              holeCount: holeCount,
+                              theme: theme,
+                              leader: widget.leaderForCourse(course.id),
+                            )
+                          : showLabel
+                              ? _LabelMarker(name: course.name, theme: theme)
+                              : _DotMarker(theme: theme),
+                    ),
+                  );
+                }),
+              ],
+            ),
+            const RichAttributionWidget(
+              attributions: [TextSourceAttribution('© OpenStreetMap © CARTO')],
+              showFlutterMapAttribution: false,
+            ),
+          ],
         ),
-        const RichAttributionWidget(
-          attributions: [TextSourceAttribution('© OpenStreetMap © CARTO')],
-          showFlutterMapAttribution: false,
-        ),
+
       ],
     );
   }
 }
+
+// ── Course action sheet (Catch / Battle / Gym) ──────────────────────────────
+
+class _CourseActionSheet extends StatelessWidget {
+  const _CourseActionSheet({
+    required this.course,
+    required this.leader,
+    required this.onCatch,
+    required this.onBattle,
+    required this.onGym,
+  });
+
+  final GolfCourse course;
+  final CourseLeader leader;
+  final VoidCallback onCatch;
+  final VoidCallback onBattle;
+  final VoidCallback onGym;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const amber = Color(0xFFFFD700);
+    final totalPar = course.flatPars.isEmpty
+        ? null
+        : course.flatPars.reduce((a, b) => a + b);
+    final holeCount = course.flatPars.length;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+          24, 20, 24, MediaQuery.of(context).viewInsets.bottom + 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            course.name,
+            style: theme.textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          if (totalPar != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                '$holeCount holes  ·  Par $totalPar',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+          const SizedBox(height: 16),
+
+          // Leader info
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: amber.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: amber.withValues(alpha: 0.2)),
+            ),
+            child: Row(
+              children: [
+                _TrainerAvatar(sprite: leader.trainerSprite, size: 36),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        leader.leaderName,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: amber,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text(
+                        'HCP ${leader.hcp}',
+                        style: TextStyle(
+                          color: amber.withValues(alpha: 0.6),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                for (final p in leader.team)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: Image.network(
+                        p.imageUrl,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.catching_pokemon, size: 18),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Three action buttons
+          Row(
+            children: [
+              Expanded(
+                child: _ActionButton(
+                  icon: Icons.catching_pokemon,
+                  label: 'Catch',
+                  color: theme.colorScheme.primary,
+                  subtitle: 'Play a round',
+                  onTap: onCatch,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _ActionButton(
+                  icon: Icons.sports_mma,
+                  label: 'Battle',
+                  color: Colors.redAccent,
+                  subtitle: 'PvP challenge',
+                  onTap: onBattle,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _ActionButton(
+                  icon: Icons.shield,
+                  label: 'Gym',
+                  color: amber,
+                  subtitle: 'Challenge leader',
+                  onTap: onGym,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: color.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: color, size: 26),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Map markers ──────────────────────────────────────────────────────────────
 
 class _DotMarker extends StatelessWidget {
   const _DotMarker({required this.theme});
@@ -384,7 +748,12 @@ class _DotMarker extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: theme.colorScheme.primary,
-        boxShadow: [BoxShadow(color: theme.colorScheme.primary.withValues(alpha: 0.5), blurRadius: 6)],
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withValues(alpha: 0.5),
+            blurRadius: 6,
+          ),
+        ],
       ),
     );
   }
@@ -405,7 +774,8 @@ class _LabelMarker extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF172417),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.6)),
+            border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.6)),
           ),
           child: Text(
             name,
@@ -429,48 +799,105 @@ class _LabelMarker extends StatelessWidget {
 }
 
 class _DetailMarker extends StatelessWidget {
-  const _DetailMarker({required this.course, required this.totalPar, required this.holeCount, required this.theme});
+  const _DetailMarker({
+    required this.course,
+    required this.totalPar,
+    required this.holeCount,
+    required this.theme,
+    required this.leader,
+  });
   final GolfCourse course;
   final int? totalPar;
   final int holeCount;
   final ThemeData theme;
+  final CourseLeader leader;
 
   @override
   Widget build(BuildContext context) {
+    const amber = Color(0xFFFFD700);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: const Color(0xFF172417),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.7)),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 8)],
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.7)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.5),
+                blurRadius: 10,
+              ),
+            ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                course.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: theme.colorScheme.primary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
+              _TrainerAvatar(sprite: leader.trainerSprite, size: 56),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      course.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    if (totalPar != null)
+                      Text(
+                        '$holeCount holes · par $totalPar',
+                        style: TextStyle(
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.6),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${leader.leaderName}  ·  HCP ${leader.hcp}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: amber,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final p in leader.team)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: SizedBox(
+                              width: 32,
+                              height: 32,
+                              child: Image.network(
+                                p.imageUrl,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) =>
+                                    const SizedBox.shrink(),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              if (totalPar != null)
-                Text(
-                  '$holeCount holes · par $totalPar',
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
             ],
           ),
         ),
@@ -492,12 +919,16 @@ class _CourseCard extends StatefulWidget {
     required this.isHome,
     required this.onSetHome,
     required this.onPlay,
+    required this.leader,
+    required this.onChallenge,
   });
 
   final GolfCourse course;
   final bool isHome;
   final VoidCallback onSetHome;
   final VoidCallback onPlay;
+  final CourseLeader leader;
+  final VoidCallback onChallenge;
 
   @override
   State<_CourseCard> createState() => _CourseCardState();
@@ -678,6 +1109,8 @@ class _CourseCardState extends State<_CourseCard> {
             ],
           ],
           const SizedBox(height: 14),
+          _LeaderSection(leader: widget.leader, onChallenge: widget.onChallenge),
+          const SizedBox(height: 14),
           Row(
             children: <Widget>[
               if (!widget.isHome)
@@ -701,6 +1134,161 @@ class _CourseCardState extends State<_CourseCard> {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LeaderSection extends StatelessWidget {
+  const _LeaderSection({required this.leader, required this.onChallenge});
+
+  final CourseLeader leader;
+  final VoidCallback onChallenge;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const amber = Color(0xFFFFD700);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: amber.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: amber.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _TrainerAvatar(sprite: leader.trainerSprite, size: 56),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      leader.isNpc ? Icons.smart_toy_outlined : Icons.person,
+                      size: 12,
+                      color: amber.withValues(alpha: 0.6),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Gym Leader',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: amber.withValues(alpha: 0.6),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Text(
+                      leader.leaderName,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'HCP ${leader.hcp}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    for (final pokemon in leader.team)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: SizedBox(
+                          width: 34,
+                          height: 34,
+                          child: Image.network(
+                            pokemon.imageUrl,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.catching_pokemon, size: 20),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            height: 56,
+            child: OutlinedButton(
+              onPressed: onChallenge,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: amber,
+                side: BorderSide(color: amber.withValues(alpha: 0.5)),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('⚔️', style: TextStyle(fontSize: 16)),
+                  SizedBox(height: 2),
+                  Text('Fight', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrainerAvatar extends StatelessWidget {
+  const _TrainerAvatar({required this.sprite, this.size = 32});
+
+  final String? sprite;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    if (sprite == null) {
+      return Icon(Icons.person, size: size * 0.7, color: const Color(0xFFFFD700));
+    }
+    // Showdown sprites have ~40% transparent padding baked into the canvas,
+    // so we render at a larger internal size to fill the visual space.
+    final inner = size * 1.5;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: OverflowBox(
+        maxWidth: inner,
+        maxHeight: inner,
+        child: Image.asset(
+          sprite!,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.medium,
+          errorBuilder: (_, __, ___) =>
+              Icon(Icons.person, size: size * 0.7, color: const Color(0xFFFFD700)),
+        ),
       ),
     );
   }
@@ -975,195 +1563,3 @@ class _RadioRow extends StatelessWidget {
   }
 }
 
-class _AddCourseSheet extends StatefulWidget {
-  const _AddCourseSheet({required this.onSaved});
-
-  final VoidCallback onSaved;
-
-  @override
-  State<_AddCourseSheet> createState() => _AddCourseSheetState();
-}
-
-class _AddCourseSheetState extends State<_AddCourseSheet> {
-  final TextEditingController _nameController = TextEditingController();
-  final List<int> _pars = List<int>.filled(18, 4);
-  bool _saving = false;
-  String? _error;
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  void _cyclePar(int index) {
-    setState(() {
-      _pars[index] = _pars[index] == 5 ? 3 : _pars[index] + 1;
-    });
-  }
-
-  Future<void> _save() async {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      setState(() => _error = 'Please enter a course name.');
-      return;
-    }
-
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
-
-    try {
-      final service = SupabaseService();
-      await service.insertUserCourse(name, _pars);
-      widget.onSaved();
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = 'Failed to save course.';
-          _saving = false;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final totalPar = _pars.fold<int>(0, (a, b) => a + b);
-
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.7,
-      maxChildSize: 0.95,
-      minChildSize: 0.4,
-      builder: (context, controller) => ListView(
-        controller: controller,
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-        children: <Widget>[
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text('Add Course',
-              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _nameController,
-            textCapitalization: TextCapitalization.words,
-            decoration: InputDecoration(
-              labelText: 'Course name',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              filled: true,
-              fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: <Widget>[
-              Text('Par per hole',
-                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-              const Spacer(),
-              Text('Total: $totalPar',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                  )),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text('Tap a hole to cycle 3 → 4 → 5',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-              )),
-          const SizedBox(height: 12),
-          for (int row = 0; row < 2; row++)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: <Widget>[
-                  for (int col = 0; col < 9; col++) ...[
-                    if (col > 0) const SizedBox(width: 4),
-                    Expanded(
-                      child: _ParCell(
-                        hole: row * 9 + col + 1,
-                        par: _pars[row * 9 + col],
-                        onTap: () => _cyclePar(row * 9 + col),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          if (_error != null) ...[
-            const SizedBox(height: 8),
-            Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
-          ],
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    height: 20, width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Save Course'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ParCell extends StatelessWidget {
-  const _ParCell({
-    required this.hole,
-    required this.par,
-    required this.onTap,
-  });
-
-  final int hole;
-  final int par;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Text(
-              '$hole',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                fontSize: 10,
-              ),
-            ),
-            Text(
-              '$par',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

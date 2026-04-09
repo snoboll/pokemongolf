@@ -15,96 +15,81 @@ class HistoryScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final List<GolfRoundSummary> rounds = store.completedRounds;
 
-    return SafeArea(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-            child: Text(
-              'Scorecards',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          Expanded(
-            child: rounds.isEmpty
-                ? _EmptyState(theme: theme)
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                    itemCount: rounds.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (BuildContext context, int index) {
-                      final round = rounds[index];
-                      return Dismissible(
-                        key: ValueKey(round.id ?? round.completedAt.toIso8601String()),
-                        direction: DismissDirection.endToStart,
-                        confirmDismiss: (_) async {
-                          return await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Delete scorecard?'),
-                              content: const Text(
-                                  'This round will be permanently removed.'),
-                              actions: <Widget>[
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(ctx, false),
-                                  child: const Text('Cancel'),
-                                ),
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.pop(ctx, true),
-                                  child: Text(
-                                    'Delete',
-                                    style: TextStyle(
-                                      color: Theme.of(ctx).colorScheme.error,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ) ?? false;
-                        },
-                        onDismissed: (_) {
-                          PokemonGolfScope.of(context).deleteRound(round);
-                        },
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 24),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(16),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Scorecards'),
+      ),
+      body: rounds.isEmpty
+          ? _EmptyState(theme: theme)
+          : ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              itemCount: rounds.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
+              itemBuilder: (BuildContext context, int index) {
+                final round = rounds[index];
+                return Dismissible(
+                  key: ValueKey(round.id ?? round.completedAt.toIso8601String()),
+                  direction: DismissDirection.endToStart,
+                  confirmDismiss: (_) async {
+                    return await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Delete scorecard?'),
+                        content: const Text(
+                            'This round will be permanently removed.'),
+                        actions: <Widget>[
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancel'),
                           ),
-                          child: Icon(
-                            Icons.delete_outline,
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        ),
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => ScorecardDetailScreen(
-                                  holes: round.holes,
-                                  holeCount: round.holeCount,
-                                  isBattle: round.isBattle,
-                                  title: round.courseName != null
-                                      ? '${round.isBattle ? '⚔️ ' : ''}${round.courseName}'
-                                      : '${round.holeCount}H · ${_formatDate(round.completedAt)}',
-                                ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: Text(
+                              'Delete',
+                              style: TextStyle(
+                                color: Theme.of(ctx).colorScheme.error,
                               ),
-                            );
-                          },
-                          child: _RoundCard(round: round),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ) ?? false;
+                  },
+                  onDismissed: (_) {
+                    PokemonGolfScope.of(context).deleteRound(round);
+                  },
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 24),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.error.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      Icons.delete_outline,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => ScorecardDetailScreen(
+                            holes: round.holes,
+                            holeCount: round.holeCount,
+                            isBattle: round.isBattle,
+                            title: round.courseName != null
+                                ? '${round.isBattle ? '⚔️ ' : ''}${round.courseName}'
+                                : '${round.holeCount}H · ${_formatDate(round.completedAt)}',
+                          ),
                         ),
                       );
                     },
+                    child: _RoundCard(round: round),
                   ),
-          ),
-        ],
-      ),
+                );
+              },
+            ),
     );
   }
 }

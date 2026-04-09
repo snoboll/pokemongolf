@@ -154,4 +154,73 @@ class BattleService {
 
     return Battle.fromJson(Map<String, dynamic>.from(result as Map));
   }
+
+  // ── Leader challenges ──────────────────────────────────────────────────────
+
+  Future<Battle> createLeaderChallenge({
+    required String courseId,
+    required String courseName,
+    required int holeCount,
+    required List<int> coursePars,
+    required List<BattlePokemon> team,
+    required String challengerName,
+    required String leaderName,
+    required List<BattlePokemon> leaderTeam,
+    required int leaderHcp,
+    String? leaderUserId,
+  }) async {
+    final uid = currentUserId!;
+
+    final row = await _client.from('battles').insert({
+      'course_id':            courseId,
+      'course_name':          courseName,
+      'hole_count':           holeCount,
+      'course_pars':          coursePars,
+      'challenger_id':        uid,
+      'challenger_name':      challengerName,
+      'challenger_team':      team.map((p) => p.toJson()).toList(),
+      'opponent_id':          leaderUserId,
+      'opponent_name':        leaderName,
+      'opponent_team':        leaderTeam.map((p) => p.toJson()).toList(),
+      'is_leader_challenge':  true,
+      'leader_hcp':           leaderHcp,
+      'status':               'active',
+    }).select().single();
+
+    return Battle.fromJson(Map<String, dynamic>.from(row));
+  }
+
+  Future<Battle> submitLeaderChallengeScore({
+    required String battleId,
+    required int hole,
+    required int strokes,
+  }) async {
+    final result = await _client.rpc(
+      'submit_leader_challenge_score',
+      params: {
+        'p_battle_id': battleId,
+        'p_hole':      hole,
+        'p_strokes':   strokes,
+      },
+    );
+
+    return Battle.fromJson(Map<String, dynamic>.from(result as Map));
+  }
+
+  Future<Map<String, dynamic>> claimCourseLeadership({
+    required String courseId,
+    required String battleId,
+    required List<BattlePokemon> defenderTeam,
+  }) async {
+    final result = await _client.rpc(
+      'claim_course_leadership',
+      params: {
+        'p_course_id':  courseId,
+        'p_battle_id':  battleId,
+        'p_team':       defenderTeam.map((p) => p.toJson()).toList(),
+      },
+    );
+
+    return Map<String, dynamic>.from(result as Map);
+  }
 }

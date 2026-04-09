@@ -177,6 +177,71 @@ class BattleStore extends ChangeNotifier {
     return updated;
   }
 
+  // ── Leader challenge ─────────────────────────────────────────────────────
+
+  Future<Battle> createLeaderChallenge({
+    required String courseId,
+    required String courseName,
+    required int holeCount,
+    required List<int> coursePars,
+    required List<BattlePokemon> team,
+    required String challengerName,
+    required String leaderName,
+    required List<BattlePokemon> leaderTeam,
+    required int leaderHcp,
+    String? leaderUserId,
+  }) async {
+    final battle = await _service.createLeaderChallenge(
+      courseId:       courseId,
+      courseName:     courseName,
+      holeCount:      holeCount,
+      coursePars:     coursePars,
+      team:           team,
+      challengerName: challengerName,
+      leaderName:     leaderName,
+      leaderTeam:     leaderTeam,
+      leaderHcp:      leaderHcp,
+      leaderUserId:   leaderUserId,
+    );
+    _battles = [battle, ..._battles];
+    notifyListeners();
+    return battle;
+  }
+
+  Future<Battle> submitLeaderChallengeScore({
+    required String battleId,
+    required int hole,
+    required int strokes,
+  }) async {
+    final updated = await _service.submitLeaderChallengeScore(
+      battleId: battleId,
+      hole:     hole,
+      strokes:  strokes,
+    );
+    _upsertBattle(updated);
+    if (_watchedBattle?.id == battleId) {
+      _watchedBattle = updated;
+      if (updated.isCompleted) {
+        _stopWatching();
+        _maybeSaveScorecard(updated);
+      }
+    }
+    notifyListeners();
+    return updated;
+  }
+
+  Future<void> claimCourseLeadership({
+    required String courseId,
+    required String battleId,
+    required List<BattlePokemon> defenderTeam,
+  }) async {
+    await _service.claimCourseLeadership(
+      courseId:     courseId,
+      battleId:     battleId,
+      defenderTeam: defenderTeam,
+    );
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   void _upsertBattle(Battle battle) {
