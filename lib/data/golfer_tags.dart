@@ -2,21 +2,21 @@ import '../models/bogeybeast_type.dart';
 import 'first_gen_bogeybeasts.dart';
 
 const Map<BogeybeastType, String> _typeToTag = <BogeybeastType, String>{
-  BogeybeastType.bug: 'Bug Catcher',
+  BogeybeastType.bug: 'Roughrunner',
   BogeybeastType.water: 'Fisherman',
-  BogeybeastType.rock: 'Hiker',
-  BogeybeastType.ground: 'Hiker',
-  BogeybeastType.fighting: 'Blackbelt',
-  BogeybeastType.flying: 'Bird Keeper',
-  BogeybeastType.fire: 'Burglar',
-  BogeybeastType.poison: 'Rocket Grunt',
-  BogeybeastType.psychic: 'Psychic',
-  BogeybeastType.ghost: 'Channeler',
-  BogeybeastType.grass: 'Lass',
-  BogeybeastType.normal: 'Youngster',
+  BogeybeastType.rock: 'Bunkerboy',
+  BogeybeastType.ground: 'Bunkerboy',
+  BogeybeastType.fighting: 'Longdriver',
+  BogeybeastType.flying: 'Flyer',
+  BogeybeastType.fire: 'Fader',
+  BogeybeastType.poison: 'Hooker',
+  BogeybeastType.psychic: 'Psych',
+  BogeybeastType.ghost: 'Psych',
+  BogeybeastType.grass: 'Drawer',
+  BogeybeastType.normal: 'Chipper',
   BogeybeastType.dragon: 'Ace Golfer',
   BogeybeastType.ice: 'Ace Golfer',
-  BogeybeastType.electric: 'Engineer',
+  BogeybeastType.electric: 'Hotshot',
 };
 
 /// Returns the golfer class tag for a set of caught dex numbers,

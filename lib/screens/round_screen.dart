@@ -25,6 +25,7 @@ class RoundScreen extends StatefulWidget {
 class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin {
   int _par = 4;
   GolfScore _selectedScore = GolfScore.par;
+  int? _customStrokes; // set when user enters a stroke count manually
   HoleStats _holeStats = const HoleStats();
   HoleResolution? _resolution;
 
@@ -36,7 +37,55 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
   late final Animation<Offset> _bogeybeastSlide;
   late final Animation<double> _grayscaleAmount;
 
-  int get _strokes => _par + _selectedScore.relativeToPar;
+  int get _strokes => _customStrokes ?? (_par + _selectedScore.relativeToPar);
+
+  static GolfScore _scoreFromRelative(int rel) {
+    if (rel <= -2) return GolfScore.eagle;
+    if (rel == -1) return GolfScore.birdie;
+    if (rel == 0) return GolfScore.par;
+    if (rel == 1) return GolfScore.bogey;
+    if (rel == 2) return GolfScore.doubleBogey;
+    return GolfScore.tripleOrWorse;
+  }
+
+  void _showCustomStrokeDialog() {
+    final controller = TextEditingController(text: '$_strokes');
+    showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Custom strokes'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Strokes',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final v = int.tryParse(controller.text.trim());
+              if (v != null && v >= 1) Navigator.of(ctx).pop(v);
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    ).then((strokes) {
+      if (strokes != null && mounted) {
+        setState(() {
+          _customStrokes = strokes;
+          _selectedScore = _scoreFromRelative(strokes - _par);
+        });
+      }
+    });
+  }
 
   void _confirmExitAndSave(BuildContext context, dynamic store) {
     showDialog<bool>(
@@ -99,6 +148,7 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
     setState(() {
       _par = nextPar ?? 4;
       _selectedScore = GolfScore.par;
+      _customStrokes = null;
       _holeStats = const HoleStats();
       _resolution = null;
     });
@@ -231,33 +281,8 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
             'Hole ${activeRound.currentHoleNumber} / ${activeRound.holeCount}'),
         actions: <Widget>[
           Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(formatScoreToPar(activeRound.scoreToPar),
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700)),
-                const SizedBox(width: 12),
-                Icon(Icons.pets,
-                    size: 16, color: theme.colorScheme.primary),
-                const SizedBox(width: 4),
-                Text('${activeRound.caughtCount}',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700)),
-                if (activeRound.streakBonus >= 1) ...<Widget>[
-                  const SizedBox(width: 12),
-                  Icon(Icons.local_fire_department,
-                      size: 16, color: const Color(0xFFFFB300)),
-                  const SizedBox(width: 2),
-                  Text('${activeRound.streakBonus}',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFFFFB300),
-                      )),
-                ],
-              ],
-            ),
+            padding: const EdgeInsets.only(right: 8),
+            child: _ScoreChip(scoreToPar: activeRound.scoreToPar),
           ),
           if (activeRound.completedHoles.isNotEmpty)
             IconButton(
@@ -436,18 +461,41 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
                     ),
                   ],
                   const SizedBox(height: 24),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('Your score',
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700)),
+                  Row(
+                    children: [
+                      Text('Your score',
+                          style: theme.textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700)),
+                      const Spacer(),
+                      if (_customStrokes != null)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Text(
+                            '$_customStrokes strokes',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        tooltip: 'Enter exact strokes',
+                        visualDensity: VisualDensity.compact,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                        onPressed: _showCustomStrokeDialog,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 10),
                   ScorePicker(
                     par: _par,
                     selected: _selectedScore,
                     onChanged: (GolfScore score) {
-                      setState(() => _selectedScore = score);
+                      setState(() {
+                        _selectedScore = score;
+                        _customStrokes = null; // clear custom when chip tapped
+                      });
                     },
                   ),
                   const SizedBox(height: 24),
@@ -515,7 +563,7 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
                         });
                       },
                       icon: const Icon(Icons.pets),
-                      label: const Text('Throw Bogeycube'),
+                      label: const Text('Shoot Bogeycube'),
                     ),
                   ),
                 ],
@@ -545,6 +593,43 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ScoreChip extends StatelessWidget {
+  const _ScoreChip({required this.scoreToPar});
+  final int scoreToPar;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final label = formatScoreToPar(scoreToPar);
+    final Color bg;
+    final Color fg;
+    if (scoreToPar < 0) {
+      bg = Colors.green.shade700;
+      fg = Colors.white;
+    } else if (scoreToPar == 0) {
+      bg = theme.colorScheme.surfaceContainerHighest;
+      fg = theme.colorScheme.onSurface;
+    } else {
+      bg = Colors.red.shade700;
+      fg = Colors.white;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w800,
+          color: fg,
+        ),
       ),
     );
   }

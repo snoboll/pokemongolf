@@ -29,7 +29,7 @@ class BattleBogeybeast {
 
   String get paddedDexNumber => dexNumber.toString().padLeft(3, '0');
   String get imageUrl =>
-      'https://raw.githubusercontent.com/HybridShivam/Bogeybeast/master/assets/images/$paddedDexNumber.png';
+      'https://raw.githubusercontent.com/HybridShivam/Pokemon/master/assets/images/${dexNumber.toString().padLeft(4, '0')}.png';
 
   BattleBogeybeast copyWith({int? hpCurrent}) => BattleBogeybeast(
         dexNumber: dexNumber,
@@ -175,6 +175,7 @@ class Battle {
     this.completedAt,
     this.isLeaderChallenge = false,
     this.leaderHcp,
+    this.evolutionClaimed = false,
   });
 
   final String id;
@@ -197,6 +198,7 @@ class Battle {
   final DateTime? completedAt;
   final bool isLeaderChallenge;
   final int? leaderHcp;
+  final bool evolutionClaimed;
 
   bool get isCompleted => status == BattleStatus.completed;
   bool get isPending    => status == BattleStatus.pending;
@@ -281,8 +283,21 @@ class Battle {
                           : null,
       isLeaderChallenge: json['is_leader_challenge'] as bool? ?? false,
       leaderHcp:         (json['leader_hcp'] as num?)?.toInt(),
+      evolutionClaimed:  json['evolution_claimed'] as bool? ?? false,
     );
   }
+
+  Battle withEvolutionClaimed() => Battle(
+    id: id, courseId: courseId, courseName: courseName,
+    holeCount: holeCount, coursePars: coursePars, status: status,
+    challengerId: challengerId, challengerName: challengerName,
+    opponentId: opponentId, opponentName: opponentName,
+    challengerTeam: challengerTeam, opponentTeam: opponentTeam,
+    challengerScores: challengerScores, opponentScores: opponentScores,
+    holeLog: holeLog, winnerId: winnerId, createdAt: createdAt,
+    completedAt: completedAt, isLeaderChallenge: isLeaderChallenge,
+    leaderHcp: leaderHcp, evolutionClaimed: true,
+  );
 }
 
 // ── Type string helpers ───────────────────────────────────────────────────────

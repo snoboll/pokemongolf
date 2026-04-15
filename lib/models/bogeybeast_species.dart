@@ -25,7 +25,7 @@ class BogeybeastSpecies {
   String get paddedDexNumber => dexNumber.toString().padLeft(3, '0');
 
   String get imageUrl =>
-      'https://raw.githubusercontent.com/HybridShivam/Bogeybeast/master/assets/images/$paddedDexNumber.png';
+      'https://raw.githubusercontent.com/HybridShivam/Pokemon/master/assets/images/${dexNumber.toString().padLeft(4, '0')}.png';
 
   bool hasAnyType(Set<BogeybeastType> typeSet) {
     for (final t in types) {

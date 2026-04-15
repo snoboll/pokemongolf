@@ -207,6 +207,13 @@ class BattleService {
     return Battle.fromJson(Map<String, dynamic>.from(result as Map));
   }
 
+  Future<void> claimEvolutionReward(String battleId) async {
+    await _client
+        .from('battles')
+        .update({'evolution_claimed': true})
+        .eq('id', battleId);
+  }
+
   Future<Map<String, dynamic>> claimCourseLeadership({
     required String courseId,
     required String battleId,

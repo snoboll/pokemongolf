@@ -297,6 +297,18 @@ class BogeybeastGolfStore extends ChangeNotifier {
     });
   }
 
+  Future<void> evolveBogeybeast(int fromDex, int toDex) async {
+    _caughtDexNumbers.remove(fromDex);
+    _caughtDexNumbers.add(toDex);
+    notifyListeners();
+    try {
+      await _supabaseService?.releaseBogeybeast(fromDex);
+      await _supabaseService?.insertCaughtBogeybeast(toDex);
+    } catch (e) {
+      debugPrint('Failed to evolve bogeybeast: $e');
+    }
+  }
+
   Future<void> deleteRound(GolfRoundSummary round) async {
     _completedRounds.remove(round);
     notifyListeners();

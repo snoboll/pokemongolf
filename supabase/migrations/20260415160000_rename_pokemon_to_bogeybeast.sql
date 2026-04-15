@@ -1,7 +1,7 @@
--- Rename all pokemon/trainer identifiers to bogeybeast/golfer.
+-- Rename legacy identifiers to bogeybeast/golfer.
 -- The app code was updated but the DB schema was never migrated.
 
--- 1. Rename caught_pokemon table → caught_bogeybeast
+-- 1. Rename legacy catch table → caught_bogeybeast
 do $$ begin
   if exists (
     select 1 from information_schema.tables
@@ -11,7 +11,7 @@ do $$ begin
   end if;
 end $$;
 
--- 2. Rename hole_results.pokemon_dex → bogeybeast_dex
+-- 2. Rename hole_results legacy dex column → bogeybeast_dex
 do $$ begin
   if exists (
     select 1 from information_schema.columns

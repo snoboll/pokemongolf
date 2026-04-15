@@ -8,27 +8,27 @@ import 'history_screen.dart';
 import 'my_bag_screen.dart';
 
 const List<({String asset, String label})> _availableSprites = [
-  (asset: 'assets/golfers/red-lgpe.png',           label: 'Red'),
-  (asset: 'assets/golfers/blue-lgpe.png',          label: 'Blue'),
-  (asset: 'assets/golfers/ethan.png',              label: 'Ethan'),
-  (asset: 'assets/golfers/dawn.png',               label: 'Dawn'),
-  (asset: 'assets/golfers/brendan-rs.png',         label: 'Brendan'),
-  (asset: 'assets/golfers/acegolfer.png',         label: 'Ace Golfer'),
-  (asset: 'assets/golfers/acegolfer-gen1.png',    label: 'Ace Golfer ♂'),
-  (asset: 'assets/golfers/acegolferf-gen1.png',   label: 'Ace Golfer ♀'),
-  (asset: 'assets/golfers/youngster-gen1.png',     label: 'Youngster'),
-  (asset: 'assets/golfers/lass-gen1.png',          label: 'Lass'),
-  (asset: 'assets/golfers/bugcatcher-gen1.png',    label: 'Bug Catcher'),
-  (asset: 'assets/golfers/fisherman-gen1.png',     label: 'Fisherman'),
-  (asset: 'assets/golfers/hiker-gen1.png',         label: 'Hiker'),
-  (asset: 'assets/golfers/blackbelt-gen1.png',     label: 'Black Belt'),
-  (asset: 'assets/golfers/birdkeeper-gen1.png',    label: 'Bird Keeper'),
-  (asset: 'assets/golfers/sailor-gen1.png',        label: 'Sailor'),
-  (asset: 'assets/golfers/camper.png',             label: 'Camper'),
-  (asset: 'assets/golfers/gambler-gen1.png',       label: 'Gambler'),
-  (asset: 'assets/golfers/scientist-gen1.png',     label: 'Scientist'),
-  (asset: 'assets/golfers/channeler-gen1.png',     label: 'Channeler'),
-  (asset: 'assets/golfers/teamrocket.png',         label: 'Team Rocket'),
+  (asset: 'assets/trainers/red-lgpe.png',           label: 'Red'),
+  (asset: 'assets/trainers/blue-lgpe.png',          label: 'Blue'),
+  (asset: 'assets/trainers/ethan.png',              label: 'Ethan'),
+  (asset: 'assets/trainers/dawn.png',               label: 'Dawn'),
+  (asset: 'assets/trainers/brendan-rs.png',         label: 'Brendan'),
+  (asset: 'assets/trainers/acetrainer.png',         label: 'Ace Golfer'),
+  (asset: 'assets/trainers/acetrainer-gen1.png',    label: 'Ace Golfer ♂'),
+  (asset: 'assets/trainers/acetrainerf-gen1.png',   label: 'Ace Golfer ♀'),
+  (asset: 'assets/trainers/youngster-gen1.png',     label: 'Chipper'),
+  (asset: 'assets/trainers/lass-gen1.png',          label: 'Drawer'),
+  (asset: 'assets/trainers/bugcatcher-gen1.png',    label: 'Roughrunner'),
+  (asset: 'assets/trainers/fisherman-gen1.png',     label: 'Fisherman'),
+  (asset: 'assets/trainers/hiker-gen1.png',         label: 'Bunkerboy'),
+  (asset: 'assets/trainers/blackbelt-gen1.png',     label: 'Longdriver'),
+  (asset: 'assets/trainers/birdkeeper-gen1.png',    label: 'Flyer'),
+  (asset: 'assets/trainers/sailor-gen1.png',        label: 'Slicer'),
+  (asset: 'assets/trainers/camper.png',             label: 'Greenkeeper'),
+  (asset: 'assets/trainers/gambler-gen1.png',       label: 'Hotshot'),
+  (asset: 'assets/trainers/scientist-gen1.png',     label: 'Club Manager'),
+  (asset: 'assets/trainers/channeler-gen1.png',     label: 'Psych'),
+  (asset: 'assets/trainers/teamrocket.png',         label: 'Hooker'),
 ];
 
 class ProfileScreen extends StatelessWidget {
@@ -554,12 +554,12 @@ class _TeamSelector extends StatelessWidget {
                     opacity: locked && !selected ? 0.35 : 1.0,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 18),
                       decoration: BoxDecoration(
                         color: selected
                             ? team.color.withValues(alpha: 0.15)
                             : theme.cardTheme.color,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: selected
                               ? team.color
@@ -570,22 +570,30 @@ class _TeamSelector extends StatelessWidget {
                       child: Column(
                         children: <Widget>[
                           Container(
-                            width: 28,
-                            height: 28,
+                            width: 44,
+                            height: 44,
                             decoration: BoxDecoration(
                               color: team.color.withValues(alpha: selected ? 0.3 : 0.15),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
-                              team.icon,
-                              size: 16,
-                              color: team.color,
+                            child: Center(
+                              child: team == GolferTeam.socket
+                                  ? Text(
+                                      'S',
+                                      style: TextStyle(
+                                        color: team.color,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.w900,
+                                        height: 1,
+                                      ),
+                                    )
+                                  : Icon(team.icon, size: 24, color: team.color),
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           Text(
                             team.label,
-                            style: theme.textTheme.labelSmall?.copyWith(
+                            style: theme.textTheme.labelMedium?.copyWith(
                               fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                               color: selected
                                   ? team.color

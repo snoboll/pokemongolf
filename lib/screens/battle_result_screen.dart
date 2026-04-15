@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../app.dart';
+import '../data/evolution_chains.dart';
+import '../data/first_gen_bogeybeasts.dart';
 import '../models/battle_models.dart';
+import '../models/bogeybeast_species.dart';
 import '../models/course_leader.dart';
 import '../models/golf_score.dart';
 import '../models/hole_stats.dart';
-import '../models/bogeybeast_species.dart';
 import '../models/round_models.dart';
 import '../state/battle_store.dart';
+import 'evolve_animation_screen.dart';
 import 'round_screen.dart';
 import 'team_select_screen.dart';
 
@@ -116,6 +119,10 @@ class BattleResultScreen extends StatelessWidget {
                   theirName:    theirName,
                 ),
                 const SizedBox(height: 32),
+
+                // ── Evolve reward for PvP wins ─────────────────────────────
+                if (won && !battle.isLeaderChallenge)
+                  _EvolveRewardSection(battle: battle),
 
                 // ── Claim leadership if this was a leader challenge and player won ─
                 if (battle.isLeaderChallenge && won)
@@ -466,6 +473,308 @@ class _HoleSummaryRow extends StatelessWidget {
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.4))),
             ),
         ],
+      ),
+    );
+  }
+}
+
+// ── _EvolveRewardSection ─────────────────────────────────────────────────────
+
+class _EvolveRewardSection extends StatefulWidget {
+  const _EvolveRewardSection({required this.battle});
+  final Battle battle;
+
+  @override
+  State<_EvolveRewardSection> createState() => _EvolveRewardSectionState();
+}
+
+class _EvolveRewardSectionState extends State<_EvolveRewardSection> {
+  BogeybeastSpecies? _evolved;
+  BogeybeastSpecies? _intoSpecies;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const color = Color(0xFF7C4DFF);
+
+    if (_evolved != null && _intoSpecies != null) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 40, height: 40,
+              child: Image.network(_evolved!.imageUrl, fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(Icons.pets)),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Icon(Icons.arrow_forward_rounded, color: color, size: 20),
+            ),
+            SizedBox(
+              width: 40, height: 40,
+              child: Image.network(_intoSpecies!.imageUrl, fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(Icons.pets)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '${_evolved!.name} evolved into ${_intoSpecies!.name}!',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (widget.battle.evolutionClaimed) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Text('✨', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Victory reward!',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'You can evolve one of your Bogeybeasts.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: _pickAndEvolve,
+            icon: const Text('✨', style: TextStyle(fontSize: 14)),
+            label: const Text('Evolve a Bogeybeast'),
+            style: FilledButton.styleFrom(
+              backgroundColor: color,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickAndEvolve() async {
+    final bogeybeastStore = BogeybeastGolfScope.of(context);
+    final battleStore = BattleScope.of(context);
+    final caught = bogeybeastStore.caughtDexNumbers;
+
+    // Build list of (species, targets) for beasts that can evolve
+    final evolvable = <(BogeybeastSpecies, List<int>)>[];
+    for (final dex in caught) {
+      final targets = nextEvolutionTargets(dex);
+      if (targets != null) {
+        try {
+          final species = firstGenBogeybeast.firstWhere((s) => s.dexNumber == dex);
+          evolvable.add((species, targets));
+        } catch (_) {}
+      }
+    }
+
+    if (evolvable.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('None of your Bogeybeasts can evolve yet.')),
+        );
+      }
+      return;
+    }
+
+    // Show picker sheet
+    if (!mounted) return;
+    final result = await showModalBottomSheet<(BogeybeastSpecies, BogeybeastSpecies)>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _EvolvePickerSheet(evolvable: evolvable),
+    );
+
+    if (result == null || !mounted) return;
+
+    final (from, into) = result;
+
+    // Push the animation screen; it calls onEvolve at the flash peak
+    await Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        opaque: false,
+        transitionDuration: const Duration(milliseconds: 400),
+        pageBuilder: (_, __, ___) => EvolveAnimationScreen(
+          from: from,
+          into: into,
+          onEvolve: () async {
+            await bogeybeastStore.evolveBogeybeast(from.dexNumber, into.dexNumber);
+            await battleStore.claimEvolutionReward(widget.battle.id);
+          },
+        ),
+        transitionsBuilder: (_, anim, __, child) =>
+            FadeTransition(opacity: anim, child: child),
+      ),
+    );
+
+    if (mounted) {
+      setState(() {
+        _evolved = from;
+        _intoSpecies = into;
+      });
+    }
+  }
+}
+
+class _EvolvePickerSheet extends StatelessWidget {
+  const _EvolvePickerSheet({required this.evolvable});
+  final List<(BogeybeastSpecies, List<int>)> evolvable;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const color = Color(0xFF7C4DFF);
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.55,
+      maxChildSize: 0.9,
+      builder: (_, controller) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        child: Column(
+          children: [
+            Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text('Choose a Bogeybeast to evolve',
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Text('This uses your victory reward — choose wisely.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                )),
+            const SizedBox(height: 12),
+            Expanded(
+              child: ListView.builder(
+                controller: controller,
+                itemCount: evolvable.length,
+                itemBuilder: (_, i) {
+                  final (species, targets) = evolvable[i];
+                  final targetSpecies = targets.map((dex) {
+                    try {
+                      return firstGenBogeybeast.firstWhere((s) => s.dexNumber == dex);
+                    } catch (_) {
+                      return null;
+                    }
+                  }).whereType<BogeybeastSpecies>().toList();
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: targetSpecies.length == 1
+                          ? () => Navigator.of(context).pop((species, targetSpecies.first))
+                          : null,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                SizedBox(
+                                  width: 44, height: 44,
+                                  child: Image.network(species.imageUrl, fit: BoxFit.contain,
+                                      errorBuilder: (_, __, ___) => const Icon(Icons.pets)),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(species.name,
+                                          style: theme.textTheme.titleSmall
+                                              ?.copyWith(fontWeight: FontWeight.w700)),
+                                      Text('#${species.paddedDexNumber}',
+                                          style: theme.textTheme.labelSmall?.copyWith(
+                                            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                                          )),
+                                    ],
+                                  ),
+                                ),
+                                Icon(Icons.arrow_forward_rounded, size: 16,
+                                    color: color.withValues(alpha: 0.6)),
+                                const SizedBox(width: 6),
+                                // Evolution target(s)
+                                Row(
+                                  children: targetSpecies.map((t) => GestureDetector(
+                                    onTap: () => Navigator.of(context).pop((species, t)),
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(left: 6),
+                                      child: Column(
+                                        children: [
+                                          SizedBox(
+                                            width: 44, height: 44,
+                                            child: Image.network(t.imageUrl, fit: BoxFit.contain,
+                                                errorBuilder: (_, __, ___) => const Icon(Icons.pets)),
+                                          ),
+                                          Text(t.name,
+                                              style: theme.textTheme.labelSmall?.copyWith(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w600,
+                                                color: color,
+                                              )),
+                                        ],
+                                      ),
+                                    ),
+                                  )).toList(),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

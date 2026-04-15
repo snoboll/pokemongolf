@@ -199,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               icon: Icons.videogame_asset_rounded,
                               label: 'PvP',
                               subtitle: 'PvP challenge',
-                              color: const Color(0xFFC62828),
+                              color: const Color(0xFFEF1010),
                               onTap: store.caughtDexNumbers.length >= 3
                                   ? widget.onBattleMode
                                   : null,
@@ -605,55 +605,42 @@ class _CatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const shadowColor = Color(0xFF2E7D32);
+    const color = Color(0xFF2E7D32);
+    const fgColor = Color(0xFF4EE566); // vivid neon green matching the logo
+    final cardBg = Color.alphaBlend(color.withValues(alpha: 0.22), theme.colorScheme.surface);
     return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(16),
+      color: cardBg,
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Ink(
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 20),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF56C45A), Color(0xFF2E7D32)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: shadowColor.withValues(alpha: 0.5),
-                blurRadius: 18,
-                offset: const Offset(0, 6),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: fgColor.withValues(alpha: 0.55), width: 1.5),
+          ),
+          child: Column(
+            children: [
+              Icon(Icons.pets_rounded, color: fgColor, size: 30),
+              const SizedBox(height: 6),
+              Text(
+                'Catch',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: fgColor,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Play a round',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
               ),
             ],
-          ),
-          child: SizedBox(
-            width: double.infinity,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 22),
-              child: Column(
-                children: [
-                  const Icon(Icons.pets_rounded, color: Colors.white, size: 32),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Catch',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Play a round',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.white.withValues(alpha: 0.75),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
         ),
       ),
@@ -683,10 +670,17 @@ class _ActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final enabled = onTap != null;
-    final effectiveColor = enabled ? color : color.withValues(alpha: 0.35);
+    final baseColor = enabled ? color : color.withValues(alpha: 0.35);
+    final fgColor = enabled
+        ? Color.lerp(color, Colors.white, 0.45)!
+        : Color.lerp(color, Colors.white, 0.45)!.withValues(alpha: 0.35);
 
+    final cardBg = Color.alphaBlend(
+      baseColor.withValues(alpha: enabled ? 0.22 : 0.10),
+      theme.colorScheme.surface,
+    );
     return Material(
-      color: effectiveColor.withValues(alpha: 0.1),
+      color: cardBg,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -695,17 +689,20 @@ class _ActionCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: effectiveColor.withValues(alpha: 0.3)),
+            border: Border.all(
+              color: fgColor.withValues(alpha: enabled ? 0.55 : 0.2),
+              width: 1.5,
+            ),
           ),
           child: Column(
             children: [
-              Icon(icon, color: effectiveColor, size: 26),
+              Icon(icon, color: fgColor, size: 26),
               const SizedBox(height: 6),
               Text(
                 label,
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: effectiveColor,
+                  color: fgColor,
                 ),
               ),
               const SizedBox(height: 2),
@@ -750,28 +747,29 @@ class _GymCard extends StatelessWidget {
         ? teamColor(GolferTeam.fromDb(leader!.golferTeam))
         : gymColor;
     final enabled = onTap != null;
-    final effectiveColor = enabled ? leaderColor : leaderColor.withValues(alpha: 0.35);
+    final gymFg = Color.lerp(gymColor, Colors.white, 0.45)!;
 
     // Loading / no gym nearby — simple compact state
     if (nearestCourse == null || leader == null) {
+      final dimBg = Color.alphaBlend(gymColor.withValues(alpha: 0.10), Theme.of(context).colorScheme.surface);
       return Material(
-        color: gymColor.withValues(alpha: 0.08),
+        color: dimBg,
         borderRadius: BorderRadius.circular(14),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: gymColor.withValues(alpha: 0.25)),
+            border: Border.all(color: gymFg.withValues(alpha: 0.25), width: 1.5),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.shield_rounded, color: gymColor.withValues(alpha: 0.35), size: 26),
+              Icon(Icons.shield_rounded, color: gymFg.withValues(alpha: 0.35), size: 26),
               const SizedBox(height: 6),
               Text(
                 'Gym',
                 style: TextStyle(
-                  color: gymColor.withValues(alpha: 0.35),
+                  color: gymFg.withValues(alpha: 0.35),
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
                 ),
@@ -781,7 +779,7 @@ class _GymCard extends StatelessWidget {
                 !locationDone ? 'Finding gym…' : 'No gym nearby',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: gymColor.withValues(alpha: 0.3),
+                  color: gymFg.withValues(alpha: 0.3),
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
                 ),
@@ -792,9 +790,17 @@ class _GymCard extends StatelessWidget {
       );
     }
 
+    final fgColor = enabled
+        ? Color.lerp(leaderColor, Colors.white, 0.45)!
+        : Color.lerp(leaderColor, Colors.white, 0.45)!.withValues(alpha: 0.35);
+
     // Gym found — show leader info inside the card
+    final cardBg = Color.alphaBlend(
+      (enabled ? leaderColor : leaderColor.withValues(alpha: 0.35)).withValues(alpha: enabled ? 0.22 : 0.10),
+      Theme.of(context).colorScheme.surface,
+    );
     return Material(
-      color: effectiveColor.withValues(alpha: 0.1),
+      color: cardBg,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -803,7 +809,10 @@ class _GymCard extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: effectiveColor.withValues(alpha: 0.3)),
+            border: Border.all(
+              color: fgColor.withValues(alpha: enabled ? 0.55 : 0.2),
+              width: 1.5,
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -811,12 +820,12 @@ class _GymCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.shield_rounded, color: effectiveColor, size: 14),
+                  Icon(Icons.shield_rounded, color: fgColor, size: 14),
                   const SizedBox(width: 4),
                   Text(
                     'Gym',
                     style: TextStyle(
-                      color: effectiveColor,
+                      color: fgColor,
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.2,
@@ -833,7 +842,7 @@ class _GymCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: effectiveColor,
+                  color: fgColor,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),
@@ -844,7 +853,7 @@ class _GymCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: effectiveColor.withValues(alpha: 0.6),
+                  color: fgColor.withValues(alpha: 0.6),
                   fontSize: 9,
                   fontWeight: FontWeight.w500,
                 ),
@@ -876,7 +885,7 @@ class _GymCard extends StatelessWidget {
                   lockHint!,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: effectiveColor.withValues(alpha: 0.5),
+                    color: fgColor.withValues(alpha: 0.5),
                     fontSize: 9,
                     fontWeight: FontWeight.w500,
                   ),

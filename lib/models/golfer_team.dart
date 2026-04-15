@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 enum GolferTeam {
-  hazard('Team Hazard', Color(0xFFE53935), 'hazard', Icons.local_fire_department),
+  hazard('Team Hazard', Color(0xFFE53935), 'hazard', Icons.warning_rounded),
   socket('Team Socket', Color(0xFF1E88E5), 'socket', Icons.bolt),
   green('Team Green', Color(0xFF43A047), 'green', Icons.eco);
 

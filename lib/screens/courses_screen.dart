@@ -1381,75 +1381,124 @@ class _LoopPickerSheet extends StatefulWidget {
 }
 
 class _LoopPickerSheetState extends State<_LoopPickerSheet> {
-  late int _selected; // index into _options
-
-  // Each option is either a single loop index or all loops combined (-1)
-  late final List<_LoopOption> _options;
+  // _mode: loop index (>=0) = single loop, -1 = 18h pick, -2 = all loops
+  late int _mode;
+  // Ordered list — tap order defines play order
+  final List<int> _orderedPicks = [];
 
   @override
   void initState() {
     super.initState();
+    _mode = widget.course.loops.length >= 2 ? -1 : 0;
+  }
+
+  bool get _canPlay {
+    if (_mode >= 0) return true;
+    if (_mode == -2) return true;
+    return _orderedPicks.length == 2;
+  }
+
+  void _play() {
     final loops = widget.course.loops;
-
-    _options = [
-      // Individual loops
-      for (int i = 0; i < loops.length; i++)
-        _LoopOption(
-          label: loops[i].name.isEmpty ? 'Loop ${i + 1}' : loops[i].name,
-          subtitle: '${loops[i].holeCount} holes  ·  Par ${loops[i].holes.fold<int>(0, (a, h) => a + h.par)}',
-          loopIndices: [i],
-        ),
-      // All pairs (18-hole combos for 3-loop courses, full round for 2-loop)
-      if (loops.length >= 2)
-        for (int a = 0; a < loops.length; a++)
-          for (int b = a + 1; b < loops.length; b++)
-            _LoopOption(
-              label: loops.length == 2
-                  ? 'Full round'
-                  : '${loops[a].name} + ${loops[b].name}',
-              subtitle: () {
-                final selected = [loops[a], loops[b]];
-                final holes = selected.fold<int>(0, (s, l) => s + l.holeCount);
-                final par = selected.expand((l) => l.holes).fold<int>(0, (s, h) => s + h.par);
-                return '$holes holes  ·  Par $par';
-              }(),
-              loopIndices: [a, b],
-            ),
-      // Full 27-hole round for 3-loop courses
-      if (loops.length == 3)
-        _LoopOption(
-          label: 'Full round (27 holes)',
-          subtitle: '${loops.fold<int>(0, (s, l) => s + l.holeCount)} holes  ·  Par ${loops.expand((l) => l.holes).fold<int>(0, (s, h) => s + h.par)}',
-          loopIndices: [0, 1, 2],
-        ),
-    ];
-
-    // Default to first 18-hole option if available, else last option
-    final firstPairIndex = loops.length;
-    _selected = _options.length > firstPairIndex ? firstPairIndex : _options.length - 1;
+    final List<int> indices;
+    if (_mode >= 0) {
+      indices = [_mode];
+    } else if (_mode == -2) {
+      indices = List.generate(loops.length, (i) => i);
+    } else {
+      indices = List<int>.from(_orderedPicks); // already in tap order
+    }
+    final picked = indices.map((i) => loops[i]).toList();
+    final pars = widget.course.parsForLoops(picked);
+    final greens = widget.course.greensNullableForLoops(picked);
+    widget.onStart(pars, greenCoords: greens.any((e) => e != null) ? greens : null);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final loops = widget.course.loops;
+
+    String loopName(int i) => loops[i].name.isEmpty ? 'Loop ${i + 1}' : loops[i].name;
+    String loopSub(int i) {
+      final l = loops[i];
+      return '${l.holeCount} holes  ·  Par ${l.holes.fold<int>(0, (a, h) => a + h.par)}';
+    }
+
+    final totalHoles = loops.fold<int>(0, (s, l) => s + l.holeCount);
+    final totalPar = loops.expand((l) => l.holes).fold<int>(0, (s, h) => s + h.par);
+
+    // Build inline pick hint label
+    String pickHint() {
+      if (_orderedPicks.isEmpty) return 'Tap to pick 1st loop';
+      if (_orderedPicks.length == 1) return '${loopName(_orderedPicks[0])} → tap to pick 2nd';
+      return '${loopName(_orderedPicks[0])} → ${loopName(_orderedPicks[1])}';
+    }
 
     return _RoundPickerShell(
       courseName: widget.course.name,
-      onPlay: () {
-        final indices = _options[_selected].loopIndices;
-        final picked = indices.map((i) => widget.course.loops[i]).toList();
-        final pars = widget.course.parsForLoops(picked);
-        final greens = widget.course.greensNullableForLoops(picked);
-        widget.onStart(pars, greenCoords: greens.any((e) => e != null) ? greens : null);
-      },
+      onPlay: _canPlay ? _play : null,
       children: [
-        for (int i = 0; i < _options.length; i++) ...[
+        // Individual loops
+        for (int i = 0; i < loops.length; i++) ...[
           if (i > 0) const SizedBox(height: 8),
           _RadioRow(
-            label: _options[i].label,
-            subtitle: _options[i].subtitle,
-            selected: _selected == i,
-            onTap: () => setState(() => _selected = i),
+            label: loopName(i),
+            subtitle: loopSub(i),
+            selected: _mode == i,
+            onTap: () => setState(() { _mode = i; _orderedPicks.clear(); }),
+            theme: theme,
+          ),
+        ],
+        // 18-hole option
+        if (loops.length >= 2) ...[
+          const SizedBox(height: 8),
+          _RadioRow(
+            label: '18 holes',
+            subtitle: _mode == -1 ? pickHint() : 'Pick two loops',
+            selected: _mode == -1,
+            onTap: () => setState(() { _mode = -1; _orderedPicks.clear(); }),
+            theme: theme,
+          ),
+          if (_mode == -1) ...[
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (int i = 0; i < loops.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 6),
+                    _LoopCheckRow(
+                      label: loopName(i),
+                      subtitle: loopSub(i),
+                      orderLabel: _orderedPicks.indexOf(i) >= 0
+                          ? '${_orderedPicks.indexOf(i) + 1}'
+                          : null,
+                      enabled: _orderedPicks.contains(i) || _orderedPicks.length < 2,
+                      onTap: () => setState(() {
+                        if (_orderedPicks.contains(i)) {
+                          _orderedPicks.remove(i);
+                        } else if (_orderedPicks.length < 2) {
+                          _orderedPicks.add(i);
+                        }
+                      }),
+                      theme: theme,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ],
+        // Full round for 3+ loops
+        if (loops.length >= 3) ...[
+          const SizedBox(height: 8),
+          _RadioRow(
+            label: 'Full round ($totalHoles holes)',
+            subtitle: 'All loops  ·  Par $totalPar',
+            selected: _mode == -2,
+            onTap: () => setState(() { _mode = -2; _orderedPicks.clear(); }),
             theme: theme,
           ),
         ],
@@ -1517,30 +1566,53 @@ class _RoundPickerShell extends StatelessWidget {
   const _RoundPickerShell({required this.courseName, required this.onPlay, required this.children});
 
   final String courseName;
-  final VoidCallback onPlay;
+  final VoidCallback? onPlay;
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).viewInsets.bottom + 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: theme.colorScheme.outlineVariant, borderRadius: BorderRadius.circular(2)),
+    final bottomPad = MediaQuery.of(context).viewInsets.bottom + 32;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Header — fixed
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(courseName, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+        // Options — scrollable
+        Flexible(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
             ),
           ),
-          const SizedBox(height: 20),
-          Text(courseName, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-          const SizedBox(height: 16),
-          ...children,
-          const SizedBox(height: 24),
-          SizedBox(
+        ),
+        // Play button — fixed at bottom
+        Padding(
+          padding: EdgeInsets.fromLTRB(24, 24, 24, bottomPad),
+          child: SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
               onPressed: onPlay,
@@ -1549,7 +1621,88 @@ class _RoundPickerShell extends StatelessWidget {
               style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
             ),
           ),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+class _LoopCheckRow extends StatelessWidget {
+  const _LoopCheckRow({
+    required this.label,
+    required this.subtitle,
+    required this.orderLabel,
+    required this.enabled,
+    required this.onTap,
+    required this.theme,
+  });
+
+  final String label;
+  final String subtitle;
+  final String? orderLabel; // '1' or '2' when picked, null when not
+  final bool enabled;
+  final VoidCallback onTap;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final picked = orderLabel != null;
+    final color = theme.colorScheme.primary;
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Opacity(
+        opacity: enabled ? 1.0 : 0.35,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: picked ? color.withValues(alpha: 0.1) : theme.colorScheme.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: picked ? color : Colors.transparent,
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: picked ? color : Colors.transparent,
+                  border: Border.all(
+                    color: picked ? color : theme.colorScheme.outlineVariant,
+                    width: 1.5,
+                  ),
+                ),
+                child: picked
+                    ? Center(
+                        child: Text(
+                          orderLabel!,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+                    Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

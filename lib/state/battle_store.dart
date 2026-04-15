@@ -230,6 +230,15 @@ class BattleStore extends ChangeNotifier {
     return updated;
   }
 
+  Future<void> claimEvolutionReward(String battleId) async {
+    final idx = _battles.indexWhere((b) => b.id == battleId);
+    if (idx >= 0) {
+      _battles = List<Battle>.from(_battles)..[idx] = _battles[idx].withEvolutionClaimed();
+      notifyListeners();
+    }
+    await _service.claimEvolutionReward(battleId);
+  }
+
   Future<void> claimCourseLeadership({
     required String courseId,
     required String battleId,
