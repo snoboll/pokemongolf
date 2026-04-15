@@ -126,7 +126,7 @@ class BattleStore extends ChangeNotifier {
     required String courseName,
     required int holeCount,
     required List<int> coursePars,
-    required List<BattlePokemon> team,
+    required List<BattleBogeybeast> team,
     required String challengerName,
   }) async {
     final battle = await _service.createBattle(
@@ -146,7 +146,7 @@ class BattleStore extends ChangeNotifier {
 
   Future<Battle> joinBattle({
     required String battleId,
-    required List<BattlePokemon> team,
+    required List<BattleBogeybeast> team,
   }) async {
     final updated = await _service.joinBattle(battleId: battleId, team: team);
     _upsertBattle(updated);
@@ -184,10 +184,10 @@ class BattleStore extends ChangeNotifier {
     required String courseName,
     required int holeCount,
     required List<int> coursePars,
-    required List<BattlePokemon> team,
+    required List<BattleBogeybeast> team,
     required String challengerName,
     required String leaderName,
-    required List<BattlePokemon> leaderTeam,
+    required List<BattleBogeybeast> leaderTeam,
     required int leaderHcp,
     String? leaderUserId,
   }) async {
@@ -233,7 +233,7 @@ class BattleStore extends ChangeNotifier {
   Future<void> claimCourseLeadership({
     required String courseId,
     required String battleId,
-    required List<BattlePokemon> defenderTeam,
+    required List<BattleBogeybeast> defenderTeam,
   }) async {
     await _service.claimCourseLeadership(
       courseId:     courseId,

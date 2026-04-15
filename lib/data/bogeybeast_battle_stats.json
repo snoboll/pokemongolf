@@ -1,9 +1,9 @@
 {
   "notes": {
-    "offenseTier": "1-10 scale representing offensive power, based on the Pokémon's best offensive stat (Attack or Special). Scaled from actual Gen 1 base stats.",
+    "offenseTier": "1-10 scale representing offensive power, based on the Bogeybeast's best offensive stat (Attack or Special). Scaled from actual Gen 1 base stats.",
     "defenseTier": "1-10 scale representing defensive durability, based on average of Defense and Special Defense (same stat in Gen 1). Scaled from actual base stats.",
     "hpTier": "1-10 scale representing HP pool. Chansey is the ceiling at 10.",
-    "types": "1-2 types per Pokémon. First type is primary.",
+    "types": "1-2 types per Bogeybeast. First type is primary.",
     "typeChart": "Gen 1 type chart simplified. 'superEffectiveAgainst' = 2x damage. 'notVeryEffectiveAgainst' = 0.5x damage (includes former immunities). No 0x/immune category.",
     "dualTypeAttackRule": "For dual-type attackers, use whichever of their two types deals MORE damage against the defender (best of two). For dual-type defenders, apply both type multipliers multiplicatively (e.g. 2x * 2x = 4x, 2x * 0.5x = 1x).",
     "battleNotes": "Suggested damage formula: rawDmg = attackerOffense - floor(defenderDefense / 2). Apply type multiplier. scoreDiffBonus = scoreDiff * multiplier. finalDmg = (rawDmg + scoreDiffBonus) * typeMult."
@@ -72,7 +72,7 @@
     }
   },
 
-  "pokemon": [
+  "bogeybeast": [
     { "id": 1,   "name": "Bulbasaur",   "types": ["Grass", "Poison"],    "offenseTier": 3,  "defenseTier": 4,  "hpTier": 2 },
     { "id": 2,   "name": "Ivysaur",     "types": ["Grass", "Poison"],    "offenseTier": 5,  "defenseTier": 5,  "hpTier": 3 },
     { "id": 3,   "name": "Venusaur",    "types": ["Grass", "Poison"],    "offenseTier": 7,  "defenseTier": 7,  "hpTier": 4 },

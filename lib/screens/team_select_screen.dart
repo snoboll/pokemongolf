@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 
-import '../data/first_gen_pokemon.dart';
+import '../data/first_gen_bogeybeasts.dart';
 import '../models/battle_models.dart';
-import '../models/pokemon_species.dart';
-import '../models/pokemon_type.dart';
+import '../models/bogeybeast_species.dart';
+import '../models/bogeybeast_type.dart';
+import '../models/course_leader.dart';
+import '../models/golfer_team.dart';
 
 class TeamSelectScreen extends StatefulWidget {
   const TeamSelectScreen({
     super.key,
     required this.caughtDexNumbers,
     this.title = 'Pick your team',
+    this.leader,
   });
 
   final Set<int> caughtDexNumbers;
   final String title;
+  final CourseLeader? leader;
 
   @override
   State<TeamSelectScreen> createState() => _TeamSelectScreenState();
@@ -25,9 +29,9 @@ class _TeamSelectScreenState extends State<TeamSelectScreen> {
 
   static const int _maxTeamSize = 3;
 
-  List<PokemonSpecies> get _filtered {
+  List<BogeybeastSpecies> get _filtered {
     final q = _search.toLowerCase();
-    return firstGenPokemon.where((p) {
+    return firstGenBogeybeast.where((p) {
       if (!widget.caughtDexNumbers.contains(p.dexNumber)) return false;
       if (q.isEmpty) return true;
       return p.name.toLowerCase().contains(q) ||
@@ -47,7 +51,7 @@ class _TeamSelectScreenState extends State<TeamSelectScreen> {
           TextButton(
             onPressed: canConfirm
                 ? () => Navigator.of(context).pop(
-                      _selectedDex.map(BattlePokemon.fromDexNumber).toList(),
+                      _selectedDex.map(BattleBogeybeast.fromDexNumber).toList(),
                     )
                 : null,
             child: Text(
@@ -64,51 +68,53 @@ class _TeamSelectScreenState extends State<TeamSelectScreen> {
       ),
       body: Column(
         children: [
-          // Selected team preview
-          if (_selectedDex.isNotEmpty)
-            Container(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                children: [
-                  Text('Team: ',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
-                  for (final dex in _selectedDex)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _MiniPokemonChip(
-                        dex: dex,
-                        onRemove: () => setState(() => _selectedDex.remove(dex)),
+          // vs gym leader banner — always visible when challenging a leader
+          if (widget.leader != null)
+            _VsLeaderBanner(leader: widget.leader!),
+
+          // Selected team preview — always visible so the layout doesn't jump
+          Container(
+            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              children: [
+                Text('Team: ',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
+                for (final dex in _selectedDex)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: _MiniBogeybeastChip(
+                      dex: dex,
+                      onRemove: () => setState(() => _selectedDex.remove(dex)),
+                    ),
+                  ),
+                for (int i = _selectedDex.length; i < _maxTeamSize; i++)
+                  Container(
+                    width: 32,
+                    height: 32,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant,
+                        width: 1.5,
                       ),
                     ),
-                  if (_selectedDex.length < _maxTeamSize)
-                    for (int i = _selectedDex.length; i < _maxTeamSize; i++)
-                      Container(
-                        width: 32,
-                        height: 32,
-                        margin: const EdgeInsets.only(right: 8),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: theme.colorScheme.outlineVariant,
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Icon(Icons.add,
-                            size: 16,
-                            color: theme.colorScheme.outlineVariant),
-                      ),
-                ],
-              ),
+                    child: Icon(Icons.add,
+                        size: 16,
+                        color: theme.colorScheme.outlineVariant),
+                  ),
+              ],
             ),
+          ),
 
           // Search
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: TextField(
               decoration: const InputDecoration(
-                hintText: 'Search Pokemon...',
+                hintText: 'Search Bogeybeast...',
                 prefixIcon: Icon(Icons.search, size: 20),
                 isDense: true,
               ),
@@ -122,8 +128,8 @@ class _TeamSelectScreenState extends State<TeamSelectScreen> {
                 ? Center(
                     child: Text(
                       widget.caughtDexNumbers.isEmpty
-                          ? 'Catch some Pokemon first!'
-                          : 'No Pokemon match your search.',
+                          ? 'Catch some Bogeybeast first!'
+                          : 'No Bogeybeast match your search.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
@@ -138,7 +144,7 @@ class _TeamSelectScreenState extends State<TeamSelectScreen> {
                           _selectedDex.contains(species.dexNumber);
                       final isFull = _selectedDex.length >= _maxTeamSize;
 
-                      return _PokemonSelectTile(
+                      return _BogeybeastSelectTile(
                         species:    species,
                         isSelected: isSelected,
                         disabled:   isFull && !isSelected,
@@ -161,17 +167,112 @@ class _TeamSelectScreenState extends State<TeamSelectScreen> {
   }
 }
 
-// ── _PokemonSelectTile ────────────────────────────────────────────────────────
+// ── _VsLeaderBanner ──────────────────────────────────────────────────────────
 
-class _PokemonSelectTile extends StatelessWidget {
-  const _PokemonSelectTile({
+class _VsLeaderBanner extends StatelessWidget {
+  const _VsLeaderBanner({required this.leader});
+  final CourseLeader leader;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = teamColor(GolferTeam.fromDb(leader.golferTeam));
+
+    return Container(
+      width: double.infinity,
+      color: color.withValues(alpha: 0.08),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          // Sprite
+          _LeaderSprite(sprite: leader.golferSprite, color: color),
+          const SizedBox(width: 12),
+          // Name + team beasts
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  leader.leaderName,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                  ),
+                ),
+                if (leader.team.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      for (final b in leader.team.take(3))
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: Image.network(
+                              b.imageUrl,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) =>
+                                  Icon(Icons.pets, size: 20, color: color.withValues(alpha: 0.4)),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Text(
+            'vs',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: color.withValues(alpha: 0.4),
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LeaderSprite extends StatelessWidget {
+  const _LeaderSprite({required this.sprite, required this.color});
+  final String? sprite;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    if (sprite != null) {
+      return SizedBox(
+        width: 40,
+        height: 40,
+        child: Image.network(
+          sprite!,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => _fallback(),
+        ),
+      );
+    }
+    return _fallback();
+  }
+
+  Widget _fallback() => Icon(Icons.shield_rounded, color: color, size: 36);
+}
+
+// ── _BogeybeastSelectTile ────────────────────────────────────────────────────────
+
+class _BogeybeastSelectTile extends StatelessWidget {
+  const _BogeybeastSelectTile({
     required this.species,
     required this.isSelected,
     required this.disabled,
     required this.onTap,
   });
 
-  final PokemonSpecies species;
+  final BogeybeastSpecies species;
   final bool isSelected;
   final bool disabled;
   final VoidCallback onTap;
@@ -207,7 +308,7 @@ class _PokemonSelectTile extends StatelessWidget {
                   species.imageUrl,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.catching_pokemon, size: 32),
+                      const Icon(Icons.pets, size: 32),
                 ),
               ),
               const SizedBox(width: 12),
@@ -283,8 +384,8 @@ class _StatsPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final p = firstGenPokemon.firstWhere((s) => s.dexNumber == dex);
-    // We only have access to the species here, stats are in pokemonBattleStats.
+    final p = firstGenBogeybeast.firstWhere((s) => s.dexNumber == dex);
+    // We only have access to the species here, stats are in bogeybeastBattleStats.
     // Import lazily to avoid bloat.
     // Show type as a small color dot instead.
     return Row(
@@ -359,17 +460,17 @@ class _StatsPill extends StatelessWidget {
   }
 }
 
-// ── _MiniPokemonChip ──────────────────────────────────────────────────────────
+// ── _MiniBogeybeastChip ──────────────────────────────────────────────────────────
 
-class _MiniPokemonChip extends StatelessWidget {
-  const _MiniPokemonChip({required this.dex, required this.onRemove});
+class _MiniBogeybeastChip extends StatelessWidget {
+  const _MiniBogeybeastChip({required this.dex, required this.onRemove});
   final int dex;
   final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final species = firstGenPokemon.firstWhere((p) => p.dexNumber == dex);
+    final species = firstGenBogeybeast.firstWhere((p) => p.dexNumber == dex);
 
     return GestureDetector(
       onTap: onRemove,
@@ -385,7 +486,7 @@ class _MiniPokemonChip extends StatelessWidget {
             species.imageUrl,
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) =>
-                const Icon(Icons.catching_pokemon, size: 20),
+                const Icon(Icons.pets, size: 20),
           ),
         ),
       ),
@@ -397,7 +498,7 @@ class _MiniPokemonChip extends StatelessWidget {
 
 class _TypeBadge extends StatelessWidget {
   const _TypeBadge({required this.type});
-  final PokemonType type;
+  final BogeybeastType type;
 
   @override
   Widget build(BuildContext context) {
@@ -419,28 +520,28 @@ class _TypeBadge extends StatelessWidget {
     );
   }
 
-  String _typeName(PokemonType t) {
+  String _typeName(BogeybeastType t) {
     return t.name[0].toUpperCase() + t.name.substring(1);
   }
 
-  Color _typeColor(PokemonType t) {
+  Color _typeColor(BogeybeastType t) {
     return switch (t) {
-      PokemonType.fire     => const Color(0xFFFF6B35),
-      PokemonType.water    => const Color(0xFF4FC3F7),
-      PokemonType.grass    => const Color(0xFF66BB6A),
-      PokemonType.electric => const Color(0xFFFFD700),
-      PokemonType.ice      => const Color(0xFF80DEEA),
-      PokemonType.fighting => const Color(0xFFEF5350),
-      PokemonType.poison   => const Color(0xFFAB47BC),
-      PokemonType.ground   => const Color(0xFFD4A853),
-      PokemonType.flying   => const Color(0xFF90CAF9),
-      PokemonType.psychic  => const Color(0xFFF48FB1),
-      PokemonType.bug      => const Color(0xFFA5D6A7),
-      PokemonType.rock     => const Color(0xFFBCAAA4),
-      PokemonType.ghost    => const Color(0xFF9575CD),
-      PokemonType.dragon   => const Color(0xFF7986CB),
-      PokemonType.fairy    => const Color(0xFFF8BBD0),
-      PokemonType.normal   => const Color(0xFF9E9E9E),
+      BogeybeastType.fire     => const Color(0xFFFF6B35),
+      BogeybeastType.water    => const Color(0xFF4FC3F7),
+      BogeybeastType.grass    => const Color(0xFF66BB6A),
+      BogeybeastType.electric => const Color(0xFFFFD700),
+      BogeybeastType.ice      => const Color(0xFF80DEEA),
+      BogeybeastType.fighting => const Color(0xFFEF5350),
+      BogeybeastType.poison   => const Color(0xFFAB47BC),
+      BogeybeastType.ground   => const Color(0xFFD4A853),
+      BogeybeastType.flying   => const Color(0xFF90CAF9),
+      BogeybeastType.psychic  => const Color(0xFFF48FB1),
+      BogeybeastType.bug      => const Color(0xFFA5D6A7),
+      BogeybeastType.rock     => const Color(0xFFBCAAA4),
+      BogeybeastType.ghost    => const Color(0xFF9575CD),
+      BogeybeastType.dragon   => const Color(0xFF7986CB),
+      BogeybeastType.fairy    => const Color(0xFFF8BBD0),
+      BogeybeastType.normal   => const Color(0xFF9E9E9E),
     };
   }
 }

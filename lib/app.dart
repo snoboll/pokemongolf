@@ -18,21 +18,21 @@ import 'screens/profile_screen.dart';
 import 'screens/round_screen.dart';
 import 'screens/courses_screen.dart';
 import 'screens/team_select_screen.dart';
-import 'screens/trainers_screen.dart';
+import 'screens/golfers_screen.dart';
 import 'services/battle_service.dart';
 import 'services/supabase_service.dart';
 import 'state/battle_store.dart';
-import 'state/pokemon_golf_store.dart';
+import 'state/bogeybeasts_golf_store.dart';
 
-class PokemonGolfApp extends StatefulWidget {
-  const PokemonGolfApp({super.key});
+class BogeybeastGolfApp extends StatefulWidget {
+  const BogeybeastGolfApp({super.key});
 
   @override
-  State<PokemonGolfApp> createState() => _PokemonGolfAppState();
+  State<BogeybeastGolfApp> createState() => _BogeybeastGolfAppState();
 }
 
-class _PokemonGolfAppState extends State<PokemonGolfApp> {
-  PokemonGolfStore? _store;
+class _BogeybeastGolfAppState extends State<BogeybeastGolfApp> {
+  BogeybeastGolfStore? _store;
   late final StreamSubscription<AuthState> _authSub;
   bool _isAuthenticated = false;
   bool _loading = true;
@@ -73,7 +73,7 @@ class _PokemonGolfAppState extends State<PokemonGolfApp> {
   }
 
   Future<void> _initStore() async {
-    final store = PokemonGolfStore(
+    final store = BogeybeastGolfStore(
       supabaseService: SupabaseService(),
     );
     await store.loadUserData();
@@ -95,7 +95,7 @@ class _PokemonGolfAppState extends State<PokemonGolfApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Pokemon Golf',
+      title: 'Bogeybeasts',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -187,7 +187,7 @@ class _PokemonGolfAppState extends State<PokemonGolfApp> {
       ),
       builder: (BuildContext context, Widget? child) {
         if (_store != null) {
-          return PokemonGolfScope(
+          return BogeybeastGolfScope(
             notifier: _store!,
             child: child!,
           );
@@ -209,33 +209,33 @@ class _PokemonGolfAppState extends State<PokemonGolfApp> {
       return const AuthScreen();
     }
 
-    return const PokemonGolfShell();
+    return const BogeybeastGolfShell();
   }
 }
 
-class PokemonGolfScope extends InheritedNotifier<PokemonGolfStore> {
-  const PokemonGolfScope({
+class BogeybeastGolfScope extends InheritedNotifier<BogeybeastGolfStore> {
+  const BogeybeastGolfScope({
     super.key,
-    required PokemonGolfStore notifier,
+    required BogeybeastGolfStore notifier,
     required super.child,
   }) : super(notifier: notifier);
 
-  static PokemonGolfStore of(BuildContext context) {
-    final PokemonGolfScope? scope =
-        context.dependOnInheritedWidgetOfExactType<PokemonGolfScope>();
-    assert(scope != null, 'PokemonGolfScope not found in widget tree.');
+  static BogeybeastGolfStore of(BuildContext context) {
+    final BogeybeastGolfScope? scope =
+        context.dependOnInheritedWidgetOfExactType<BogeybeastGolfScope>();
+    assert(scope != null, 'BogeybeastGolfScope not found in widget tree.');
     return scope!.notifier!;
   }
 }
 
-class PokemonGolfShell extends StatefulWidget {
-  const PokemonGolfShell({super.key});
+class BogeybeastGolfShell extends StatefulWidget {
+  const BogeybeastGolfShell({super.key});
 
   @override
-  State<PokemonGolfShell> createState() => _PokemonGolfShellState();
+  State<BogeybeastGolfShell> createState() => _BogeybeastGolfShellState();
 }
 
-class _PokemonGolfShellState extends State<PokemonGolfShell> {
+class _BogeybeastGolfShellState extends State<BogeybeastGolfShell> {
   int _selectedIndex = 2;
   bool _hasUpdate = false;
   String _currentVersion = '';
@@ -272,7 +272,7 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
   }
 
   void _resumeRound(BuildContext context) {
-    final store = PokemonGolfScope.of(context);
+    final store = BogeybeastGolfScope.of(context);
     if (store.activeRound == null) {
       return;
     }
@@ -293,17 +293,17 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
   }
 
   void _challengeLeader(BuildContext context, GolfCourse course) async {
-    final store = PokemonGolfScope.of(context);
+    final store = BogeybeastGolfScope.of(context);
     final leader = store.leaderForCourse(course.id);
 
     if (store.caughtDexNumbers.length < 3) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Catch at least 3 Pokémon to challenge a leader')),
+        const SnackBar(content: Text('Catch at least 3 Bogeybeast to challenge a leader')),
       );
       return;
     }
 
-    final team = await Navigator.of(context).push<List<BattlePokemon>>(
+    final team = await Navigator.of(context).push<List<BattleBogeybeast>>(
       MaterialPageRoute(
         builder: (_) => TeamSelectScreen(
           caughtDexNumbers: Set<int>.from(store.caughtDexNumbers),
@@ -325,7 +325,7 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
         holeCount: holeCount,
         coursePars: selectedPars,
         team: team,
-        challengerName: store.trainerName ?? 'Trainer',
+        challengerName: store.golferName ?? 'Golfer',
         leaderName: leader.leaderName,
         leaderTeam: leader.team,
         leaderHcp: leader.hcp,
@@ -342,7 +342,7 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
       )).then((_) {
         battleStore.stopWatching();
         if (context.mounted) {
-          PokemonGolfScope.of(context).refreshCourseLeaders();
+          BogeybeastGolfScope.of(context).refreshCourseLeaders();
         }
       });
     } catch (e) {
@@ -358,7 +358,7 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
   Widget build(BuildContext context) {
     final List<Widget> pages = <Widget>[
       const CollectionScreen(),
-      const TrainersScreen(),
+      const GolfersScreen(),
       HomeScreen(
         onPlay: () => setState(() => _selectedIndex = 3),
         onResumeRound: () => _resumeRound(context),
@@ -411,14 +411,14 @@ class _PokemonGolfShellState extends State<PokemonGolfShell> {
         selectedIndex: _selectedIndex,
         destinations: const <NavigationDestination>[
           NavigationDestination(
-            icon: Icon(Icons.catching_pokemon_outlined),
-            selectedIcon: Icon(Icons.catching_pokemon),
-            label: 'Pokedex',
+            icon: Icon(Icons.pets),
+            selectedIcon: Icon(Icons.pets),
+            label: 'Bogeydex',
           ),
           NavigationDestination(
             icon: Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people),
-            label: 'Trainers',
+            label: 'Golfers',
           ),
           NavigationDestination(
             icon: Icon(Icons.golf_course_outlined),

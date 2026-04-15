@@ -155,7 +155,7 @@ class _DistanceToGreenState extends State<DistanceToGreen> {
         ),
     };
 
-    final clubs = PokemonGolfScope.of(context).clubs;
+    final clubs = BogeybeastGolfScope.of(context).clubs;
     final recommendation = (_state == _LocationState.listening && _distanceMeters != null)
         ? _recommendClub(clubs, _distanceMeters!)
         : null;

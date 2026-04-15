@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pokemon_golf/models/golf_score.dart';
-import 'package:pokemon_golf/models/pokemon_rarity.dart';
-import 'package:pokemon_golf/services/catch_service.dart';
+import 'package:bogeybeasts/models/golf_score.dart';
+import 'package:bogeybeasts/models/bogeybeast_rarity.dart';
+import 'package:bogeybeasts/services/catch_service.dart';
 
 void main() {
   group('CatchService', () {
@@ -9,19 +9,19 @@ void main() {
 
     test('common par and better is 100%', () {
       expect(
-        service.catchChance(rarity: PokemonRarity.common, score: GolfScore.par),
+        service.catchChance(rarity: BogeybeastRarity.common, score: GolfScore.par),
         100,
       );
       expect(
         service.catchChance(
-          rarity: PokemonRarity.common,
+          rarity: BogeybeastRarity.common,
           score: GolfScore.birdie,
         ),
         100,
       );
       expect(
         service.catchChance(
-          rarity: PokemonRarity.common,
+          rarity: BogeybeastRarity.common,
           score: GolfScore.eagle,
         ),
         100,
@@ -31,14 +31,14 @@ void main() {
     test('common bogey is 65%, double is 20%', () {
       expect(
         service.catchChance(
-          rarity: PokemonRarity.common,
+          rarity: BogeybeastRarity.common,
           score: GolfScore.bogey,
         ),
         65,
       );
       expect(
         service.catchChance(
-          rarity: PokemonRarity.common,
+          rarity: BogeybeastRarity.common,
           score: GolfScore.doubleBogey,
         ),
         20,
@@ -47,12 +47,12 @@ void main() {
 
     test('rare par is 90%, double is 5%', () {
       expect(
-        service.catchChance(rarity: PokemonRarity.rare, score: GolfScore.par),
+        service.catchChance(rarity: BogeybeastRarity.rare, score: GolfScore.par),
         90,
       );
       expect(
         service.catchChance(
-          rarity: PokemonRarity.rare,
+          rarity: BogeybeastRarity.rare,
           score: GolfScore.doubleBogey,
         ),
         5,
@@ -60,7 +60,7 @@ void main() {
     });
 
     test('better golf score always improves catch rate within rarity', () {
-      for (final rarity in PokemonRarity.values) {
+      for (final rarity in BogeybeastRarity.values) {
         final par = service.catchChance(
           rarity: rarity,
           score: GolfScore.par,
@@ -73,13 +73,13 @@ void main() {
       }
     });
 
-    test('rarer Pokemon are harder to catch at the same score', () {
+    test('rarer Bogeybeast are harder to catch at the same score', () {
       final commonPar = service.catchChance(
-        rarity: PokemonRarity.common,
+        rarity: BogeybeastRarity.common,
         score: GolfScore.par,
       );
       final legendaryPar = service.catchChance(
-        rarity: PokemonRarity.legendary,
+        rarity: BogeybeastRarity.legendary,
         score: GolfScore.par,
       );
       expect(commonPar, greaterThan(legendaryPar));
@@ -88,14 +88,14 @@ void main() {
     test('uncommon par is 95%, bogey is 50%', () {
       expect(
         service.catchChance(
-          rarity: PokemonRarity.uncommon,
+          rarity: BogeybeastRarity.uncommon,
           score: GolfScore.par,
         ),
         95,
       );
       expect(
         service.catchChance(
-          rarity: PokemonRarity.uncommon,
+          rarity: BogeybeastRarity.uncommon,
           score: GolfScore.bogey,
         ),
         50,
@@ -105,7 +105,7 @@ void main() {
     test('legendary eagle is 60%', () {
       expect(
         service.catchChance(
-          rarity: PokemonRarity.legendary,
+          rarity: BogeybeastRarity.legendary,
           score: GolfScore.eagle,
         ),
         60,

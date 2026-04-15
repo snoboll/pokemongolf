@@ -53,7 +53,7 @@ class BattlesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final battleStore  = BattleScope.of(context);
-    final pokemonStore = PokemonGolfScope.of(context);
+    final bogeybeastStore = BogeybeastGolfScope.of(context);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -62,7 +62,7 @@ class BattlesScreen extends StatelessWidget {
         centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _newBattle(context, pokemonStore, battleStore),
+        onPressed: () => _newBattle(context, bogeybeastStore, battleStore),
         icon: const Icon(Icons.add),
         label: const Text('Challenge'),
       ),
@@ -96,7 +96,7 @@ class BattlesScreen extends StatelessWidget {
                             ?.copyWith(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 8),
                     Text(
-                      'Tap Challenge to invite another trainer.\nPick 3 Pokemon and a course.',
+                      'Tap Challenge to invite another golfer.\nPick 3 Bogeybeast and a course.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
@@ -119,7 +119,7 @@ class BattlesScreen extends StatelessWidget {
                     _BattleCard(
                       battle:      b,
                       uid:         uid!,
-                      onTap:       () => _openChallenge(context, b, pokemonStore, battleStore),
+                      onTap:       () => _openChallenge(context, b, bogeybeastStore, battleStore),
                     ),
                   const SizedBox(height: 16),
                 ],
@@ -149,8 +149,8 @@ class BattlesScreen extends StatelessWidget {
             )),
       );
 
-  void _newBattle(BuildContext context, dynamic pokemonStore, BattleStore battleStore) async {
-    final courses = (pokemonStore.catalogCourses as List<GolfCourse>)
+  void _newBattle(BuildContext context, dynamic bogeybeastStore, BattleStore battleStore) async {
+    final courses = (bogeybeastStore.catalogCourses as List<GolfCourse>)
         .where((c) => c.flatPars.isNotEmpty)
         .toList();
 
@@ -173,12 +173,12 @@ class BattlesScreen extends StatelessWidget {
     if (pick == null || !context.mounted) return;
 
     // Step 2: pick team
-    final team = await Navigator.of(context).push<List<BattlePokemon>>(
+    final team = await Navigator.of(context).push<List<BattleBogeybeast>>(
       MaterialPageRoute(
         builder: (_) => BattleScope(
           notifier: battleStore,
           child: TeamSelectScreen(
-            caughtDexNumbers: Set<int>.from(pokemonStore.caughtDexNumbers),
+            caughtDexNumbers: Set<int>.from(bogeybeastStore.caughtDexNumbers),
             title: 'Pick your team',
           ),
         ),
@@ -194,7 +194,7 @@ class BattlesScreen extends StatelessWidget {
         holeCount:      pick.holeCount,
         coursePars:     pars,
         team:           team,
-        challengerName: pokemonStore.trainerName ?? 'Trainer',
+        challengerName: bogeybeastStore.golferName ?? 'Golfer',
       );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -210,14 +210,14 @@ class BattlesScreen extends StatelessWidget {
     }
   }
 
-  void _openChallenge(BuildContext context, Battle battle, dynamic pokemonStore, BattleStore battleStore) async {
+  void _openChallenge(BuildContext context, Battle battle, dynamic bogeybeastStore, BattleStore battleStore) async {
     // Opponent joining: pick team then join
-    final team = await Navigator.of(context).push<List<BattlePokemon>>(
+    final team = await Navigator.of(context).push<List<BattleBogeybeast>>(
       MaterialPageRoute(
         builder: (_) => BattleScope(
           notifier: battleStore,
           child: TeamSelectScreen(
-            caughtDexNumbers: Set<int>.from(pokemonStore.caughtDexNumbers),
+            caughtDexNumbers: Set<int>.from(bogeybeastStore.caughtDexNumbers),
             title: 'Pick your team to accept',
           ),
         ),

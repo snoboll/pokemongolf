@@ -197,9 +197,9 @@ begin
                                else 'opponent_wins' end,
       'damage',           v_final_dmg,
       'type_mult',        v_type_mult,
-      'attacker_pokemon', case when v_lead_atk is not null then v_lead_atk ->> 'name'
+      'attacker_bogeybeast', case when v_lead_atk is not null then v_lead_atk ->> 'name'
                                else null end,
-      'defender_pokemon', case when v_lead_def is not null then v_lead_def ->> 'name'
+      'defender_bogeybeast', case when v_lead_def is not null then v_lead_def ->> 'name'
                                else null end,
       'c_team_after',     v_c_team,
       'o_team_after',     v_o_team
@@ -276,7 +276,7 @@ as $$
 declare
   v_battle       record;
   v_user_id      uuid;
-  v_trainer_name text;
+  v_golfer_name text;
   v_hcp          int;
 begin
   v_user_id := auth.uid();
@@ -287,11 +287,11 @@ begin
   if v_battle.course_id != p_course_id then raise exception 'Battle course mismatch'; end if;
   if not v_battle.is_leader_challenge then raise exception 'Not a leader challenge'; end if;
 
-  select trainer_name, hcp into v_trainer_name, v_hcp
+  select golfer_name, hcp into v_golfer_name, v_hcp
   from profiles where user_id = v_user_id;
 
   insert into course_leaders (course_id, user_id, leader_name, hcp, team, is_npc, claimed_at)
-  values (p_course_id, v_user_id, coalesce(v_trainer_name, 'Trainer'), coalesce(v_hcp, 36), p_team, false, now())
+  values (p_course_id, v_user_id, coalesce(v_golfer_name, 'Golfer'), coalesce(v_hcp, 36), p_team, false, now())
   on conflict (course_id) do update set
     user_id     = excluded.user_id,
     leader_name = excluded.leader_name,

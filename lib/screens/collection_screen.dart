@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../app.dart';
-import '../state/pokemon_golf_store.dart';
-import '../data/first_gen_pokemon.dart';
-import '../models/pokemon_species.dart';
-import '../widgets/pokeball_badge.dart';
-import '../widgets/pokemon_art.dart';
+import '../state/bogeybeasts_golf_store.dart';
+import '../data/first_gen_bogeybeasts.dart';
+import '../models/bogeybeast_species.dart';
+import '../widgets/bogeycube_badge.dart';
+import '../widgets/bogeybeast_art.dart';
 
 enum _CatchFilter { all, notCaught, caught }
 
@@ -20,12 +20,12 @@ class _CollectionScreenState extends State<CollectionScreen> {
   _CatchFilter _filter = _CatchFilter.all;
 
   void _confirmRelease(
-      BuildContext context, PokemonGolfStore store, PokemonSpecies pokemon) {
+      BuildContext context, BogeybeastGolfStore store, BogeybeastSpecies bogeybeast) {
     showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Release ${pokemon.name}?'),
-        content: const Text('This Pokémon will be removed from your Pokédex.'),
+        title: Text('Release ${bogeybeast.name}?'),
+        content: const Text('This Bogeybeast will be removed from your Bogeydex.'),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -41,21 +41,21 @@ class _CollectionScreenState extends State<CollectionScreen> {
         ],
       ),
     ).then((confirmed) {
-      if (confirmed == true) store.releasePokemon(pokemon);
+      if (confirmed == true) store.releaseBogeybeast(bogeybeast);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final PokemonGolfStore store = PokemonGolfScope.of(context);
+    final BogeybeastGolfStore store = BogeybeastGolfScope.of(context);
     final ThemeData theme = Theme.of(context);
 
     return ListenableBuilder(
       listenable: store,
       builder: (BuildContext context, _) {
-        final List<PokemonSpecies> filteredPokemon =
-            firstGenPokemon.where((PokemonSpecies pokemon) {
-          final bool caught = store.hasCaught(pokemon);
+        final List<BogeybeastSpecies> filteredBogeybeast =
+            firstGenBogeybeast.where((BogeybeastSpecies bogeybeast) {
+          final bool caught = store.hasCaught(bogeybeast);
           return switch (_filter) {
             _CatchFilter.all => true,
             _CatchFilter.caught => caught,
@@ -73,14 +73,14 @@ class _CollectionScreenState extends State<CollectionScreen> {
                   children: <Widget>[
                     Expanded(
                       child: Text(
-                        'Pokedex',
+                        'Bogeydex',
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
                     Text(
-                      '${store.caughtDexNumbers.length} / ${firstGenPokemon.length}',
+                      '${store.caughtDexNumbers.length} / ${firstGenBogeybeast.length}',
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: theme.colorScheme.primary,
                         fontWeight: FontWeight.w700,
@@ -127,18 +127,18 @@ class _CollectionScreenState extends State<CollectionScreen> {
                     crossAxisSpacing: 10,
                     childAspectRatio: 0.8,
                   ),
-                  itemCount: filteredPokemon.length,
+                  itemCount: filteredBogeybeast.length,
                   itemBuilder: (BuildContext context, int index) {
-                    final PokemonSpecies pokemon = filteredPokemon[index];
-                    final bool caught = store.hasCaught(pokemon);
-                    final bool seen = store.seenDexNumbers.contains(pokemon.dexNumber);
+                    final BogeybeastSpecies bogeybeast = filteredBogeybeast[index];
+                    final bool caught = store.hasCaught(bogeybeast);
+                    final bool seen = store.seenDexNumbers.contains(bogeybeast.dexNumber);
 
-                    return _PokedexTile(
-                      pokemon: pokemon,
+                    return _BogeydexTile(
+                      bogeybeast: bogeybeast,
                       caught: caught,
                       seen: seen,
                       onRelease: caught
-                          ? () => _confirmRelease(context, store, pokemon)
+                          ? () => _confirmRelease(context, store, bogeybeast)
                           : null,
                     );
                   },
@@ -197,15 +197,15 @@ class _FilterChipButton extends StatelessWidget {
   }
 }
 
-class _PokedexTile extends StatelessWidget {
-  const _PokedexTile({
-    required this.pokemon,
+class _BogeydexTile extends StatelessWidget {
+  const _BogeydexTile({
+    required this.bogeybeast,
     required this.caught,
     required this.seen,
     this.onRelease,
   });
 
-  final PokemonSpecies pokemon;
+  final BogeybeastSpecies bogeybeast;
   final bool caught;
   final bool seen;
   final VoidCallback? onRelease;
@@ -227,7 +227,7 @@ class _PokedexTile extends StatelessWidget {
               top: 8,
               left: 10,
               child: Text(
-                '#${pokemon.paddedDexNumber}',
+                '#${bogeybeast.paddedDexNumber}',
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
                   fontWeight: FontWeight.w600,
@@ -237,7 +237,7 @@ class _PokedexTile extends StatelessWidget {
             Positioned(
               top: 4,
               right: 6,
-              child: PokeballCaughtBadge(caught: caught),
+              child: BogeycubeCaughtBadge(caught: caught),
             ),
             Column(
               children: <Widget>[
@@ -246,15 +246,15 @@ class _PokedexTile extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: caught
-                        ? PokemonArt(imageUrl: pokemon.imageUrl, height: 100)
+                        ? BogeybeastArt(imageUrl: bogeybeast.imageUrl, height: 100)
                         : seen
                             ? ColorFiltered(
                                 colorFilter: grayscaleColorFilter(1.0),
-                                child: PokemonArt(imageUrl: pokemon.imageUrl, height: 100),
+                                child: BogeybeastArt(imageUrl: bogeybeast.imageUrl, height: 100),
                               )
                             : Center(
                                 child: Icon(
-                                  Icons.catching_pokemon,
+                                  Icons.pets,
                                   size: 48,
                                   color: theme.colorScheme.outlineVariant
                                       .withValues(alpha: 0.3),
@@ -265,7 +265,7 @@ class _PokedexTile extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
                   child: Text(
-                    caught ? pokemon.name : '???',
+                    caught ? bogeybeast.name : '???',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class PokemonArt extends StatelessWidget {
-  const PokemonArt({
+class BogeybeastArt extends StatelessWidget {
+  const BogeybeastArt({
     super.key,
     required this.imageUrl,
     this.height = 200,

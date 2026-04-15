@@ -6,12 +6,12 @@ import '../app.dart';
 import '../models/encounter_modifiers.dart';
 import '../models/golf_score.dart';
 import '../models/hole_stats.dart';
-import '../models/pokemon_rarity.dart';
-import '../models/pokemon_type.dart';
+import '../models/bogeybeast_rarity.dart';
+import '../models/bogeybeast_type.dart';
 import '../models/round_models.dart';
 import '../widgets/distance_to_green.dart';
-import '../widgets/pokeball_badge.dart';
-import '../widgets/pokemon_art.dart';
+import '../widgets/bogeycube_badge.dart';
+import '../widgets/bogeybeast_art.dart';
 import '../widgets/score_picker.dart';
 import 'scorecard_detail_screen.dart';
 
@@ -33,7 +33,7 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
   late final Animation<double> _flashOpacity;
   late final Animation<double> _stripesIn;
   late final Animation<double> _overlayAlpha;
-  late final Animation<Offset> _pokemonSlide;
+  late final Animation<Offset> _bogeybeastSlide;
   late final Animation<double> _grayscaleAmount;
 
   int get _strokes => _par + _selectedScore.relativeToPar;
@@ -94,7 +94,7 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
   }
 
   void _resetForNextHole() {
-    final store = PokemonGolfScope.of(context);
+    final store = BogeybeastGolfScope.of(context);
     final nextPar = store.activeRound?.currentHolePar;
     setState(() {
       _par = nextPar ?? 4;
@@ -138,8 +138,8 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
       ),
     );
 
-    // Pokemon slides in slowly from right: 2400–3700ms (0.60–0.925)
-    _pokemonSlide = Tween<Offset>(
+    // Bogeybeast slides in slowly from right: 2400–3700ms (0.60–0.925)
+    _bogeybeastSlide = Tween<Offset>(
       begin: const Offset(1.5, 0),
       end: Offset.zero,
     ).animate(CurvedAnimation(
@@ -169,7 +169,7 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final store = PokemonGolfScope.of(context);
+    final store = BogeybeastGolfScope.of(context);
     final coursePar = store.activeRound?.currentHolePar;
     if (coursePar != null && _resolution == null) {
       _par = coursePar;
@@ -178,7 +178,7 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    final store = PokemonGolfScope.of(context);
+    final store = BogeybeastGolfScope.of(context);
     final ActiveRound? activeRound = store.activeRound;
 
     if (_resolution != null) {
@@ -239,7 +239,7 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.w700)),
                 const SizedBox(width: 12),
-                Icon(Icons.catching_pokemon,
+                Icon(Icons.pets,
                     size: 16, color: theme.colorScheme.primary),
                 const SizedBox(width: 4),
                 Text('${activeRound.caughtCount}',
@@ -336,7 +336,7 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
                           animation: _encounterController,
                           builder: (context, child) {
                             return SlideTransition(
-                              position: _pokemonSlide,
+                              position: _bogeybeastSlide,
                               child: ColorFiltered(
                                 colorFilter: _encounterGrayscaleFilter(
                                     _grayscaleAmount.value),
@@ -344,7 +344,7 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
                               ),
                             );
                           },
-                          child: PokemonArt(
+                          child: BogeybeastArt(
                             imageUrl: activeRound.currentEncounter.imageUrl,
                             height: 180,
                           ),
@@ -352,7 +352,7 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
                         Positioned(
                           top: 0,
                           right: 0,
-                          child: PokeballCaughtBadge(
+                          child: BogeycubeCaughtBadge(
                             caught: store.hasCaught(
                                 activeRound.currentEncounter),
                           ),
@@ -514,8 +514,8 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
                           );
                         });
                       },
-                      icon: const Icon(Icons.catching_pokemon),
-                      label: const Text('Throw Pokeball'),
+                      icon: const Icon(Icons.pets),
+                      label: const Text('Throw Bogeycube'),
                     ),
                   ),
                 ],
@@ -769,7 +769,7 @@ class _HoleResolutionViewState extends State<_HoleResolutionView>
           child: Column(
             children: <Widget>[
               Icon(
-                result.caught ? Icons.catching_pokemon : Icons.close,
+                result.caught ? Icons.pets : Icons.close,
                 size: 56,
                 color: result.caught
                     ? theme.colorScheme.primary
@@ -783,7 +783,7 @@ class _HoleResolutionViewState extends State<_HoleResolutionView>
               ),
               const SizedBox(height: 4),
               Text(
-                '${result.pokemon.name}  ·  ${result.score.label}',
+                '${result.bogeybeast.name}  ·  ${result.score.label}',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color:
                       theme.colorScheme.onSurface.withValues(alpha: 0.6),
@@ -792,8 +792,8 @@ class _HoleResolutionViewState extends State<_HoleResolutionView>
               const SizedBox(height: 24),
               SlideTransition(
                 position: _slideAnimation,
-                child: PokemonArt(
-                  imageUrl: result.pokemon.imageUrl,
+                child: BogeybeastArt(
+                  imageUrl: result.bogeybeast.imageUrl,
                   height: 200,
                 ),
               ),
@@ -937,10 +937,10 @@ class _RoundCompleteCard extends StatelessWidget {
                   value: '${summary.caughtCount}/${summary.holes.length}'),
             ],
           ),
-          if (summary.caughtPokemon.isNotEmpty) ...<Widget>[
+          if (summary.caughtBogeybeast.isNotEmpty) ...<Widget>[
             const SizedBox(height: 12),
             Text(
-              summary.caughtPokemon.map((p) => p.name).join(', '),
+              summary.caughtBogeybeast.map((p) => p.name).join(', '),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
@@ -1035,7 +1035,7 @@ class _NextEncounterBoostsCard extends StatelessWidget {
   final int streakBonus;
   final int streakCount;
 
-  static String _typeNames(Set<PokemonType> types) => types
+  static String _typeNames(Set<BogeybeastType> types) => types
       .map((t) => t.name[0].toUpperCase() + t.name.substring(1))
       .join(' · ');
 
@@ -1057,7 +1057,7 @@ class _NextEncounterBoostsCard extends StatelessWidget {
         ((5 + streakBonus) / (100 + streakBonus) * 100).round();
 
     Widget terrainRow(
-        IconData icon, Color color, String label, Set<PokemonType> types) {
+        IconData icon, Color color, String label, Set<BogeybeastType> types) {
       return Padding(
         padding: const EdgeInsets.only(top: 7),
         child: Row(

@@ -1,26 +1,26 @@
-import 'pokemon_type.dart';
+import 'bogeybeast_type.dart';
 
-const Set<PokemonType> bunkerTypes = {
-  PokemonType.ground,
-  PokemonType.rock,
-  PokemonType.fire,
+const Set<BogeybeastType> bunkerTypes = {
+  BogeybeastType.ground,
+  BogeybeastType.rock,
+  BogeybeastType.fire,
 };
 
-const Set<PokemonType> waterTypes = {
-  PokemonType.water,
-  PokemonType.ice,
+const Set<BogeybeastType> waterTypes = {
+  BogeybeastType.water,
+  BogeybeastType.ice,
 };
 
-const Set<PokemonType> roughTypes = {
-  PokemonType.grass,
-  PokemonType.poison,
-  PokemonType.bug,
+const Set<BogeybeastType> roughTypes = {
+  BogeybeastType.grass,
+  BogeybeastType.poison,
+  BogeybeastType.bug,
 };
 
-const Set<PokemonType> onePuttTypes = {
-  PokemonType.psychic,
-  PokemonType.ghost,
-  PokemonType.electric,
+const Set<BogeybeastType> onePuttTypes = {
+  BogeybeastType.psychic,
+  BogeybeastType.ghost,
+  BogeybeastType.electric,
 };
 
 class EncounterModifiers {
@@ -40,8 +40,8 @@ class EncounterModifiers {
   /// Resets to 0 on bogey or worse.
   final int streakBonus;
 
-  Set<PokemonType> get boostedTypes {
-    final Set<PokemonType> types = <PokemonType>{};
+  Set<BogeybeastType> get boostedTypes {
+    final Set<BogeybeastType> types = <BogeybeastType>{};
     if (bunker) types.addAll(bunkerTypes);
     if (water) types.addAll(waterTypes);
     if (rough) types.addAll(roughTypes);

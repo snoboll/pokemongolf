@@ -9,14 +9,14 @@ import '../models/encounter_modifiers.dart';
 import '../models/golf_course.dart';
 import '../models/golf_score.dart';
 import '../models/hole_stats.dart';
-import '../models/pokemon_species.dart';
+import '../models/bogeybeast_species.dart';
 import '../models/round_models.dart';
 import '../services/catch_service.dart';
 import '../services/encounter_service.dart';
 import '../services/supabase_service.dart';
 
-class PokemonGolfStore extends ChangeNotifier {
-  PokemonGolfStore({
+class BogeybeastGolfStore extends ChangeNotifier {
+  BogeybeastGolfStore({
     EncounterService? encounterService,
     CatchService? catchService,
     SupabaseService? supabaseService,
@@ -33,9 +33,9 @@ class PokemonGolfStore extends ChangeNotifier {
 
   ActiveRound? _activeRound;
   final Set<int> _pendingCatches = <int>{};
-  String? _trainerName;
-  String? _trainerSprite;
-  String? _trainerTeam;
+  String? _golferName;
+  String? _golferSprite;
+  String? _golferTeam;
   DateTime? _teamChangedAt;
   double? _hcpOverride;
   String? _homeCourseId;
@@ -46,9 +46,9 @@ class PokemonGolfStore extends ChangeNotifier {
   Map<String, CourseLeader> _defaultLeaders = {};
 
   ActiveRound? get activeRound => _activeRound;
-  String? get trainerName => _trainerName;
-  String? get trainerSprite => _trainerSprite;
-  String? get trainerTeam => _trainerTeam;
+  String? get golferName => _golferName;
+  String? get golferSprite => _golferSprite;
+  String? get golferTeam => _golferTeam;
   DateTime? get teamChangedAt => _teamChangedAt;
   String? get homeCourseId => _homeCourseId;
 
@@ -157,21 +157,21 @@ class PokemonGolfStore extends ChangeNotifier {
     return null;
   }
 
-  void setTrainerSprite(String? sprite) {
-    _trainerSprite = sprite;
+  void setGolferSprite(String? sprite) {
+    _golferSprite = sprite;
     notifyListeners();
-    _supabaseService?.updateTrainerSprite(sprite).catchError((e) {
-      debugPrint('Failed to update trainer sprite: $e');
+    _supabaseService?.updateGolferSprite(sprite).catchError((e) {
+      debugPrint('Failed to update golfer sprite: $e');
     });
   }
 
-  void setTrainerTeam(String? team) {
+  void setGolferTeam(String? team) {
     if (!canChangeTeam) return;
-    _trainerTeam = team;
+    _golferTeam = team;
     _teamChangedAt = DateTime.now().toUtc();
     notifyListeners();
-    _supabaseService?.updateTrainerTeam(team).catchError((e) {
-      debugPrint('Failed to update trainer team: $e');
+    _supabaseService?.updateGolferTeam(team).catchError((e) {
+      debugPrint('Failed to update golfer team: $e');
     });
   }
 
@@ -196,14 +196,14 @@ class PokemonGolfStore extends ChangeNotifier {
     final Set<int> seen = <int>{};
     for (final GolfRoundSummary round in _completedRounds) {
       for (final hole in round.holes) {
-        seen.add(hole.pokemon.dexNumber);
+        seen.add(hole.bogeybeast.dexNumber);
       }
     }
     return seen;
   }
 
-  bool hasCaught(PokemonSpecies pokemon) {
-    return _caughtDexNumbers.contains(pokemon.dexNumber);
+  bool hasCaught(BogeybeastSpecies bogeybeast) {
+    return _caughtDexNumbers.contains(bogeybeast.dexNumber);
   }
 
   Future<void> loadUserData() async {
@@ -214,7 +214,7 @@ class PokemonGolfStore extends ChangeNotifier {
       final results = await Future.wait([
         supa.fetchCaughtDexNumbers(),
         supa.fetchCompletedRounds(),
-        supa.fetchTrainerName(),
+        supa.fetchGolferName(),
       ]);
 
       _caughtDexNumbers
@@ -223,20 +223,20 @@ class PokemonGolfStore extends ChangeNotifier {
       _completedRounds
         ..clear()
         ..addAll(results[1] as List<GolfRoundSummary>);
-      _trainerName = results[2] as String?;
+      _golferName = results[2] as String?;
 
       try {
-        _trainerSprite = await supa.fetchTrainerSprite();
+        _golferSprite = await supa.fetchGolferSprite();
       } catch (e) {
-        debugPrint('Failed to load trainer sprite: $e');
+        debugPrint('Failed to load golfer sprite: $e');
       }
 
       try {
-        final teamData = await supa.fetchTrainerTeam();
-        _trainerTeam = teamData.team;
+        final teamData = await supa.fetchGolferTeam();
+        _golferTeam = teamData.team;
         _teamChangedAt = teamData.changedAt;
       } catch (e) {
-        debugPrint('Failed to load trainer team: $e');
+        debugPrint('Failed to load golfer team: $e');
       }
 
       try {
@@ -289,11 +289,11 @@ class PokemonGolfStore extends ChangeNotifier {
     }
   }
 
-  Future<void> releasePokemon(PokemonSpecies pokemon) async {
-    _caughtDexNumbers.remove(pokemon.dexNumber);
+  Future<void> releaseBogeybeast(BogeybeastSpecies bogeybeast) async {
+    _caughtDexNumbers.remove(bogeybeast.dexNumber);
     notifyListeners();
-    _supabaseService?.releasePokemon(pokemon.dexNumber).catchError((e) {
-      debugPrint('Failed to release pokemon: $e');
+    _supabaseService?.releaseBogeybeast(bogeybeast.dexNumber).catchError((e) {
+      debugPrint('Failed to release bogeybeast: $e');
     });
   }
 
@@ -340,9 +340,9 @@ class PokemonGolfStore extends ChangeNotifier {
     _caughtDexNumbers.clear();
     _completedRounds.clear();
     _activeRound = null;
-    _trainerName = null;
-    _trainerSprite = null;
-    _trainerTeam = null;
+    _golferName = null;
+    _golferSprite = null;
+    _golferTeam = null;
     _teamChangedAt = null;
     _hcpOverride = null;
     _homeCourseId = null;
@@ -423,7 +423,7 @@ class PokemonGolfStore extends ChangeNotifier {
       holeNumber: round.currentHoleNumber,
       par: par,
       strokes: strokes,
-      pokemon: round.currentEncounter,
+      bogeybeast: round.currentEncounter,
       score: score,
       catchChance: chance,
       caught: caught,
@@ -549,7 +549,7 @@ class PokemonGolfStore extends ChangeNotifier {
   }
 
   void _persistCatch(int dexNumber) {
-    _supabaseService?.insertCaughtPokemon(dexNumber).catchError((e) {
+    _supabaseService?.insertCaughtBogeybeast(dexNumber).catchError((e) {
       debugPrint('Failed to persist catch: $e');
     });
   }

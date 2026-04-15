@@ -6,11 +6,11 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../app.dart';
-import '../data/first_gen_pokemon.dart';
+import '../data/first_gen_bogeybeasts.dart';
 import '../models/course_leader.dart';
 import '../models/golf_course.dart';
-import '../models/trainer_team.dart';
-import '../state/pokemon_golf_store.dart';
+import '../models/golfer_team.dart';
+import '../state/bogeybeasts_golf_store.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       if (!mounted) return;
 
-      final store = PokemonGolfScope.of(context);
+      final store = BogeybeastGolfScope.of(context);
       final courses = store.catalogCourses
           .where((c) => c.lat != null && c.lng != null)
           .toList();
@@ -103,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final store = PokemonGolfScope.of(context);
+    final store = BogeybeastGolfScope.of(context);
     final theme = Theme.of(context);
 
     return SafeArea(
@@ -119,22 +119,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
                       Icon(
-                        Icons.catching_pokemon,
+                        Icons.pets,
                         size: 72,
                         color: theme.colorScheme.primary,
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Pokemon Golf',
+                        'Bogeybeasts',
                         style: theme.textTheme.headlineLarge?.copyWith(
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.5,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      if (store.trainerName != null) ...<Widget>[
+                      if (store.golferName != null) ...<Widget>[
                         Text(
-                          'Trainer ${store.trainerName}',
+                          'Golfer ${store.golferName}',
                           style: theme.textTheme.titleMedium?.copyWith(
                             color: theme.colorScheme.primary,
                             fontWeight: FontWeight.w600,
@@ -174,16 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       const SizedBox(height: 48),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: widget.onPlay,
-                          icon: const Icon(Icons.play_arrow_rounded, size: 26),
-                          label: const Text('Play'),
-                        ),
-                      ),
                       if (store.activeRound != null) ...<Widget>[
-                        const SizedBox(height: 16),
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
@@ -194,40 +185,47 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
+                        const SizedBox(height: 16),
                       ],
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: store.caughtDexNumbers.length >= 3
-                              ? widget.onBattleMode
-                              : null,
-                          icon: const Text('⚔️', style: TextStyle(fontSize: 20)),
-                          label: const Text('Battle Mode'),
-                        ),
-                      ),
-                      if (store.caughtDexNumbers.length < 3)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(
-                            'Catch ${3 - store.caughtDexNumbers.length} more Pokémon to unlock',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.4),
+                      // ── Catch (primary) ──────────────────────────────
+                      _CatchCard(onTap: widget.onPlay),
+                      const SizedBox(height: 10),
+                      // ── PvP + Gym (secondary row) ─────────────────────
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _ActionCard(
+                              icon: Icons.videogame_asset_rounded,
+                              label: 'PvP',
+                              subtitle: 'PvP challenge',
+                              color: const Color(0xFFC62828),
+                              onTap: store.caughtDexNumbers.length >= 3
+                                  ? widget.onBattleMode
+                                  : null,
+                              lockHint: store.caughtDexNumbers.length < 3
+                                  ? 'Catch ${3 - store.caughtDexNumbers.length} more'
+                                  : null,
                             ),
                           ),
-                        ),
-                      const SizedBox(height: 16),
-                      _GymChallengeCard(
-                        nearestCourse: _nearestCourse,
-                        locationDone: _locationDone,
-                        leader: _nearestCourse != null
-                            ? store.leaderForCourse(_nearestCourse!.id)
-                            : null,
-                        canChallenge: store.caughtDexNumbers.length >= 3,
-                        onChallenge: _nearestCourse != null
-                            ? () => widget.onGymChallenge(_nearestCourse!)
-                            : null,
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _GymCard(
+                              nearestCourse: _nearestCourse,
+                              locationDone: _locationDone,
+                              leader: _nearestCourse != null
+                                  ? store.leaderForCourse(_nearestCourse!.id)
+                                  : null,
+                              canChallenge: store.caughtDexNumbers.length >= 3,
+                              lockHint: store.caughtDexNumbers.length < 3
+                                  ? 'Catch ${3 - store.caughtDexNumbers.length} more'
+                                  : null,
+                              onTap: store.caughtDexNumbers.length >= 3 && _nearestCourse != null
+                                  ? () => widget.onGymChallenge(_nearestCourse!)
+                                  : null,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 48),
                       Container(
@@ -247,9 +245,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
                             _QuickStat(
-                              icon: Icons.catching_pokemon,
+                              icon: Icons.pets,
                               value: '${store.caughtDexNumbers.length}',
-                              label: '/ ${firstGenPokemon.length}',
+                              label: '/ ${firstGenBogeybeast.length}',
                             ),
                             Container(
                               width: 1,
@@ -325,7 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Reset all progress?'),
         content: const Text(
-          'This will permanently delete your entire Pokedex and all scorecards. This cannot be undone.',
+          'This will permanently delete your entire Bogeydex and all scorecards. This cannot be undone.',
         ),
         actions: <Widget>[
           TextButton(
@@ -338,7 +336,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             onPressed: () async {
               Navigator.of(ctx).pop();
-              final store = PokemonGolfScope.of(context);
+              final store = BogeybeastGolfScope.of(context);
               try {
                 await store.resetProgress();
                 if (context.mounted) {
@@ -446,7 +444,7 @@ class _InfoSheet extends StatelessWidget {
           _section(theme, 'Terrain Bonuses'),
           const SizedBox(height: 8),
           Text(
-            'Toggle terrain on a hole to boost the chance of encountering matching Pokemon types on the next hole.',
+            'Toggle terrain on a hole to boost the chance of encountering matching Bogeybeast types on the next hole.',
             style: TextStyle(color: dim),
           ),
           const SizedBox(height: 10),
@@ -599,131 +597,301 @@ class _InfoSheet extends StatelessWidget {
     );
   }
 }
-class _GymChallengeCard extends StatelessWidget {
-  const _GymChallengeCard({
+// Full-width primary Catch card.
+class _CatchCard extends StatelessWidget {
+  const _CatchCard({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const shadowColor = Color(0xFF2E7D32);
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF56C45A), Color(0xFF2E7D32)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: shadowColor.withValues(alpha: 0.5),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 22),
+              child: Column(
+                children: [
+                  const Icon(Icons.pets_rounded, color: Colors.white, size: 32),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Catch',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Play a round',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.white.withValues(alpha: 0.75),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Compact secondary card (PvP).
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+    this.lockHint,
+  });
+
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final Color color;
+  final VoidCallback? onTap;
+  final String? lockHint;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final enabled = onTap != null;
+    final effectiveColor = enabled ? color : color.withValues(alpha: 0.35);
+
+    return Material(
+      color: effectiveColor.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: effectiveColor.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: effectiveColor, size: 26),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: effectiveColor,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                enabled ? subtitle : (lockHint ?? subtitle),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: theme.colorScheme.onSurface.withValues(alpha: enabled ? 0.4 : 0.2),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Gym card: compact secondary card with embedded leader preview.
+class _GymCard extends StatelessWidget {
+  const _GymCard({
     required this.nearestCourse,
     required this.locationDone,
     required this.leader,
     required this.canChallenge,
-    required this.onChallenge,
+    required this.onTap,
+    this.lockHint,
   });
 
   final GolfCourse? nearestCourse;
   final bool locationDone;
   final CourseLeader? leader;
   final bool canChallenge;
-  final VoidCallback? onChallenge;
+  final VoidCallback? onTap;
+  final String? lockHint;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    const gymColor = Color(0xFFF9A825);
     final leaderColor = leader != null
-        ? teamColor(TrainerTeam.fromDb(leader!.trainerTeam))
-        : npcAmber;
+        ? teamColor(GolferTeam.fromDb(leader!.golferTeam))
+        : gymColor;
+    final enabled = onTap != null;
+    final effectiveColor = enabled ? leaderColor : leaderColor.withValues(alpha: 0.35);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: leaderColor.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: leaderColor.withValues(alpha: 0.25)),
+    // Loading / no gym nearby — simple compact state
+    if (nearestCourse == null || leader == null) {
+      return Material(
+        color: gymColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: gymColor.withValues(alpha: 0.25)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.shield_rounded, color: gymColor.withValues(alpha: 0.35), size: 26),
+              const SizedBox(height: 6),
+              Text(
+                'Gym',
+                style: TextStyle(
+                  color: gymColor.withValues(alpha: 0.35),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                !locationDone ? 'Finding gym…' : 'No gym nearby',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: gymColor.withValues(alpha: 0.3),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Gym found — show leader info inside the card
+    return Material(
+      color: effectiveColor.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: effectiveColor.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.shield_rounded, color: effectiveColor, size: 14),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Gym',
+                    style: TextStyle(
+                      color: effectiveColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _GolferSprite(sprite: leader!.golferSprite, size: 36),
+              const SizedBox(height: 4),
+              Text(
+                leader!.leaderName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: effectiveColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                nearestCourse!.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: effectiveColor.withValues(alpha: 0.6),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (leader!.team.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (final p in leader!.team.take(3))
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: Image.network(
+                            p.imageUrl,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+              if (!enabled && lockHint != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  lockHint!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: effectiveColor.withValues(alpha: 0.5),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
-      child: nearestCourse == null || leader == null
-          ? Row(
-              children: [
-                Icon(Icons.shield, size: 20, color: npcAmber.withValues(alpha: 0.4)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    !locationDone ? 'Finding nearby gym…' : 'No gym nearby',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                    ),
-                  ),
-                ),
-              ],
-            )
-          : Row(
-              children: [
-                _TrainerSprite(sprite: leader!.trainerSprite, size: 48),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        nearestCourse!.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                        ),
-                      ),
-                      Text(
-                        '${leader!.leaderName}  ·  HCP ${leader!.hcp}',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: leaderColor,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          for (final p in leader!.team)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 4),
-                              child: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: Image.network(
-                                  p.imageUrl,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) =>
-                                      const SizedBox.shrink(),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  height: 48,
-                  child: OutlinedButton(
-                    onPressed: canChallenge ? onChallenge : null,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: leaderColor,
-                      side: BorderSide(
-                        color: canChallenge
-                            ? leaderColor.withValues(alpha: 0.5)
-                            : leaderColor.withValues(alpha: 0.15),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('⚔️', style: TextStyle(fontSize: 16)),
-                        SizedBox(height: 2),
-                        Text('Gym', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
     );
   }
 }
 
-class _TrainerSprite extends StatelessWidget {
-  const _TrainerSprite({required this.sprite, this.size = 32});
+class _GolferSprite extends StatelessWidget {
+  const _GolferSprite({required this.sprite, this.size = 32});
 
   final String? sprite;
   final double size;

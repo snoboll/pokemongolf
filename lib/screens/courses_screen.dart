@@ -7,7 +7,7 @@ import '../app.dart';
 import '../models/battle_models.dart';
 import '../models/course_leader.dart';
 import '../models/golf_course.dart';
-import '../models/trainer_team.dart';
+import '../models/golfer_team.dart';
 import '../services/battle_service.dart';
 import '../services/supabase_service.dart';
 import '../state/battle_store.dart';
@@ -51,7 +51,7 @@ class _CoursesScreenState extends State<CoursesScreen>
 
   Future<void> _loadUserCourses() async {
     if (!mounted) return;
-    final store = PokemonGolfScope.of(context);
+    final store = BogeybeastGolfScope.of(context);
     setState(() => _loading = true);
     try {
       final service = SupabaseService();
@@ -71,7 +71,7 @@ class _CoursesScreenState extends State<CoursesScreen>
   }
 
   void _startRound(GolfCourse course) {
-    final store = PokemonGolfScope.of(context);
+    final store = BogeybeastGolfScope.of(context);
 
     void launch(List<int> pars, {List<({double lat, double lng})?>? greenCoords}) {
       store.startRound(pars.length, holePars: pars, courseName: course.name, greenCoords: greenCoords);
@@ -121,22 +121,81 @@ class _CoursesScreenState extends State<CoursesScreen>
     launch(pars, greenCoords: course.singleLoopNullableGreens);
   }
 
-  void _challengeLeader(GolfCourse course) async {
-    final store = PokemonGolfScope.of(context);
-    final leader = store.leaderForCourse(course.id);
+  void _startBattle(GolfCourse course) async {
+    final store = BogeybeastGolfScope.of(context);
 
     if (store.caughtDexNumbers.length < 3) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Catch at least 3 Pokemon to challenge a leader')),
+        const SnackBar(content: Text('Catch at least 3 Bogeybeast to battle')),
       );
       return;
     }
 
-    final team = await Navigator.of(context).push<List<BattlePokemon>>(
+    final team = await Navigator.of(context).push<List<BattleBogeybeast>>(
       MaterialPageRoute(
         builder: (_) => TeamSelectScreen(
           caughtDexNumbers: Set<int>.from(store.caughtDexNumbers),
-          title: 'Challenge ${leader.leaderName}',
+          title: 'Pick your team',
+        ),
+      ),
+    );
+    if (team == null || !mounted) return;
+
+    final pars = course.flatPars;
+    final holeCount = pars.length > 18 ? 18 : pars.length;
+    final selectedPars = pars.take(holeCount).toList();
+
+    try {
+      final battleStore = BattleStore(service: BattleService());
+      final battle = await battleStore.createBattle(
+        courseId:       course.id,
+        courseName:     course.name,
+        holeCount:      holeCount,
+        coursePars:     selectedPars,
+        team:           team,
+        challengerName: store.golferName ?? 'Golfer',
+      );
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('PvP challenge created at ${course.name}!')),
+      );
+
+      battleStore.watchBattle(battle.id);
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => BattleScope(
+            notifier: battleStore,
+            child: BattleRoundScreen(battleId: battle.id),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  void _challengeLeader(GolfCourse course) async {
+    final store = BogeybeastGolfScope.of(context);
+    final leader = store.leaderForCourse(course.id);
+
+    if (store.caughtDexNumbers.length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Catch at least 3 Bogeybeast to challenge a leader')),
+      );
+      return;
+    }
+
+    final team = await Navigator.of(context).push<List<BattleBogeybeast>>(
+      MaterialPageRoute(
+        builder: (_) => TeamSelectScreen(
+          caughtDexNumbers: Set<int>.from(store.caughtDexNumbers),
+          title: 'Pick your team',
+          leader: leader,
         ),
       ),
     );
@@ -154,7 +213,7 @@ class _CoursesScreenState extends State<CoursesScreen>
         holeCount:      holeCount,
         coursePars:     selectedPars,
         team:           team,
-        challengerName: store.trainerName ?? 'Trainer',
+        challengerName: store.golferName ?? 'Golfer',
         leaderName:     leader.leaderName,
         leaderTeam:     leader.team,
         leaderHcp:      leader.hcp,
@@ -171,7 +230,7 @@ class _CoursesScreenState extends State<CoursesScreen>
       )).then((_) {
         battleStore.stopWatching();
         if (mounted) {
-          PokemonGolfScope.of(context).refreshCourseLeaders();
+          BogeybeastGolfScope.of(context).refreshCourseLeaders();
         }
       });
     } catch (e) {
@@ -184,7 +243,7 @@ class _CoursesScreenState extends State<CoursesScreen>
   }
 
   Future<void> _setHomeCourse(GolfCourse course) async {
-    final store = PokemonGolfScope.of(context);
+    final store = BogeybeastGolfScope.of(context);
     try {
       final service = SupabaseService();
       await service.setHomeCourse(course.id);
@@ -205,7 +264,7 @@ class _CoursesScreenState extends State<CoursesScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final store = PokemonGolfScope.of(context);
+    final store = BogeybeastGolfScope.of(context);
 
     final allCourses = <GolfCourse>[
       ...store.catalogCourses,
@@ -243,6 +302,7 @@ class _CoursesScreenState extends State<CoursesScreen>
               ? _CourseMap(
                   courses: [...store.catalogCourses, ..._userCourses],
                   onStartRound: _startRound,
+                  onStartBattle: _startBattle,
                   onChallengeLeader: _challengeLeader,
                   leaderForCourse: store.leaderForCourse,
                 )
@@ -280,6 +340,7 @@ class _CoursesScreenState extends State<CoursesScreen>
                             isHome: true,
                             onSetHome: () {},
                             onPlay: () => _startRound(homeCourse),
+                            onBattle: () => _startBattle(homeCourse),
                             leader: store.leaderForCourse(homeCourse.id),
                             onChallenge: () => _challengeLeader(homeCourse),
                           ),
@@ -334,6 +395,7 @@ class _CoursesScreenState extends State<CoursesScreen>
                           isHome: false,
                           onSetHome: () => _setHomeCourse(course),
                           onPlay: () => _startRound(course),
+                          onBattle: () => _startBattle(course),
                           leader: store.leaderForCourse(course.id),
                           onChallenge: () => _challengeLeader(course),
                         );
@@ -352,12 +414,14 @@ class _CourseMap extends StatefulWidget {
   const _CourseMap({
     required this.courses,
     required this.onStartRound,
+    required this.onStartBattle,
     required this.onChallengeLeader,
     required this.leaderForCourse,
   });
 
   final List<GolfCourse> courses;
   final void Function(GolfCourse) onStartRound;
+  final void Function(GolfCourse) onStartBattle;
   final void Function(GolfCourse) onChallengeLeader;
   final CourseLeader Function(String courseId) leaderForCourse;
 
@@ -412,9 +476,7 @@ class _CourseMapState extends State<_CourseMap> {
         },
         onBattle: () {
           Navigator.of(context).pop();
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const BattleFlow()),
-          );
+          widget.onStartBattle(course);
         },
         onGym: () {
           Navigator.of(context).pop();
@@ -498,7 +560,7 @@ class _CourseMapState extends State<_CourseMap> {
                       onTap: () => _openCourseActions(course),
                       child: Builder(builder: (_) {
                         final leader = widget.leaderForCourse(course.id);
-                        final dotColor = teamColor(TrainerTeam.fromDb(leader.trainerTeam));
+                        final dotColor = teamColor(GolferTeam.fromDb(leader.golferTeam));
                         return showDetail
                           ? _DetailMarker(
                               course: course,
@@ -528,7 +590,7 @@ class _CourseMapState extends State<_CourseMap> {
   }
 }
 
-// ── Course action sheet (Catch / Battle / Gym) ──────────────────────────────
+// ── Course action sheet (Catch / PvP / Gym) ─────────────────────────────────
 
 class _CourseActionSheet extends StatelessWidget {
   const _CourseActionSheet({
@@ -548,7 +610,7 @@ class _CourseActionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final leaderColor = teamColor(TrainerTeam.fromDb(leader.trainerTeam));
+    final leaderColor = teamColor(GolferTeam.fromDb(leader.golferTeam));
     final totalPar = course.flatPars.isEmpty
         ? null
         : course.flatPars.reduce((a, b) => a + b);
@@ -599,7 +661,7 @@ class _CourseActionSheet extends StatelessWidget {
             ),
             child: Row(
               children: [
-                _TrainerAvatar(sprite: leader.trainerSprite, size: 36),
+                _GolferAvatar(sprite: leader.golferSprite, size: 36),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -633,7 +695,7 @@ class _CourseActionSheet extends StatelessWidget {
                         p.imageUrl,
                         fit: BoxFit.contain,
                         errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.catching_pokemon, size: 18),
+                            const Icon(Icons.pets, size: 18),
                       ),
                     ),
                   ),
@@ -647,7 +709,7 @@ class _CourseActionSheet extends StatelessWidget {
             children: [
               Expanded(
                 child: _ActionButton(
-                  icon: Icons.catching_pokemon,
+                  icon: Icons.pets,
                   label: 'Catch',
                   color: theme.colorScheme.primary,
                   subtitle: 'Play a round',
@@ -657,8 +719,8 @@ class _CourseActionSheet extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _ActionButton(
-                  icon: Icons.sports_mma,
-                  label: 'Battle',
+                  icon: Icons.videogame_asset_rounded,
+                  label: 'PvP',
                   color: Colors.redAccent,
                   subtitle: 'PvP challenge',
                   onTap: onBattle,
@@ -667,7 +729,7 @@ class _CourseActionSheet extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _ActionButton(
-                  icon: TrainerTeam.fromDb(leader.trainerTeam)?.icon ?? Icons.shield,
+                  icon: GolferTeam.fromDb(leader.golferTeam)?.icon ?? Icons.shield,
                   label: 'Gym',
                   color: leaderColor,
                   subtitle: 'Challenge leader',
@@ -820,7 +882,7 @@ class _DetailMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final leaderColor = teamColor(TrainerTeam.fromDb(leader.trainerTeam));
+    final leaderColor = teamColor(GolferTeam.fromDb(leader.golferTeam));
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -843,7 +905,7 @@ class _DetailMarker extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _TrainerAvatar(sprite: leader.trainerSprite, size: 56),
+              _GolferAvatar(sprite: leader.golferSprite, size: 56),
               const SizedBox(width: 10),
               Flexible(
                 child: Column(
@@ -925,6 +987,7 @@ class _CourseCard extends StatefulWidget {
     required this.isHome,
     required this.onSetHome,
     required this.onPlay,
+    required this.onBattle,
     required this.leader,
     required this.onChallenge,
   });
@@ -933,6 +996,7 @@ class _CourseCard extends StatefulWidget {
   final bool isHome;
   final VoidCallback onSetHome;
   final VoidCallback onPlay;
+  final VoidCallback onBattle;
   final CourseLeader leader;
   final VoidCallback onChallenge;
 
@@ -1044,101 +1108,44 @@ class _CourseCardState extends State<_CourseCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          if (course.hasMultipleLoops)
-            for (final CourseLoop loop in course.loops) ...[
-              Row(
-                children: <Widget>[
-                  Text(
-                    loop.name.isEmpty ? 'Loop' : loop.name,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Par ${loop.holes.fold<int>(0, (int a, CourseHole h) => a + h.par)}',
-                    style: theme.textTheme.labelMedium?.copyWith(color: dim),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              _HoleParGrid(
-                pars: loop.holes.map((CourseHole h) => h.par).toList(growable: false),
-                startHole: 1,
-              ),
-              const SizedBox(height: 12),
-            ]
-          else ...[
-            if (course.flatPars.length >= 18) ...[
-              Row(
-                children: <Widget>[
-                  Text('Front 9', style: theme.textTheme.labelMedium?.copyWith(color: dim)),
-                  const Spacer(),
-                  Text(
-                    'Par ${course.flatPars.sublist(0, 9).fold<int>(0, (a, b) => a + b)}',
-                    style: theme.textTheme.labelMedium?.copyWith(color: dim),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              _HoleParGrid(pars: course.flatPars.sublist(0, 9), startHole: 1),
-              const SizedBox(height: 10),
-              Row(
-                children: <Widget>[
-                  Text('Back 9', style: theme.textTheme.labelMedium?.copyWith(color: dim)),
-                  const Spacer(),
-                  Text(
-                    'Par ${course.flatPars.sublist(9).fold<int>(0, (a, b) => a + b)}',
-                    style: theme.textTheme.labelMedium?.copyWith(color: dim),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              _HoleParGrid(pars: course.flatPars.sublist(9), startHole: 10),
-            ] else ...[
-              Row(
-                children: <Widget>[
-                  Text(
-                    '${course.flatPars.length} holes',
-                    style: theme.textTheme.labelMedium?.copyWith(color: dim),
-                  ),
-                  const Spacer(),
-                  Text(
-                    'Par ${course.flatPars.fold<int>(0, (a, b) => a + b)}',
-                    style: theme.textTheme.labelMedium?.copyWith(color: dim),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              _HoleParGrid(pars: course.flatPars, startHole: 1),
-            ],
-          ],
-          const SizedBox(height: 14),
           _LeaderSection(leader: widget.leader, onChallenge: widget.onChallenge),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           Row(
-            children: <Widget>[
-              if (!widget.isHome)
-                TextButton.icon(
-                  onPressed: widget.onSetHome,
-                  icon: const Icon(Icons.home_outlined, size: 18),
-                  label: const Text('Set as home'),
-                  style: TextButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                  ),
+            children: [
+              Expanded(
+                child: _ActionButton(
+                  icon: Icons.pets,
+                  label: 'Catch',
+                  color: theme.colorScheme.primary,
+                  subtitle: 'Play a round',
+                  onTap: widget.onPlay,
                 ),
-              const Spacer(),
-              FilledButton.icon(
-                onPressed: widget.onPlay,
-                icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                label: const Text('Play'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _ActionButton(
+                  icon: Icons.videogame_asset_rounded,
+                  label: 'PvP',
+                  color: Colors.redAccent,
+                  subtitle: 'PvP challenge',
+                  onTap: widget.onBattle,
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 10),
+          if (!widget.isHome)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: widget.onSetHome,
+                icon: const Icon(Icons.home_outlined, size: 18),
+                label: const Text('Set as home'),
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -1153,123 +1160,131 @@ class _LeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final leaderColor = teamColor(TrainerTeam.fromDb(leader.trainerTeam));
+    final leaderColor = teamColor(GolferTeam.fromDb(leader.golferTeam));
+    final roleLabel = leader.isNpc
+        ? 'Gym Leader'
+        : (GolferTeam.fromDb(leader.golferTeam)?.label ?? 'Gym Leader');
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: leaderColor.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: leaderColor.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          _TrainerAvatar(sprite: leader.trainerSprite, size: 56),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      leader.isNpc ? Icons.smart_toy_outlined : Icons.person,
-                      size: 12,
-                      color: leaderColor.withValues(alpha: 0.6),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      leader.isNpc ? 'Gym Leader' : (TrainerTeam.fromDb(leader.trainerTeam)?.label ?? 'Gym Leader'),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: leaderColor.withValues(alpha: 0.6),
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Text(
-                      leader.leaderName,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'HCP ${leader.hcp}',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+    return GestureDetector(
+      onTap: onChallenge,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: leaderColor.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: leaderColor.withValues(alpha: 0.45), width: 1.5),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _GolferAvatar(sprite: leader.golferSprite, size: 52),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.shield_rounded, size: 11, color: leaderColor.withValues(alpha: 0.7)),
+                      const SizedBox(width: 4),
+                      Text(
+                        roleLabel,
+                        style: TextStyle(
+                          color: leaderColor.withValues(alpha: 0.7),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    for (final pokemon in leader.team)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: SizedBox(
-                          width: 34,
-                          height: 34,
-                          child: Image.network(
-                            pokemon.imageUrl,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) =>
-                                const Icon(Icons.catching_pokemon, size: 20),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Text(
+                        leader.leaderName,
+                        style: TextStyle(
+                          color: leaderColor,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: leaderColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'HCP ${leader.hcp}',
+                          style: TextStyle(
+                            color: leaderColor.withValues(alpha: 0.8),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
+                    ],
+                  ),
+                  if (leader.team.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        for (final b in leader.team)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: SizedBox(
+                              width: 32,
+                              height: 32,
+                              child: Image.network(
+                                b.imageUrl,
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) =>
+                                    const Icon(Icons.pets, size: 18),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            height: 56,
-            child: OutlinedButton(
-              onPressed: onChallenge,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: leaderColor,
-                side: BorderSide(color: leaderColor.withValues(alpha: 0.5)),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('⚔️', style: TextStyle(fontSize: 16)),
-                  SizedBox(height: 2),
-                  Text('Fight', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
                 ],
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: leaderColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: leaderColor.withValues(alpha: 0.4)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.shield_rounded, color: leaderColor, size: 18),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Gym',
+                    style: TextStyle(
+                      color: leaderColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _TrainerAvatar extends StatelessWidget {
-  const _TrainerAvatar({required this.sprite, this.size = 32});
+class _GolferAvatar extends StatelessWidget {
+  const _GolferAvatar({required this.sprite, this.size = 32});
 
   final String? sprite;
   final double size;
@@ -1375,21 +1390,43 @@ class _LoopPickerSheetState extends State<_LoopPickerSheet> {
   void initState() {
     super.initState();
     final loops = widget.course.loops;
+
     _options = [
+      // Individual loops
       for (int i = 0; i < loops.length; i++)
         _LoopOption(
           label: loops[i].name.isEmpty ? 'Loop ${i + 1}' : loops[i].name,
           subtitle: '${loops[i].holeCount} holes  ·  Par ${loops[i].holes.fold<int>(0, (a, h) => a + h.par)}',
           loopIndices: [i],
         ),
-      if (loops.length == 2)
+      // All pairs (18-hole combos for 3-loop courses, full round for 2-loop)
+      if (loops.length >= 2)
+        for (int a = 0; a < loops.length; a++)
+          for (int b = a + 1; b < loops.length; b++)
+            _LoopOption(
+              label: loops.length == 2
+                  ? 'Full round'
+                  : '${loops[a].name} + ${loops[b].name}',
+              subtitle: () {
+                final selected = [loops[a], loops[b]];
+                final holes = selected.fold<int>(0, (s, l) => s + l.holeCount);
+                final par = selected.expand((l) => l.holes).fold<int>(0, (s, h) => s + h.par);
+                return '$holes holes  ·  Par $par';
+              }(),
+              loopIndices: [a, b],
+            ),
+      // Full 27-hole round for 3-loop courses
+      if (loops.length == 3)
         _LoopOption(
-          label: 'Full round',
-          subtitle: '${loops.fold<int>(0, (s, l) => s + l.holeCount)} holes  ·  Par ${loops.expand((l) => l.holes).fold<int>(0, (a, h) => a + h.par)}',
-          loopIndices: [0, 1],
+          label: 'Full round (27 holes)',
+          subtitle: '${loops.fold<int>(0, (s, l) => s + l.holeCount)} holes  ·  Par ${loops.expand((l) => l.holes).fold<int>(0, (s, h) => s + h.par)}',
+          loopIndices: [0, 1, 2],
         ),
     ];
-    _selected = _options.length - 1; // default: full round or last loop
+
+    // Default to first 18-hole option if available, else last option
+    final firstPairIndex = loops.length;
+    _selected = _options.length > firstPairIndex ? firstPairIndex : _options.length - 1;
   }
 
   @override

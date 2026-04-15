@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class PokeballCaughtBadge extends StatelessWidget {
-  const PokeballCaughtBadge({super.key, required this.caught});
+class BogeycubeCaughtBadge extends StatelessWidget {
+  const BogeycubeCaughtBadge({super.key, required this.caught});
   final bool caught;
 
   @override
@@ -18,7 +18,7 @@ class PokeballCaughtBadge extends StatelessWidget {
             width: 1.5,
           ),
         ),
-        child: Icon(Icons.catching_pokemon, size: 18,
+        child: Icon(Icons.pets, size: 18,
             color: theme.colorScheme.primary),
       );
     }
@@ -32,7 +32,7 @@ class PokeballCaughtBadge extends StatelessWidget {
           width: 1.5,
         ),
       ),
-      child: Icon(Icons.catching_pokemon, size: 18,
+      child: Icon(Icons.pets, size: 18,
           color: theme.colorScheme.onSurface.withValues(alpha: 0.25)),
     );
   }

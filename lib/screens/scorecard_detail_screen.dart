@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/golf_score.dart';
-import '../models/pokemon_rarity.dart';
+import '../models/bogeybeast_rarity.dart';
 import '../models/round_models.dart';
 
 class ScorecardDetailScreen extends StatelessWidget {
@@ -167,7 +167,7 @@ class _TableHeader extends StatelessWidget {
           ),
           SizedBox(width: 40, child: Text('+/-', style: style)),
           Expanded(
-              child: Text('Pokemon', style: style, textAlign: TextAlign.right)),
+              child: Text('Bogeybeast', style: style, textAlign: TextAlign.right)),
           const SizedBox(width: 4),
         ],
       ),
@@ -260,7 +260,7 @@ class _HoleRow extends StatelessWidget {
               ),
               Expanded(
                 child: played
-                    ? _PokemonCell(result: result!)
+                    ? _BogeybeastCell(result: result!)
                     : const SizedBox.shrink(),
               ),
             ],
@@ -340,8 +340,8 @@ class _ScoreCell extends StatelessWidget {
   }
 }
 
-class _PokemonCell extends StatelessWidget {
-  const _PokemonCell({required this.result});
+class _BogeybeastCell extends StatelessWidget {
+  const _BogeybeastCell({required this.result});
 
   final HoleResult result;
 
@@ -350,7 +350,7 @@ class _PokemonCell extends StatelessWidget {
     final theme = Theme.of(context);
 
     // Battle sentinel (dex=0) — show swords emoji, no catch indicator
-    if (result.pokemon.dexNumber == 0) {
+    if (result.bogeybeast.dexNumber == 0) {
       return const Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: <Widget>[
@@ -365,7 +365,7 @@ class _PokemonCell extends StatelessWidget {
       children: <Widget>[
         Flexible(
           child: Text(
-            result.pokemon.name,
+            result.bogeybeast.name,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
@@ -379,12 +379,12 @@ class _PokemonCell extends StatelessWidget {
             width: 28,
             height: 28,
             child: Image.network(
-              result.pokemon.imageUrl,
+              result.bogeybeast.imageUrl,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stack) => Icon(
-                Icons.catching_pokemon,
+                Icons.pets,
                 size: 18,
-                color: result.pokemon.rarity.color,
+                color: result.bogeybeast.rarity.color,
               ),
             ),
           ),

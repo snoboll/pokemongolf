@@ -1,10 +1,10 @@
-/// Battle stats for all 151 Gen 1 Pokemon.
+/// Battle stats for all 151 Gen 1 Bogeybeast.
 /// offense_tier and defense_tier are 1–10 scales.
 /// hp_tier is a 1–10 HP pool scale (Chansey = 10).
-/// Source: pokemon_battle_stats.json
+/// Source: bogeybeast_battle_stats.json
 library;
 
-const Map<int, ({int offense, int defense, int hp})> pokemonBattleStats = {
+const Map<int, ({int offense, int defense, int hp})> bogeybeastBattleStats = {
   1:   (offense: 3,  defense: 4,  hp: 2),
   2:   (offense: 5,  defense: 5,  hp: 3),
   3:   (offense: 7,  defense: 7,  hp: 4),
@@ -158,5 +158,5 @@ const Map<int, ({int offense, int defense, int hp})> pokemonBattleStats = {
   151: (offense: 8,  defense: 8,  hp: 5),
 };
 
-/// hpMax for a battle Pokemon derived from its hp tier.
+/// hpMax for a battle Bogeybeast derived from its hp tier.
 int battleHpMax(int hpTier) => hpTier * 10;

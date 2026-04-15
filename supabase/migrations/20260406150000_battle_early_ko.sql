@@ -162,8 +162,8 @@ begin
       'result',           case when v_c_strokes < v_o_strokes then 'challenger_wins' else 'opponent_wins' end,
       'damage',           v_final_dmg,
       'type_mult',        v_type_mult,
-      'attacker_pokemon', case when v_lead_atk is not null then v_lead_atk ->> 'name' else null end,
-      'defender_pokemon', case when v_lead_def is not null then v_lead_def ->> 'name' else null end,
+      'attacker_bogeybeast', case when v_lead_atk is not null then v_lead_atk ->> 'name' else null end,
+      'defender_bogeybeast', case when v_lead_def is not null then v_lead_def ->> 'name' else null end,
       'c_team_after',     v_c_team,
       'o_team_after',     v_o_team
     );

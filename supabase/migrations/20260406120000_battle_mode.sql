@@ -83,7 +83,7 @@ create table if not exists public.battles (
   opponent_scores    jsonb not null default '{}',
 
   -- Combat log: [{hole, c_strokes, o_strokes, result, damage, type_mult,
-  --               attacker_pokemon, defender_pokemon, c_team_after, o_team_after}]
+  --               attacker_bogeybeast, defender_bogeybeast, c_team_after, o_team_after}]
   hole_log           jsonb not null default '[]',
 
   winner_id          uuid references auth.users(id),
@@ -142,7 +142,7 @@ begin
 
   update battles set
     opponent_id   = auth.uid(),
-    opponent_name = (select trainer_name from profiles where user_id = auth.uid()),
+    opponent_name = (select golfer_name from profiles where user_id = auth.uid()),
     opponent_team = p_team,
     status        = 'active'
   where id = p_battle_id;
@@ -263,7 +263,7 @@ begin
       v_defender_team := v_c_team;
     end if;
 
-    -- Find lead Pokemon (first with hp_current > 0)
+    -- Find lead Bogeybeast (first with hp_current > 0)
     v_lead_atk := null;
     v_lead_def := null;
     for i in 0..jsonb_array_length(v_attacker_team) - 1 loop
@@ -278,7 +278,7 @@ begin
     end loop;
 
     if v_lead_atk is null or v_lead_def is null then
-      raise exception 'No alive Pokemon found (game should have ended)';
+      raise exception 'No alive Bogeybeast found (game should have ended)';
     end if;
 
     -- Damage calculation
@@ -294,7 +294,7 @@ begin
     if v_type_mult = 0 then v_type_mult := 1.0; end if; -- Fairy or unknown: neutral
     v_final_dmg   := greatest(1, round((v_raw_dmg + v_score_bonus)::numeric * v_type_mult)::int);
 
-    -- Apply damage: reduce hp_current of the first alive defender Pokemon
+    -- Apply damage: reduce hp_current of the first alive defender Bogeybeast
     if v_c_strokes < v_o_strokes then
       -- Challenger attacks opponent team
       for i in 0..jsonb_array_length(v_o_team) - 1 loop
@@ -322,8 +322,8 @@ begin
       'result',            case when v_c_strokes < v_o_strokes then 'challenger_wins' else 'opponent_wins' end,
       'damage',            v_final_dmg,
       'type_mult',         v_type_mult,
-      'attacker_pokemon',  v_lead_atk ->> 'name',
-      'defender_pokemon',  v_lead_def ->> 'name',
+      'attacker_bogeybeast',  v_lead_atk ->> 'name',
+      'defender_bogeybeast',  v_lead_def ->> 'name',
       'c_team_after',      v_c_team,
       'o_team_after',      v_o_team
     );

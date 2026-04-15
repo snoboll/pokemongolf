@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
 
 import '../app.dart';
-import '../data/first_gen_pokemon.dart';
-import '../data/trainer_tags.dart';
-import '../models/pokemon_rarity.dart';
-import '../models/pokemon_species.dart';
-import '../models/trainer_team.dart';
+import '../data/first_gen_bogeybeasts.dart';
+import '../data/golfer_tags.dart';
+import '../models/bogeybeast_rarity.dart';
+import '../models/bogeybeast_species.dart';
+import '../models/golfer_team.dart';
 import '../services/supabase_service.dart';
-import '../state/pokemon_golf_store.dart';
-import '../widgets/pokemon_art.dart';
+import '../state/bogeybeasts_golf_store.dart';
+import '../widgets/bogeybeast_art.dart';
 
-class TrainersScreen extends StatefulWidget {
-  const TrainersScreen({super.key});
+class GolfersScreen extends StatefulWidget {
+  const GolfersScreen({super.key});
 
   @override
-  State<TrainersScreen> createState() => _TrainersScreenState();
+  State<GolfersScreen> createState() => _GolfersScreenState();
 }
 
-class _TrainersScreenState extends State<TrainersScreen> {
-  List<TrainerProfile>? _trainers;
-  Map<String, String> _trainerTags = <String, String>{};
+class _GolfersScreenState extends State<GolfersScreen> {
+  List<GolferProfile>? _golfers;
+  Map<String, String> _golferTags = <String, String>{};
   Map<String, int> _gymCounts = <String, int>{};
   bool _loading = true;
   String? _error;
@@ -27,19 +27,19 @@ class _TrainersScreenState extends State<TrainersScreen> {
   /// Dismisses in-flight fetches so an older response cannot overwrite newer data (e.g. after reset).
   int _fetchGeneration = 0;
 
-  PokemonGolfStore? _store;
+  BogeybeastGolfStore? _store;
   int? _lastLocalCaughtCount;
 
   @override
   void initState() {
     super.initState();
-    _loadTrainers();
+    _loadGolfers();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final PokemonGolfStore store = PokemonGolfScope.of(context);
+    final BogeybeastGolfStore store = BogeybeastGolfScope.of(context);
     if (!identical(_store, store)) {
       _store?.removeListener(_onStoreChanged);
       _store = store;
@@ -55,15 +55,15 @@ class _TrainersScreenState extends State<TrainersScreen> {
   }
 
   void _onStoreChanged() {
-    final PokemonGolfStore? store = _store;
+    final BogeybeastGolfStore? store = _store;
     if (store == null) return;
     final int n = store.caughtDexNumbers.length;
     if (_lastLocalCaughtCount == n) return;
     _lastLocalCaughtCount = n;
-    _loadTrainers();
+    _loadGolfers();
   }
 
-  Future<void> _loadTrainers() async {
+  Future<void> _loadGolfers() async {
     final int generation = ++_fetchGeneration;
 
     setState(() {
@@ -74,44 +74,44 @@ class _TrainersScreenState extends State<TrainersScreen> {
     try {
       final service = SupabaseService();
       final List<Object> results = await Future.wait(<Future<Object>>[
-        service.fetchAllTrainers(),
+        service.fetchAllGolfers(),
         service.fetchAllCaughtDexNumbers(),
         service.fetchGymOwnershipCounts(),
       ]);
       if (!mounted || generation != _fetchGeneration) {
         return;
       }
-      final List<TrainerProfile> trainers =
-          results[0] as List<TrainerProfile>;
+      final List<GolferProfile> golfers =
+          results[0] as List<GolferProfile>;
       final Map<String, Set<int>> allCaught =
           results[1] as Map<String, Set<int>>;
       final Map<String, int> gymCounts =
           results[2] as Map<String, int>;
 
       final Map<String, String> tags = <String, String>{};
-      for (final TrainerProfile trainer in trainers) {
-        final Set<int>? caught = allCaught[trainer.userId];
+      for (final GolferProfile golfer in golfers) {
+        final Set<int>? caught = allCaught[golfer.userId];
         if (caught != null) {
-          final String? tag = trainerTagForCaughtDex(caught);
-          if (tag != null) tags[trainer.userId] = tag;
+          final String? tag = golferTagForCaughtDex(caught);
+          if (tag != null) tags[golfer.userId] = tag;
         }
       }
 
-      trainers.removeWhere((t) => t.trainerName == 'Test');
+      golfers.removeWhere((t) => t.golferName == 'Test');
 
       setState(() {
-        _trainers = trainers;
-        _trainerTags = tags;
+        _golfers = golfers;
+        _golferTags = tags;
         _gymCounts = gymCounts;
         _loading = false;
       });
     } catch (e, st) {
-      debugPrint('Trainers load error: $e\n$st');
+      debugPrint('Golfers load error: $e\n$st');
       if (!mounted || generation != _fetchGeneration) {
         return;
       }
       setState(() {
-        _error = 'Failed to load trainers.';
+        _error = 'Failed to load golfers.';
         _loading = false;
       });
     }
@@ -120,10 +120,10 @@ class _TrainersScreenState extends State<TrainersScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final total = firstGenPokemon.length;
+    final total = firstGenBogeybeast.length;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Trainers')),
+      appBar: AppBar(title: const Text('Golfers')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -134,40 +134,40 @@ class _TrainersScreenState extends State<TrainersScreen> {
                       Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
                       const SizedBox(height: 12),
                       FilledButton.tonal(
-                        onPressed: _loadTrainers,
+                        onPressed: _loadGolfers,
                         child: const Text('Retry'),
                       ),
                     ],
                   ),
                 )
-              : _trainers == null || _trainers!.isEmpty
+              : _golfers == null || _golfers!.isEmpty
                   ? Center(
                       child: Text(
-                        'No trainers yet',
+                        'No golfers yet',
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                         ),
                       ),
                     )
                   : RefreshIndicator(
-                      onRefresh: _loadTrainers,
+                      onRefresh: _loadGolfers,
                       child: ListView.separated(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        itemCount: _trainers!.length,
+                        itemCount: _golfers!.length,
                         separatorBuilder: (context, _) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
-                          final trainer = _trainers![index];
-                          final progress = trainer.caughtCount / total;
+                          final golfer = _golfers![index];
+                          final progress = golfer.caughtCount / total;
 
-                          return _TrainerCard(
+                          return _GolferCard(
                             rank: index + 1,
-                            trainer: trainer,
+                            golfer: golfer,
                             total: total,
                             progress: progress,
-                            homeCourseName: PokemonGolfScope.of(context)
-                                .courseNameForId(trainer.homeCourseId),
-                            tag: _trainerTags[trainer.userId],
-                            gymCount: _gymCounts[trainer.userId] ?? 0,
+                            homeCourseName: BogeybeastGolfScope.of(context)
+                                .courseNameForId(golfer.homeCourseId),
+                            tag: _golferTags[golfer.userId],
+                            gymCount: _gymCounts[golfer.userId] ?? 0,
                           );
                         },
                       ),
@@ -176,10 +176,10 @@ class _TrainersScreenState extends State<TrainersScreen> {
   }
 }
 
-class _TrainerCard extends StatelessWidget {
-  const _TrainerCard({
+class _GolferCard extends StatelessWidget {
+  const _GolferCard({
     required this.rank,
-    required this.trainer,
+    required this.golfer,
     required this.total,
     required this.progress,
     required this.gymCount,
@@ -188,7 +188,7 @@ class _TrainerCard extends StatelessWidget {
   });
 
   final int rank;
-  final TrainerProfile trainer;
+  final GolferProfile golfer;
   final int total;
   final double progress;
   final int gymCount;
@@ -198,8 +198,8 @@ class _TrainerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isComplete = trainer.caughtCount == total;
-    final TrainerTeam? tTeam = TrainerTeam.fromDb(trainer.trainerTeam);
+    final isComplete = golfer.caughtCount == total;
+    final GolferTeam? tTeam = GolferTeam.fromDb(golfer.golferTeam);
     final Color borderColor = isComplete
         ? const Color(0xFFFFB300)
         : tTeam?.color ?? theme.colorScheme.primary.withValues(alpha: 0.3);
@@ -209,7 +209,7 @@ class _TrainerCard extends StatelessWidget {
       child: InkWell(
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => TrainerPokedexScreen(trainer: trainer),
+            builder: (_) => GolferBogeydexScreen(golfer: golfer),
           ),
         ),
         child: Padding(
@@ -235,16 +235,16 @@ class _TrainerCard extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: borderColor, width: 1.5),
               ),
-              child: trainer.trainerSprite != null
+              child: golfer.golferSprite != null
                   ? ClipOval(
                       child: OverflowBox(
                         maxWidth: 52 * 1.4,
                         maxHeight: 52 * 1.4,
                         child: Image.asset(
-                          trainer.trainerSprite!,
+                          golfer.golferSprite!,
                           fit: BoxFit.contain,
                           errorBuilder: (_, __, ___) => Icon(
-                            Icons.catching_pokemon,
+                            Icons.pets,
                             color: isComplete
                                 ? const Color(0xFFFFB300)
                                 : theme.colorScheme.primary,
@@ -254,7 +254,7 @@ class _TrainerCard extends StatelessWidget {
                       ),
                     )
                   : Icon(
-                      Icons.catching_pokemon,
+                      Icons.pets,
                       color: isComplete
                           ? const Color(0xFFFFB300)
                           : theme.colorScheme.primary,
@@ -267,7 +267,7 @@ class _TrainerCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    trainer.trainerName,
+                    golfer.golferName,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -372,7 +372,7 @@ class _TrainerCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: <Widget>[
                 Text(
-                  '${trainer.caughtCount}',
+                  '${golfer.caughtCount}',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
@@ -402,16 +402,16 @@ class _TrainerCard extends StatelessWidget {
   }
 }
 
-class TrainerPokedexScreen extends StatefulWidget {
-  const TrainerPokedexScreen({super.key, required this.trainer});
+class GolferBogeydexScreen extends StatefulWidget {
+  const GolferBogeydexScreen({super.key, required this.golfer});
 
-  final TrainerProfile trainer;
+  final GolferProfile golfer;
 
   @override
-  State<TrainerPokedexScreen> createState() => _TrainerPokedexScreenState();
+  State<GolferBogeydexScreen> createState() => _GolferBogeydexScreenState();
 }
 
-class _TrainerPokedexScreenState extends State<TrainerPokedexScreen> {
+class _GolferBogeydexScreenState extends State<GolferBogeydexScreen> {
   Set<int>? _caughtDexNumbers;
   String? _tag;
   bool _loading = true;
@@ -420,12 +420,12 @@ class _TrainerPokedexScreenState extends State<TrainerPokedexScreen> {
   void initState() {
     super.initState();
     SupabaseService()
-        .fetchTrainerCaughtDexNumbers(widget.trainer.userId)
+        .fetchGolferCaughtDexNumbers(widget.golfer.userId)
         .then((numbers) {
       if (mounted) {
         setState(() {
           _caughtDexNumbers = numbers;
-          _tag = trainerTagForCaughtDex(numbers);
+          _tag = golferTagForCaughtDex(numbers);
           _loading = false;
         });
       }
@@ -437,11 +437,11 @@ class _TrainerPokedexScreenState extends State<TrainerPokedexScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final total = firstGenPokemon.length;
+    final total = firstGenBogeybeast.length;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.trainer.trainerName}\'s Pokédex'),
+        title: Text('${widget.golfer.golferName}\'s Bogeydex'),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(24),
           child: Padding(
@@ -450,7 +450,7 @@ class _TrainerPokedexScreenState extends State<TrainerPokedexScreen> {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Text(
-                  '${widget.trainer.caughtCount} / $total caught',
+                  '${widget.golfer.caughtCount} / $total caught',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w600,
@@ -490,21 +490,21 @@ class _TrainerPokedexScreenState extends State<TrainerPokedexScreen> {
                 crossAxisSpacing: 10,
                 childAspectRatio: 0.8,
               ),
-              itemCount: firstGenPokemon.length,
+              itemCount: firstGenBogeybeast.length,
               itemBuilder: (context, index) {
-                final PokemonSpecies pokemon = firstGenPokemon[index];
-                final bool caught = _caughtDexNumbers!.contains(pokemon.dexNumber);
-                return _TrainerPokedexTile(pokemon: pokemon, caught: caught);
+                final BogeybeastSpecies bogeybeast = firstGenBogeybeast[index];
+                final bool caught = _caughtDexNumbers!.contains(bogeybeast.dexNumber);
+                return _GolferBogeydexTile(bogeybeast: bogeybeast, caught: caught);
               },
             ),
     );
   }
 }
 
-class _TrainerPokedexTile extends StatelessWidget {
-  const _TrainerPokedexTile({required this.pokemon, required this.caught});
+class _GolferBogeydexTile extends StatelessWidget {
+  const _GolferBogeydexTile({required this.bogeybeast, required this.caught});
 
-  final PokemonSpecies pokemon;
+  final BogeybeastSpecies bogeybeast;
   final bool caught;
 
   @override
@@ -522,7 +522,7 @@ class _TrainerPokedexTile extends StatelessWidget {
             top: 8,
             left: 10,
             child: Text(
-              '#${pokemon.paddedDexNumber}',
+              '#${bogeybeast.paddedDexNumber}',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
                 fontWeight: FontWeight.w600,
@@ -536,13 +536,13 @@ class _TrainerPokedexTile extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: pokemon.rarity.color.withValues(alpha: 0.15),
+                  color: bogeybeast.rarity.color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  pokemon.rarity.label,
+                  bogeybeast.rarity.label,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: pokemon.rarity.color,
+                    color: bogeybeast.rarity.color,
                     fontWeight: FontWeight.w700,
                     fontSize: 10,
                   ),
@@ -556,10 +556,10 @@ class _TrainerPokedexTile extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: caught
-                      ? PokemonArt(imageUrl: pokemon.imageUrl, height: 100)
+                      ? BogeybeastArt(imageUrl: bogeybeast.imageUrl, height: 100)
                       : Center(
                           child: Icon(
-                            Icons.catching_pokemon,
+                            Icons.pets,
                             size: 48,
                             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
                           ),
@@ -569,7 +569,7 @@ class _TrainerPokedexTile extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
                 child: Text(
-                  caught ? pokemon.name : '???',
+                  caught ? bogeybeast.name : '???',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(

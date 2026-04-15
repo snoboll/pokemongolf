@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pokemon_golf/data/first_gen_pokemon.dart';
-import 'package:pokemon_golf/services/encounter_service.dart';
+import 'package:bogeybeasts/data/first_gen_bogeybeast.dart';
+import 'package:bogeybeasts/services/encounter_service.dart';
 
 void main() {
   group('EncounterService', () {
@@ -14,11 +14,11 @@ void main() {
 
     test('generated encounters come from the first 151 catalog', () {
       final encounter = service.generateEncounter();
-      final matchingPokemon = firstGenPokemon.where(
-        (pokemon) => pokemon.dexNumber == encounter.dexNumber,
+      final matchingBogeybeast = firstGenBogeybeast.where(
+        (bogeybeast) => bogeybeast.dexNumber == encounter.dexNumber,
       );
 
-      expect(matchingPokemon, isNotEmpty);
+      expect(matchingBogeybeast, isNotEmpty);
     });
 
     test('encounters are generated deterministically with same seed', () {

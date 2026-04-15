@@ -33,7 +33,7 @@ class _BattleRoundScreenState extends State<BattleRoundScreen>
     super.dispose();
   }
 
-  int _activeIndex(List<BattlePokemon> team) {
+  int _activeIndex(List<BattleBogeybeast> team) {
     for (int i = 0; i < team.length; i++) {
       if (team[i].isAlive) return i;
     }
@@ -161,7 +161,7 @@ class _BattleRoundScreenState extends State<BattleRoundScreen>
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Share your trainer name so they can find the challenge.',
+                          'Share your golfer name so they can find the challenge.',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                           ),
@@ -341,7 +341,7 @@ class _TeamHpSection extends StatelessWidget {
   });
 
   final String label;
-  final List<BattlePokemon> team;
+  final List<BattleBogeybeast> team;
   final bool isMe;
   final int activeIndex;
 
@@ -381,8 +381,8 @@ class _TeamHpSection extends StatelessWidget {
             for (int i = 0; i < team.length; i++)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
-                child: _PokemonHpBar(
-                  pokemon:  team[i],
+                child: _BogeybeastHpBar(
+                  bogeybeast:  team[i],
                   isActive: i == activeIndex,
                 ),
               ),
@@ -392,17 +392,17 @@ class _TeamHpSection extends StatelessWidget {
   }
 }
 
-// ── _PokemonHpBar ─────────────────────────────────────────────────────────────
+// ── _BogeybeastHpBar ─────────────────────────────────────────────────────────────
 
-class _PokemonHpBar extends StatelessWidget {
-  const _PokemonHpBar({required this.pokemon, this.isActive = false});
-  final BattlePokemon pokemon;
+class _BogeybeastHpBar extends StatelessWidget {
+  const _BogeybeastHpBar({required this.bogeybeast, this.isActive = false});
+  final BattleBogeybeast bogeybeast;
   final bool isActive;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final frac = pokemon.hpPercent.clamp(0.0, 1.0);
+    final frac = bogeybeast.hpPercent.clamp(0.0, 1.0);
     final color = frac > 0.5
         ? theme.colorScheme.primary
         : frac > 0.25
@@ -410,25 +410,25 @@ class _PokemonHpBar extends StatelessWidget {
             : theme.colorScheme.error;
 
     return Opacity(
-      opacity: pokemon.isAlive ? 1.0 : 0.4,
+      opacity: bogeybeast.isAlive ? 1.0 : 0.4,
       child: Row(
         children: [
-          // Active indicator: small triangle for first-alive Pokemon
+          // Active indicator: small triangle for first-alive Bogeybeast
           SizedBox(
             width: 12,
             child: isActive
                 ? Icon(Icons.play_arrow,
-                    size: 12, color: pokemon.isAlive ? const Color(0xFFFFD700) : Colors.transparent)
+                    size: 12, color: bogeybeast.isAlive ? const Color(0xFFFFD700) : Colors.transparent)
                 : null,
           ),
           SizedBox(
             width: 36,
             height: 36,
             child: Image.network(
-              pokemon.imageUrl,
+              bogeybeast.imageUrl,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.catching_pokemon, size: 24),
+                  const Icon(Icons.pets, size: 24),
             ),
           ),
           const SizedBox(width: 10),
@@ -438,16 +438,16 @@ class _PokemonHpBar extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(pokemon.name,
+                    Text(bogeybeast.name,
                         style: theme.textTheme.labelMedium
                             ?.copyWith(fontWeight: FontWeight.w600)),
                     const Spacer(),
                     Text(
-                      pokemon.isAlive
-                          ? '${pokemon.hpCurrent}/${pokemon.hpMax}'
+                      bogeybeast.isAlive
+                          ? '${bogeybeast.hpCurrent}/${bogeybeast.hpMax}'
                           : 'KO',
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: pokemon.isAlive
+                        color: bogeybeast.isAlive
                             ? theme.colorScheme.onSurface.withValues(alpha: 0.55)
                             : theme.colorScheme.error,
                         fontWeight: FontWeight.w600,
@@ -542,7 +542,7 @@ class _HoleResultCard extends StatelessWidget {
             Row(
               children: [
                 Text(
-                  '${event.attackerPokemonName} → ${event.defenderPokemonName}',
+                  '${event.attackerBogeybeastName} → ${event.defenderBogeybeastName}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),

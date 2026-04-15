@@ -1,4 +1,4 @@
-package com.example.pokemon_golf
+package com.example.bogeybeasts
 
 import io.flutter.embedding.android.FlutterActivity
 

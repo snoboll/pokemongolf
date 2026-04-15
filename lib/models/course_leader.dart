@@ -9,25 +9,25 @@ class CourseLeader {
     required this.team,
     required this.isNpc,
     this.claimedAt,
-    this.trainerSprite,
-    this.trainerTeam,
+    this.golferSprite,
+    this.golferTeam,
   });
 
   final String courseId;
   final String? userId;
   final String leaderName;
   final int hcp;
-  final List<BattlePokemon> team;
+  final List<BattleBogeybeast> team;
   final bool isNpc;
   final DateTime? claimedAt;
-  final String? trainerSprite;
-  final String? trainerTeam;
+  final String? golferSprite;
+  final String? golferTeam;
 
   static CourseLeader fromJson(Map<String, dynamic> json) {
-    List<BattlePokemon> parseTeam(dynamic raw) {
+    List<BattleBogeybeast> parseTeam(dynamic raw) {
       if (raw == null) return [];
       return (raw as List<dynamic>)
-          .map((e) => BattlePokemon.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map((e) => BattleBogeybeast.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
     }
 
@@ -41,8 +41,8 @@ class CourseLeader {
       claimedAt: json['claimed_at'] != null
           ? DateTime.parse(json['claimed_at'] as String)
           : null,
-      trainerSprite: json['trainer_sprite'] as String?,
-      trainerTeam: json['trainer_team'] as String?,
+      golferSprite: json['golfer_sprite'] as String?,
+      golferTeam: json['golfer_team'] as String?,
     );
   }
 }

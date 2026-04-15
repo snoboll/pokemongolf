@@ -11,7 +11,7 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _trainerNameController = TextEditingController();
+  final TextEditingController _golferNameController = TextEditingController();
   bool _isSignUp = false;
   bool _loading = false;
   bool _obscurePassword = true;
@@ -21,22 +21,22 @@ class _AuthScreenState extends State<AuthScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _trainerNameController.dispose();
+    _golferNameController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
-    final trainerName = _trainerNameController.text.trim();
+    final golferName = _golferNameController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
       setState(() => _error = 'Please enter both email and password.');
       return;
     }
 
-    if (_isSignUp && trainerName.isEmpty) {
-      setState(() => _error = 'Please choose a trainer name.');
+    if (_isSignUp && golferName.isEmpty) {
+      setState(() => _error = 'Please choose a golfer name.');
       return;
     }
 
@@ -71,7 +71,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
         if (response.session != null) {
           await supabase.from('profiles').upsert(
-            {'trainer_name': trainerName},
+            {'golfer_name': golferName},
             onConflict: 'user_id',
           );
         }
@@ -138,14 +138,14 @@ class _AuthScreenState extends State<AuthScreen> {
                       ],
                     ),
                     child: Icon(
-                      Icons.catching_pokemon,
+                      Icons.pets,
                       size: 44,
                       color: colorScheme.primary,
                     ),
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Pokemon Golf',
+                    'Bogeybeasts',
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                       color: colorScheme.onSurface,
@@ -175,11 +175,11 @@ class _AuthScreenState extends State<AuthScreen> {
                       children: <Widget>[
                         if (_isSignUp) ...<Widget>[
                           TextField(
-                            controller: _trainerNameController,
+                            controller: _golferNameController,
                             textInputAction: TextInputAction.next,
                             textCapitalization: TextCapitalization.words,
                             decoration: const InputDecoration(
-                              labelText: 'Trainer Name',
+                              labelText: 'Golfer Name',
                               prefixIcon: Icon(Icons.person_outline),
                             ),
                           ),

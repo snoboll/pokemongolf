@@ -1,6 +1,6 @@
 #!/bin/bash
 # Upload latest exported IPA to Supabase
-# Usage: pokemonupdate
+# Usage: bogeybeastupdate
 # Set SUPABASE_SERVICE_KEY in your shell profile
 
 set -e
@@ -25,7 +25,7 @@ fi
 echo "📦 Found IPA: $IPA_PATH"
 echo "⬆️  Uploading..."
 
-curl -s -X PUT "$SUPABASE_URL/storage/v1/object/$BUCKET/pokemon_golf.ipa" \
+curl -s -X PUT "$SUPABASE_URL/storage/v1/object/$BUCKET/bogeybeasts.ipa" \
   -H "apikey: $SUPABASE_KEY" \
   -H "Authorization: Bearer $SUPABASE_KEY" \
   -H "Content-Type: application/octet-stream" \

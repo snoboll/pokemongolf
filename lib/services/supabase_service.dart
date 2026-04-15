@@ -1,31 +1,31 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../data/first_gen_pokemon.dart';
+import '../data/first_gen_bogeybeasts.dart';
 import '../models/club.dart';
 import '../models/course_leader.dart';
 import '../models/golf_score.dart';
 import '../models/hole_stats.dart';
 import '../models/golf_course.dart';
-import '../models/pokemon_species.dart';
+import '../models/bogeybeast_species.dart';
 import '../models/round_models.dart';
 
-class TrainerProfile {
-  const TrainerProfile({
+class GolferProfile {
+  const GolferProfile({
     required this.userId,
-    required this.trainerName,
+    required this.golferName,
     required this.caughtCount,
     this.homeCourseId,
-    this.trainerSprite,
-    this.trainerTeam,
+    this.golferSprite,
+    this.golferTeam,
   });
 
   final String userId;
-  final String trainerName;
+  final String golferName;
   final int caughtCount;
   final String? homeCourseId;
-  final String? trainerSprite;
-  final String? trainerTeam;
+  final String? golferSprite;
+  final String? golferTeam;
 }
 
 class SupabaseService {
@@ -58,70 +58,70 @@ class SupabaseService {
 
   // ── Profiles ────────────────────────────────────────────────────────
 
-  Future<String?> fetchTrainerName() async {
+  Future<String?> fetchGolferName() async {
     final uid = currentUserId;
     if (uid == null) return null;
 
     final List<Map<String, dynamic>> rows = await _client
         .from('profiles')
-        .select('trainer_name')
+        .select('golfer_name')
         .eq('user_id', uid)
         .limit(1);
 
     if (rows.isEmpty) return null;
-    return rows.first['trainer_name'] as String;
+    return rows.first['golfer_name'] as String;
   }
 
-  Future<void> upsertTrainerName(String name) async {
+  Future<void> upsertGolferName(String name) async {
     await _client.from('profiles').upsert(
-      {'trainer_name': name},
+      {'golfer_name': name},
       onConflict: 'user_id',
     );
   }
 
-  Future<String?> fetchTrainerSprite() async {
+  Future<String?> fetchGolferSprite() async {
     final uid = currentUserId;
     if (uid == null) return null;
 
     final List<Map<String, dynamic>> rows = await _client
         .from('profiles')
-        .select('trainer_sprite')
+        .select('golfer_sprite')
         .eq('user_id', uid)
         .limit(1);
 
     if (rows.isEmpty) return null;
-    return rows.first['trainer_sprite'] as String?;
+    return rows.first['golfer_sprite'] as String?;
   }
 
-  Future<void> updateTrainerSprite(String? sprite) async {
+  Future<void> updateGolferSprite(String? sprite) async {
     await _client.from('profiles').update(
-      {'trainer_sprite': sprite},
+      {'golfer_sprite': sprite},
     ).eq('user_id', currentUserId!);
   }
 
-  Future<({String? team, DateTime? changedAt})> fetchTrainerTeam() async {
+  Future<({String? team, DateTime? changedAt})> fetchGolferTeam() async {
     final uid = currentUserId;
     if (uid == null) return (team: null, changedAt: null);
 
     final List<Map<String, dynamic>> rows = await _client
         .from('profiles')
-        .select('trainer_team, team_changed_at')
+        .select('golfer_team, team_changed_at')
         .eq('user_id', uid)
         .limit(1);
 
     if (rows.isEmpty) return (team: null, changedAt: null);
     final raw = rows.first;
     return (
-      team: raw['trainer_team'] as String?,
+      team: raw['golfer_team'] as String?,
       changedAt: raw['team_changed_at'] != null
           ? DateTime.parse(raw['team_changed_at'] as String)
           : null,
     );
   }
 
-  Future<void> updateTrainerTeam(String? team) async {
+  Future<void> updateGolferTeam(String? team) async {
     await _client.from('profiles').update(
-      {'trainer_team': team, 'team_changed_at': DateTime.now().toUtc().toIso8601String()},
+      {'golfer_team': team, 'team_changed_at': DateTime.now().toUtc().toIso8601String()},
     ).eq('user_id', currentUserId!);
   }
 
@@ -145,16 +145,16 @@ class SupabaseService {
     ).eq('user_id', currentUserId!);
   }
 
-  Future<List<TrainerProfile>> fetchAllTrainers() async {
+  Future<List<GolferProfile>> fetchAllGolfers() async {
     final List<Map<String, dynamic>> profiles = await _client
         .from('profiles')
-        .select('user_id, trainer_name, home_course_id, trainer_sprite, trainer_team')
+        .select('user_id, golfer_name, home_course_id, golfer_sprite, golfer_team')
         .order('created_at');
 
-    if (profiles.isEmpty) return <TrainerProfile>[];
+    if (profiles.isEmpty) return <GolferProfile>[];
 
     final List<Map<String, dynamic>> catchCounts = await _client
-        .rpc('get_trainer_catch_counts');
+        .rpc('get_golfer_catch_counts');
 
     final Map<String, int> countMap = <String, int>{};
     for (final row in catchCounts) {
@@ -163,21 +163,21 @@ class SupabaseService {
 
     return (profiles.map((p) {
       final String uid = p['user_id'] as String;
-      return TrainerProfile(
+      return GolferProfile(
         userId: uid,
-        trainerName: p['trainer_name'] as String,
+        golferName: p['golfer_name'] as String,
         caughtCount: countMap[uid] ?? 0,
         homeCourseId: p['home_course_id'] as String?,
-        trainerSprite: p['trainer_sprite'] as String?,
-        trainerTeam: p['trainer_team'] as String?,
+        golferSprite: p['golfer_sprite'] as String?,
+        golferTeam: p['golfer_team'] as String?,
       );
     }).toList()
       ..sort((a, b) => b.caughtCount.compareTo(a.caughtCount)));
   }
 
-  Future<Set<int>> fetchTrainerCaughtDexNumbers(String userId) async {
+  Future<Set<int>> fetchGolferCaughtDexNumbers(String userId) async {
     final List<Map<String, dynamic>> rows = await _client
-        .from('caught_pokemon')
+        .from('caught_bogeybeast')
         .select('dex_number')
         .eq('user_id', userId);
     return rows.map((r) => (r['dex_number'] as num).toInt()).toSet();
@@ -185,7 +185,7 @@ class SupabaseService {
 
   Future<Map<String, Set<int>>> fetchAllCaughtDexNumbers() async {
     final List<Map<String, dynamic>> rows = await _client
-        .from('caught_pokemon')
+        .from('caught_bogeybeast')
         .select('user_id, dex_number');
 
     final Map<String, Set<int>> result = <String, Set<int>>{};
@@ -260,11 +260,11 @@ class SupabaseService {
     });
   }
 
-  // ── Caught Pokemon ──────────────────────────────────────────────────
+  // ── Caught Bogeybeast ──────────────────────────────────────────────────
 
   Future<Set<int>> fetchCaughtDexNumbers() async {
     final List<Map<String, dynamic>> rows = await _client
-        .from('caught_pokemon')
+        .from('caught_bogeybeast')
         .select('dex_number')
         .eq('user_id', currentUserId!)
         .order('dex_number');
@@ -293,19 +293,19 @@ class SupabaseService {
     }
 
     await _client.from('rounds').delete().eq('user_id', uid);
-    await _client.from('caught_pokemon').delete().eq('user_id', uid);
+    await _client.from('caught_bogeybeast').delete().eq('user_id', uid);
   }
 
-  Future<void> releasePokemon(int dexNumber) async {
+  Future<void> releaseBogeybeast(int dexNumber) async {
     await _client
-        .from('caught_pokemon')
+        .from('caught_bogeybeast')
         .delete()
         .eq('user_id', currentUserId!)
         .eq('dex_number', dexNumber);
   }
 
-  Future<void> insertCaughtPokemon(int dexNumber) async {
-    await _client.from('caught_pokemon').upsert(
+  Future<void> insertCaughtBogeybeast(int dexNumber) async {
+    await _client.from('caught_bogeybeast').upsert(
       {'dex_number': dexNumber},
       onConflict: 'user_id,dex_number',
     );
@@ -395,16 +395,16 @@ class SupabaseService {
           .order('hole_number');
 
       final List<HoleResult> holes = holeRows.map((h) {
-        final int dex = h['pokemon_dex'] as int;
+        final int dex = h['bogeybeast_dex'] as int;
         final species = dex == 0
-            ? battleSentinelPokemon
-            : firstGenPokemon.firstWhere((p) => p.dexNumber == dex);
+            ? battleSentinelBogeybeast
+            : firstGenBogeybeast.firstWhere((p) => p.dexNumber == dex);
 
         return HoleResult(
           holeNumber: h['hole_number'] as int,
           par: h['par'] as int,
           strokes: h['strokes'] as int,
-          pokemon: species,
+          bogeybeast: species,
           score: GolfScore.values.firstWhere(
             (s) => s.name == h['score'],
             orElse: () => GolfScore.par,
@@ -458,7 +458,7 @@ class SupabaseService {
         'score': h.score.name,
         'catch_chance': h.catchChance,
         'caught': h.caught,
-        'pokemon_dex': h.pokemon.dexNumber,
+        'bogeybeast_dex': h.bogeybeast.dexNumber,
         'on_putt': h.stats.onePutt,
         'bunker': h.stats.bunker,
         'water': h.stats.water,

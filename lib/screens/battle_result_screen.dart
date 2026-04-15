@@ -5,7 +5,7 @@ import '../models/battle_models.dart';
 import '../models/course_leader.dart';
 import '../models/golf_score.dart';
 import '../models/hole_stats.dart';
-import '../models/pokemon_species.dart';
+import '../models/bogeybeast_species.dart';
 import '../models/round_models.dart';
 import '../state/battle_store.dart';
 import 'round_screen.dart';
@@ -141,7 +141,7 @@ class BattleResultScreen extends StatelessWidget {
                         holeNumber:  event.hole,
                         par:         par,
                         strokes:     strokes,
-                        pokemon:     battleSentinelPokemon,
+                        bogeybeast:     battleSentinelBogeybeast,
                         score:       scoreFromStrokes(par, strokes),
                         catchChance: 0,
                         caught:      false,
@@ -154,8 +154,8 @@ class BattleResultScreen extends StatelessWidget {
                       children: [
                         FilledButton.icon(
                           onPressed: () {
-                            final pokemonStore = PokemonGolfScope.of(context);
-                            pokemonStore.startRound(
+                            final bogeybeastStore = BogeybeastGolfScope.of(context);
+                            bogeybeastStore.startRound(
                               battle.holeCount,
                               holePars:          battle.coursePars,
                               courseName:        battle.courseName,
@@ -168,7 +168,7 @@ class BattleResultScreen extends StatelessWidget {
                               builder: (_) => const RoundScreen(),
                             ));
                           },
-                          icon: const Icon(Icons.catching_pokemon),
+                          icon: const Icon(Icons.pets),
                           label: Text(
                               'Catch Mode — $remainingHoles holes left'),
                         ),
@@ -207,7 +207,7 @@ class _FinalTeamCard extends StatelessWidget {
   });
 
   final String label;
-  final List<BattlePokemon> team;
+  final List<BattleBogeybeast> team;
   final bool isMe;
 
   @override
@@ -246,7 +246,7 @@ class _FinalTeamCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: team.map((p) => _PokemonResultPip(pokemon: p)).toList(),
+            children: team.map((p) => _BogeybeastResultPip(bogeybeast: p)).toList(),
           ),
         ],
       ),
@@ -254,15 +254,15 @@ class _FinalTeamCard extends StatelessWidget {
   }
 }
 
-class _PokemonResultPip extends StatelessWidget {
-  const _PokemonResultPip({required this.pokemon});
-  final BattlePokemon pokemon;
+class _BogeybeastResultPip extends StatelessWidget {
+  const _BogeybeastResultPip({required this.bogeybeast});
+  final BattleBogeybeast bogeybeast;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final frac = pokemon.hpPercent.clamp(0.0, 1.0);
-    final barColor = pokemon.isAlive
+    final frac = bogeybeast.hpPercent.clamp(0.0, 1.0);
+    final barColor = bogeybeast.isAlive
         ? (frac > 0.5
             ? theme.colorScheme.primary
             : frac > 0.25
@@ -271,7 +271,7 @@ class _PokemonResultPip extends StatelessWidget {
         : theme.colorScheme.onSurface.withValues(alpha: 0.2);
 
     return Opacity(
-      opacity: pokemon.isAlive ? 1.0 : 0.4,
+      opacity: bogeybeast.isAlive ? 1.0 : 0.4,
       child: SizedBox(
         width: 72,
         child: Column(
@@ -280,15 +280,15 @@ class _PokemonResultPip extends StatelessWidget {
               width: 48,
               height: 48,
               child: Image.network(
-                pokemon.imageUrl,
+                bogeybeast.imageUrl,
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) =>
-                    const Icon(Icons.catching_pokemon, size: 36),
+                    const Icon(Icons.pets, size: 36),
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              pokemon.name,
+              bogeybeast.name,
               style: theme.textTheme.labelSmall,
               textAlign: TextAlign.center,
               maxLines: 1,
@@ -306,12 +306,12 @@ class _PokemonResultPip extends StatelessWidget {
               ),
             ),
             Text(
-              pokemon.isAlive
-                  ? '${pokemon.hpCurrent}hp'
+              bogeybeast.isAlive
+                  ? '${bogeybeast.hpCurrent}hp'
                   : 'KO',
               style: theme.textTheme.labelSmall?.copyWith(
                 fontSize: 9,
-                color: pokemon.isAlive
+                color: bogeybeast.isAlive
                     ? theme.colorScheme.onSurface.withValues(alpha: 0.5)
                     : theme.colorScheme.error,
               ),
@@ -452,7 +452,7 @@ class _HoleSummaryRow extends StatelessWidget {
           if (!isTie)
             Expanded(
               child: Text(
-                '${event.attackerPokemonName} → ${event.defenderPokemonName} '
+                '${event.attackerBogeybeastName} → ${event.defenderBogeybeastName} '
                 '(${event.damage} dmg, ${event.typeMult.toStringAsFixed(1)}×)',
                 style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
@@ -545,7 +545,7 @@ class _ClaimLeadershipSectionState extends State<_ClaimLeadershipSection> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Pick 3 Pokemon to defend the course as Leader.',
+            'Pick 3 Bogeybeast to defend the course as Leader.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
@@ -569,13 +569,13 @@ class _ClaimLeadershipSectionState extends State<_ClaimLeadershipSection> {
   }
 
   Future<void> _startClaim() async {
-    final pokemonStore = PokemonGolfScope.of(context);
+    final bogeybeastStore = BogeybeastGolfScope.of(context);
     final battleStore = BattleScope.of(context);
 
-    final team = await Navigator.of(context).push<List<BattlePokemon>>(
+    final team = await Navigator.of(context).push<List<BattleBogeybeast>>(
       MaterialPageRoute(
         builder: (_) => TeamSelectScreen(
-          caughtDexNumbers: Set<int>.from(pokemonStore.caughtDexNumbers),
+          caughtDexNumbers: Set<int>.from(bogeybeastStore.caughtDexNumbers),
           title: 'Pick defenders',
         ),
       ),
@@ -591,11 +591,11 @@ class _ClaimLeadershipSectionState extends State<_ClaimLeadershipSection> {
       );
 
       if (mounted) {
-        pokemonStore.updateCourseLeader(CourseLeader(
+        bogeybeastStore.updateCourseLeader(CourseLeader(
           courseId: widget.battle.courseId,
           userId: battleStore.currentUserId,
-          leaderName: pokemonStore.trainerName ?? 'Trainer',
-          hcp: pokemonStore.playerHcp.round(),
+          leaderName: bogeybeastStore.golferName ?? 'Golfer',
+          hcp: bogeybeastStore.playerHcp.round(),
           team: team,
           isNpc: false,
         ));

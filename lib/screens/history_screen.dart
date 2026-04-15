@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app.dart';
 import '../models/golf_score.dart';
-import '../models/pokemon_rarity.dart';
+import '../models/bogeybeast_rarity.dart';
 import '../models/round_models.dart';
 import 'scorecard_detail_screen.dart';
 
@@ -11,7 +11,7 @@ class HistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = PokemonGolfScope.of(context);
+    final store = BogeybeastGolfScope.of(context);
     final theme = Theme.of(context);
     final List<GolfRoundSummary> rounds = store.completedRounds;
 
@@ -56,7 +56,7 @@ class HistoryScreen extends StatelessWidget {
                     ) ?? false;
                   },
                   onDismissed: (_) {
-                    PokemonGolfScope.of(context).deleteRound(round);
+                    BogeybeastGolfScope.of(context).deleteRound(round);
                   },
                   background: Container(
                     alignment: Alignment.centerRight,
@@ -144,9 +144,9 @@ class _RoundCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final String caughtNames = round.isBattle || round.caughtPokemon.isEmpty
+    final String caughtNames = round.isBattle || round.caughtBogeybeast.isEmpty
         ? ''
-        : round.caughtPokemon.take(4).map((p) => p.name).join(', ');
+        : round.caughtBogeybeast.take(4).map((p) => p.name).join(', ');
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -238,7 +238,7 @@ class _RoundCard extends StatelessWidget {
             Row(
               children: <Widget>[
                 Icon(
-                  Icons.catching_pokemon,
+                  Icons.pets,
                   size: 16,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
@@ -285,7 +285,7 @@ class _RoundCard extends StatelessWidget {
                 ],
               ],
             ),
-            if (round.caughtPokemon.isNotEmpty) ...<Widget>[
+            if (round.caughtBogeybeast.isNotEmpty) ...<Widget>[
               const SizedBox(height: 8),
               Text(
                 caughtNames,

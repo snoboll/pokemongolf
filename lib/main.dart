@@ -11,5 +11,5 @@ Future<void> main() async {
     anonKey: 'sb_publishable_ygSnbzr2KiEAEOmgF9JMQQ_8qz36Qt6',
   );
 
-  runApp(const PokemonGolfApp());
+  runApp(const BogeybeastGolfApp());
 }

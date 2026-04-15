@@ -8,7 +8,7 @@
 --   Avg bonus per winning hole (multiplier 10): 10 × 1.42 = 14.2
 --   Avg rawDmg (off5 vs def5): 5 - 2 = 3
 --   Avg finalDmg ≈ (3 + 14.2) × 1.05 (type) ≈ 18 HP/hole
---   Avg team HP (tier*10, 3 pokemon, avg tier 3.5): 3 × 35 = 105
+--   Avg team HP (tier*10, 3 bogeybeast, avg tier 3.5): 3 × 35 = 105
 --   Loser takes ≈ 6 × 18 = 108 HP → full wipe in ~18 holes  ✓
 --
 -- HP change (hpTier * 10 instead of * 20) is Dart-side only (applied at team creation).
@@ -132,7 +132,7 @@ begin
     end loop;
 
     if v_lead_atk is null or v_lead_def is null then
-      raise exception 'No alive Pokemon found (game should have ended)';
+      raise exception 'No alive Bogeybeast found (game should have ended)';
     end if;
 
     -- Damage formula (tuned for 15 hcp):
@@ -173,8 +173,8 @@ begin
       'result',           case when v_c_strokes < v_o_strokes then 'challenger_wins' else 'opponent_wins' end,
       'damage',           v_final_dmg,
       'type_mult',        v_type_mult,
-      'attacker_pokemon', v_lead_atk ->> 'name',
-      'defender_pokemon', v_lead_def ->> 'name',
+      'attacker_bogeybeast', v_lead_atk ->> 'name',
+      'defender_bogeybeast', v_lead_def ->> 'name',
       'c_team_after',     v_c_team,
       'o_team_after',     v_o_team
     );

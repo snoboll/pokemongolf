@@ -12,7 +12,7 @@ class BattleService {
   // ── Fetch ─────────────────────────────────────────────────────────────────
 
   /// Returns all battles where the current user is challenger or opponent,
-  /// plus all pending battles (open invites from other trainers).
+  /// plus all pending battles (open invites from other golfers).
   Future<List<Battle>> fetchBattles() async {
     final uid = currentUserId;
     if (uid == null) return [];
@@ -44,7 +44,7 @@ class BattleService {
     required String courseName,
     required int holeCount,
     required List<int> coursePars,
-    required List<BattlePokemon> team,
+    required List<BattleBogeybeast> team,
     required String challengerName,
   }) async {
     final uid = currentUserId!;
@@ -67,7 +67,7 @@ class BattleService {
 
   Future<Battle> joinBattle({
     required String battleId,
-    required List<BattlePokemon> team,
+    required List<BattleBogeybeast> team,
   }) async {
     final result = await _client.rpc(
       'join_battle',
@@ -125,7 +125,7 @@ class BattleService {
         'score':       scoreName(strokes, par),
         'catch_chance': 0,
         'caught':      false,
-        'pokemon_dex': 0,
+        'bogeybeast_dex': 0,
         'on_putt':     false,
         'bunker':      false,
         'water':       false,
@@ -162,10 +162,10 @@ class BattleService {
     required String courseName,
     required int holeCount,
     required List<int> coursePars,
-    required List<BattlePokemon> team,
+    required List<BattleBogeybeast> team,
     required String challengerName,
     required String leaderName,
-    required List<BattlePokemon> leaderTeam,
+    required List<BattleBogeybeast> leaderTeam,
     required int leaderHcp,
     String? leaderUserId,
   }) async {
@@ -210,7 +210,7 @@ class BattleService {
   Future<Map<String, dynamic>> claimCourseLeadership({
     required String courseId,
     required String battleId,
-    required List<BattlePokemon> defenderTeam,
+    required List<BattleBogeybeast> defenderTeam,
   }) async {
     final result = await _client.rpc(
       'claim_course_leadership',

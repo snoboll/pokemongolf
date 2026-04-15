@@ -1,12 +1,12 @@
-import '../data/pokemon_battle_stats.dart';
+import '../data/bogeybeast_battle_stats.dart';
 import '../data/type_effectiveness.dart';
-import '../data/first_gen_pokemon.dart';
-import 'pokemon_type.dart';
+import '../data/first_gen_bogeybeasts.dart';
+import 'bogeybeast_type.dart';
 
-// ── BattlePokemon ────────────────────────────────────────────────────────────
+// ── BattleBogeybeast ────────────────────────────────────────────────────────────
 
-class BattlePokemon {
-  BattlePokemon({
+class BattleBogeybeast {
+  BattleBogeybeast({
     required this.dexNumber,
     required this.name,
     required this.types,
@@ -18,7 +18,7 @@ class BattlePokemon {
 
   final int dexNumber;
   final String name;
-  final List<PokemonType> types;
+  final List<BogeybeastType> types;
   final int hpMax;
   int hpCurrent;
   final int offenseTier;
@@ -29,9 +29,9 @@ class BattlePokemon {
 
   String get paddedDexNumber => dexNumber.toString().padLeft(3, '0');
   String get imageUrl =>
-      'https://raw.githubusercontent.com/HybridShivam/Pokemon/master/assets/images/$paddedDexNumber.png';
+      'https://raw.githubusercontent.com/HybridShivam/Bogeybeast/master/assets/images/$paddedDexNumber.png';
 
-  BattlePokemon copyWith({int? hpCurrent}) => BattlePokemon(
+  BattleBogeybeast copyWith({int? hpCurrent}) => BattleBogeybeast(
         dexNumber: dexNumber,
         name: name,
         types: types,
@@ -51,12 +51,12 @@ class BattlePokemon {
         'defense_tier': defenseTier,
       };
 
-  static BattlePokemon fromJson(Map<String, dynamic> json) {
+  static BattleBogeybeast fromJson(Map<String, dynamic> json) {
     final typeStrings = (json['types'] as List<dynamic>).cast<String>();
-    return BattlePokemon(
+    return BattleBogeybeast(
       dexNumber: (json['dex_number'] as num).toInt(),
       name: json['name'] as String,
-      types: typeStrings.map(_typeFromString).whereType<PokemonType>().toList(),
+      types: typeStrings.map(_typeFromString).whereType<BogeybeastType>().toList(),
       hpMax: (json['hp_max'] as num).toInt(),
       hpCurrent: (json['hp_current'] as num).toInt(),
       offenseTier: (json['offense_tier'] as num).toInt(),
@@ -65,14 +65,14 @@ class BattlePokemon {
   }
 
   /// Create from a dex number using the battle stats lookup.
-  static BattlePokemon fromDexNumber(int dexNumber) {
-    final stats = pokemonBattleStats[dexNumber]!;
-    final species = firstGenPokemon.firstWhere((p) => p.dexNumber == dexNumber);
+  static BattleBogeybeast fromDexNumber(int dexNumber) {
+    final stats = bogeybeastBattleStats[dexNumber]!;
+    final species = firstGenBogeybeast.firstWhere((p) => p.dexNumber == dexNumber);
     final hpMax = battleHpMax(stats.hp);
-    return BattlePokemon(
+    return BattleBogeybeast(
       dexNumber: dexNumber,
       name: species.name,
-      types: List<PokemonType>.unmodifiable(species.types),
+      types: List<BogeybeastType>.unmodifiable(species.types),
       hpMax: hpMax,
       hpCurrent: hpMax,
       offenseTier: stats.offense,
@@ -104,8 +104,8 @@ class BattleHoleEvent {
     required this.result,
     required this.damage,
     required this.typeMult,
-    this.attackerPokemonName,
-    this.defenderPokemonName,
+    this.attackerBogeybeastName,
+    this.defenderBogeybeastName,
     required this.challengerTeamAfter,
     required this.opponentTeamAfter,
   });
@@ -116,10 +116,10 @@ class BattleHoleEvent {
   final BattleHoleResult result;
   final int damage;
   final double typeMult;
-  final String? attackerPokemonName;
-  final String? defenderPokemonName;
-  final List<BattlePokemon> challengerTeamAfter;
-  final List<BattlePokemon> opponentTeamAfter;
+  final String? attackerBogeybeastName;
+  final String? defenderBogeybeastName;
+  final List<BattleBogeybeast> challengerTeamAfter;
+  final List<BattleBogeybeast> opponentTeamAfter;
 
   static BattleHoleEvent fromJson(Map<String, dynamic> json) {
     final resultStr = json['result'] as String;
@@ -129,10 +129,10 @@ class BattleHoleEvent {
       _                 => BattleHoleResult.tie,
     };
 
-    List<BattlePokemon> parseTeam(dynamic raw) {
+    List<BattleBogeybeast> parseTeam(dynamic raw) {
       if (raw == null) return [];
       return (raw as List<dynamic>)
-          .map((e) => BattlePokemon.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map((e) => BattleBogeybeast.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
     }
 
@@ -143,8 +143,8 @@ class BattleHoleEvent {
       result: result,
       damage: (json['damage'] as num).toInt(),
       typeMult: (json['type_mult'] as num).toDouble(),
-      attackerPokemonName: json['attacker_pokemon'] as String?,
-      defenderPokemonName: json['defender_pokemon'] as String?,
+      attackerBogeybeastName: json['attacker_bogeybeast'] as String?,
+      defenderBogeybeastName: json['defender_bogeybeast'] as String?,
       challengerTeamAfter: parseTeam(json['c_team_after']),
       opponentTeamAfter: parseTeam(json['o_team_after']),
     );
@@ -187,8 +187,8 @@ class Battle {
   final String challengerName;
   final String? opponentId;
   final String? opponentName;
-  final List<BattlePokemon>? challengerTeam;
-  final List<BattlePokemon>? opponentTeam;
+  final List<BattleBogeybeast>? challengerTeam;
+  final List<BattleBogeybeast>? opponentTeam;
   final Map<int, int> challengerScores; // hole -> strokes
   final Map<int, int> opponentScores;
   final List<BattleHoleEvent> holeLog;
@@ -225,10 +225,10 @@ class Battle {
   }
 
   /// Latest snapshot of each team (from last hole log entry, or initial team).
-  List<BattlePokemon> get currentChallengerTeam =>
+  List<BattleBogeybeast> get currentChallengerTeam =>
       holeLog.isNotEmpty ? holeLog.last.challengerTeamAfter : (challengerTeam ?? []);
 
-  List<BattlePokemon> get currentOpponentTeam =>
+  List<BattleBogeybeast> get currentOpponentTeam =>
       holeLog.isNotEmpty ? holeLog.last.opponentTeamAfter : (opponentTeam ?? []);
 
   static Battle fromJson(Map<String, dynamic> json) {
@@ -239,10 +239,10 @@ class Battle {
       );
     }
 
-    List<BattlePokemon>? parseTeam(dynamic raw) {
+    List<BattleBogeybeast>? parseTeam(dynamic raw) {
       if (raw == null) return null;
       return (raw as List<dynamic>)
-          .map((e) => BattlePokemon.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map((e) => BattleBogeybeast.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
     }
 
@@ -287,52 +287,52 @@ class Battle {
 
 // ── Type string helpers ───────────────────────────────────────────────────────
 
-String _typeToString(PokemonType t) {
+String _typeToString(BogeybeastType t) {
   return switch (t) {
-    PokemonType.normal   => 'Normal',
-    PokemonType.fire     => 'Fire',
-    PokemonType.water    => 'Water',
-    PokemonType.grass    => 'Grass',
-    PokemonType.electric => 'Electric',
-    PokemonType.ice      => 'Ice',
-    PokemonType.fighting => 'Fighting',
-    PokemonType.poison   => 'Poison',
-    PokemonType.ground   => 'Ground',
-    PokemonType.flying   => 'Flying',
-    PokemonType.psychic  => 'Psychic',
-    PokemonType.bug      => 'Bug',
-    PokemonType.rock     => 'Rock',
-    PokemonType.ghost    => 'Ghost',
-    PokemonType.dragon   => 'Dragon',
-    PokemonType.fairy    => 'Fairy',
+    BogeybeastType.normal   => 'Normal',
+    BogeybeastType.fire     => 'Fire',
+    BogeybeastType.water    => 'Water',
+    BogeybeastType.grass    => 'Grass',
+    BogeybeastType.electric => 'Electric',
+    BogeybeastType.ice      => 'Ice',
+    BogeybeastType.fighting => 'Fighting',
+    BogeybeastType.poison   => 'Poison',
+    BogeybeastType.ground   => 'Ground',
+    BogeybeastType.flying   => 'Flying',
+    BogeybeastType.psychic  => 'Psychic',
+    BogeybeastType.bug      => 'Bug',
+    BogeybeastType.rock     => 'Rock',
+    BogeybeastType.ghost    => 'Ghost',
+    BogeybeastType.dragon   => 'Dragon',
+    BogeybeastType.fairy    => 'Fairy',
   };
 }
 
-PokemonType? _typeFromString(String s) => switch (s) {
-      'Normal'   => PokemonType.normal,
-      'Fire'     => PokemonType.fire,
-      'Water'    => PokemonType.water,
-      'Grass'    => PokemonType.grass,
-      'Electric' => PokemonType.electric,
-      'Ice'      => PokemonType.ice,
-      'Fighting' => PokemonType.fighting,
-      'Poison'   => PokemonType.poison,
-      'Ground'   => PokemonType.ground,
-      'Flying'   => PokemonType.flying,
-      'Psychic'  => PokemonType.psychic,
-      'Bug'      => PokemonType.bug,
-      'Rock'     => PokemonType.rock,
-      'Ghost'    => PokemonType.ghost,
-      'Dragon'   => PokemonType.dragon,
-      'Fairy'    => PokemonType.fairy,
+BogeybeastType? _typeFromString(String s) => switch (s) {
+      'Normal'   => BogeybeastType.normal,
+      'Fire'     => BogeybeastType.fire,
+      'Water'    => BogeybeastType.water,
+      'Grass'    => BogeybeastType.grass,
+      'Electric' => BogeybeastType.electric,
+      'Ice'      => BogeybeastType.ice,
+      'Fighting' => BogeybeastType.fighting,
+      'Poison'   => BogeybeastType.poison,
+      'Ground'   => BogeybeastType.ground,
+      'Flying'   => BogeybeastType.flying,
+      'Psychic'  => BogeybeastType.psychic,
+      'Bug'      => BogeybeastType.bug,
+      'Rock'     => BogeybeastType.rock,
+      'Ghost'    => BogeybeastType.ghost,
+      'Dragon'   => BogeybeastType.dragon,
+      'Fairy'    => BogeybeastType.fairy,
       _          => null,
     };
 
 /// Compute damage for a hole result. Used in Dart for preview only;
 /// authoritative calculation is in the SQL RPC.
 int computeDamage({
-  required BattlePokemon attacker,
-  required BattlePokemon defender,
+  required BattleBogeybeast attacker,
+  required BattleBogeybeast defender,
   required int scoreDiff,
 }) {
   final rawDmg = (attacker.offenseTier - (defender.defenseTier / 2)).ceil();

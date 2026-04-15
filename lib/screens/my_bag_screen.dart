@@ -9,7 +9,7 @@ class MyBagScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = PokemonGolfScope.of(context);
+    final store = BogeybeastGolfScope.of(context);
     final theme = Theme.of(context);
     final List<Club> clubs = store.clubs;
     final int totalCount = clubs.length + 1; // +1 for putter
@@ -63,7 +63,7 @@ class MyBagScreen extends StatelessWidget {
                   false;
             },
             onDismissed: (_) {
-              PokemonGolfScope.of(context).removeClub(club);
+              BogeybeastGolfScope.of(context).removeClub(club);
             },
             background: Container(
               alignment: Alignment.centerRight,
@@ -95,7 +95,7 @@ class MyBagScreen extends StatelessWidget {
       builder: (_) => _ClubEditorSheet(
         club: club,
         onSave: (Club edited) {
-          final store = PokemonGolfScope.of(context);
+          final store = BogeybeastGolfScope.of(context);
           if (club != null) {
             store.updateClub(club, edited);
           } else {

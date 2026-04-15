@@ -1,4 +1,4 @@
-enum PokemonType {
+enum BogeybeastType {
   normal,
   fire,
   water,

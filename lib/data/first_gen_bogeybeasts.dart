@@ -1,10 +1,10 @@
-import '../models/pokemon_rarity.dart';
-import '../models/pokemon_species.dart';
-import '../models/pokemon_type.dart';
+import '../models/bogeybeast_rarity.dart';
+import '../models/bogeybeast_species.dart';
+import '../models/bogeybeast_type.dart';
 
-typedef _P = PokemonType;
+typedef _P = BogeybeastType;
 
-const List<List<PokemonType>> _types = <List<PokemonType>>[
+const List<List<BogeybeastType>> _types = <List<BogeybeastType>>[
   [_P.grass, _P.poison],     // 1  Bulbasaur
   [_P.grass, _P.poison],     // 2  Ivysaur
   [_P.grass, _P.poison],     // 3  Venusaur
@@ -158,7 +158,7 @@ const List<List<PokemonType>> _types = <List<PokemonType>>[
   [_P.psychic],               // 151 Mew
 ];
 
-const List<String> _pokemonNames = <String>[
+const List<String> _bogeybeastNames = <String>[
   'Bulbasaur',
   'Ivysaur',
   'Venusaur',
@@ -331,14 +331,14 @@ const Set<int> _uncommonDexNumbers = <int>{
   79, 81, 86, 92, 95, 96, 104, 109, 111, 114, 116, 133,
 };
 
-final List<PokemonSpecies> firstGenPokemon = List<PokemonSpecies>.unmodifiable(
-  List<PokemonSpecies>.generate(
-    _pokemonNames.length,
+final List<BogeybeastSpecies> firstGenBogeybeast = List<BogeybeastSpecies>.unmodifiable(
+  List<BogeybeastSpecies>.generate(
+    _bogeybeastNames.length,
     (int index) {
       final int dexNumber = index + 1;
-      return PokemonSpecies(
+      return BogeybeastSpecies(
         dexNumber: dexNumber,
-        name: _pokemonNames[index],
+        name: _bogeybeastNames[index],
         rarity: _rarityForDexNumber(dexNumber),
         types: _types[index],
       );
@@ -346,18 +346,18 @@ final List<PokemonSpecies> firstGenPokemon = List<PokemonSpecies>.unmodifiable(
   ),
 );
 
-PokemonRarity _rarityForDexNumber(int dexNumber) {
+BogeybeastRarity _rarityForDexNumber(int dexNumber) {
   if (_legendaryDexNumbers.contains(dexNumber)) {
-    return PokemonRarity.legendary;
+    return BogeybeastRarity.legendary;
   }
   if (_epicDexNumbers.contains(dexNumber)) {
-    return PokemonRarity.epic;
+    return BogeybeastRarity.epic;
   }
   if (_rareDexNumbers.contains(dexNumber)) {
-    return PokemonRarity.rare;
+    return BogeybeastRarity.rare;
   }
   if (_uncommonDexNumbers.contains(dexNumber)) {
-    return PokemonRarity.uncommon;
+    return BogeybeastRarity.uncommon;
   }
-  return PokemonRarity.common;
+  return BogeybeastRarity.common;
 }

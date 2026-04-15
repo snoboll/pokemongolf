@@ -1,5 +1,5 @@
 #!/bin/bash
-# Pokemon Golf - Ad-hoc release script
+# Bogeybeasts - Ad-hoc release script
 # Usage: ./distribution/release.sh <version>
 # Example: ./distribution/release.sh 1.0.1
 #
@@ -15,7 +15,7 @@ SUPABASE_KEY="${SUPABASE_SERVICE_KEY}"
 BUCKET="app-distribution"
 BUILD_DIR="build/ios/ipa"
 
-echo "🏌️  Pokemon Golf release v$VERSION"
+echo "🏌️  Bogeybeasts release v$VERSION"
 
 # 1. Build IPA
 echo "📦 Building IPA..."
@@ -35,7 +35,7 @@ sed -i '' "s/v[0-9.]*/v$VERSION/" distribution/index.html
 
 # 3. Upload IPA
 echo "⬆️  Uploading IPA..."
-curl -s -X POST "$SUPABASE_URL/storage/v1/object/$BUCKET/pokemon_golf.ipa" \
+curl -s -X POST "$SUPABASE_URL/storage/v1/object/$BUCKET/bogeybeasts.ipa" \
   -H "apikey: $SUPABASE_KEY" \
   -H "Authorization: Bearer $SUPABASE_KEY" \
   -H "Content-Type: application/octet-stream" \

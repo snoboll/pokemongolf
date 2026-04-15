@@ -1,11 +1,11 @@
 import 'dart:math';
 
 import '../models/golf_score.dart';
-import '../models/pokemon_rarity.dart';
+import '../models/bogeybeast_rarity.dart';
 
-const Map<PokemonRarity, Map<GolfScore, int>> catchRateTable =
-    <PokemonRarity, Map<GolfScore, int>>{
-  PokemonRarity.common: <GolfScore, int>{
+const Map<BogeybeastRarity, Map<GolfScore, int>> catchRateTable =
+    <BogeybeastRarity, Map<GolfScore, int>>{
+  BogeybeastRarity.common: <GolfScore, int>{
     GolfScore.albatross: 100,
     GolfScore.eagle: 100,
     GolfScore.birdie: 100,
@@ -14,7 +14,7 @@ const Map<PokemonRarity, Map<GolfScore, int>> catchRateTable =
     GolfScore.doubleBogey: 20,
     GolfScore.tripleOrWorse: 5,
   },
-  PokemonRarity.uncommon: <GolfScore, int>{
+  BogeybeastRarity.uncommon: <GolfScore, int>{
     GolfScore.albatross: 100,
     GolfScore.eagle: 100,
     GolfScore.birdie: 100,
@@ -23,7 +23,7 @@ const Map<PokemonRarity, Map<GolfScore, int>> catchRateTable =
     GolfScore.doubleBogey: 12,
     GolfScore.tripleOrWorse: 3,
   },
-  PokemonRarity.rare: <GolfScore, int>{
+  BogeybeastRarity.rare: <GolfScore, int>{
     GolfScore.albatross: 100,
     GolfScore.eagle: 100,
     GolfScore.birdie: 95,
@@ -32,7 +32,7 @@ const Map<PokemonRarity, Map<GolfScore, int>> catchRateTable =
     GolfScore.doubleBogey: 5,
     GolfScore.tripleOrWorse: 2,
   },
-  PokemonRarity.epic: <GolfScore, int>{
+  BogeybeastRarity.epic: <GolfScore, int>{
     GolfScore.albatross: 95,
     GolfScore.eagle: 90,
     GolfScore.birdie: 70,
@@ -41,7 +41,7 @@ const Map<PokemonRarity, Map<GolfScore, int>> catchRateTable =
     GolfScore.doubleBogey: 3,
     GolfScore.tripleOrWorse: 1,
   },
-  PokemonRarity.legendary: <GolfScore, int>{
+  BogeybeastRarity.legendary: <GolfScore, int>{
     GolfScore.albatross: 70,
     GolfScore.eagle: 60,
     GolfScore.birdie: 40,
@@ -58,7 +58,7 @@ class CatchService {
   final Random _random;
 
   int catchChance({
-    required PokemonRarity rarity,
+    required BogeybeastRarity rarity,
     required GolfScore score,
   }) {
     return catchRateTable[rarity]![score]!;

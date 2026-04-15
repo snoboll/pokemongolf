@@ -6,7 +6,7 @@ alter table public.rounds
   add column if not exists course_name text;
 
 -- 2. Update submit_battle_score: no longer ends on mid-game KO.
---    Combat is simply skipped when either side has no alive Pokemon.
+--    Combat is simply skipped when either side has no alive Bogeybeast.
 --    Winner is determined only when all holes have been played.
 create or replace function submit_battle_score(
   p_battle_id uuid,
@@ -115,7 +115,7 @@ begin
       v_defender_team := v_c_team;
     end if;
 
-    -- Find lead alive Pokemon on each side
+    -- Find lead alive Bogeybeast on each side
     v_lead_atk := null;
     v_lead_def := null;
     for i in 0..jsonb_array_length(v_attacker_team) - 1 loop
@@ -129,7 +129,7 @@ begin
       end if;
     end loop;
 
-    -- Combat only if BOTH sides still have alive Pokemon.
+    -- Combat only if BOTH sides still have alive Bogeybeast.
     -- If either team is KO'd the game continues but no damage is dealt.
     if v_lead_atk is not null and v_lead_def is not null then
       v_raw_dmg     := greatest(1, (v_lead_atk ->> 'offense_tier')::int - ((v_lead_def ->> 'defense_tier')::int / 2));
@@ -171,8 +171,8 @@ begin
       'result',           case when v_c_strokes < v_o_strokes then 'challenger_wins' else 'opponent_wins' end,
       'damage',           v_final_dmg,
       'type_mult',        v_type_mult,
-      'attacker_pokemon', case when v_lead_atk is not null then v_lead_atk ->> 'name' else null end,
-      'defender_pokemon', case when v_lead_def is not null then v_lead_def ->> 'name' else null end,
+      'attacker_bogeybeast', case when v_lead_atk is not null then v_lead_atk ->> 'name' else null end,
+      'defender_bogeybeast', case when v_lead_def is not null then v_lead_def ->> 'name' else null end,
       'c_team_after',     v_c_team,
       'o_team_after',     v_o_team
     );

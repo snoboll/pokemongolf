@@ -1,34 +1,34 @@
 import 'package:flutter/material.dart';
 
 import '../app.dart';
-import '../data/trainer_tags.dart';
-import '../models/trainer_team.dart';
-import '../state/pokemon_golf_store.dart';
+import '../data/golfer_tags.dart';
+import '../models/golfer_team.dart';
+import '../state/bogeybeasts_golf_store.dart';
 import 'history_screen.dart';
 import 'my_bag_screen.dart';
 
 const List<({String asset, String label})> _availableSprites = [
-  (asset: 'assets/trainers/red-lgpe.png',           label: 'Red'),
-  (asset: 'assets/trainers/blue-lgpe.png',          label: 'Blue'),
-  (asset: 'assets/trainers/ethan.png',              label: 'Ethan'),
-  (asset: 'assets/trainers/dawn.png',               label: 'Dawn'),
-  (asset: 'assets/trainers/brendan-rs.png',         label: 'Brendan'),
-  (asset: 'assets/trainers/acetrainer.png',         label: 'Ace Trainer'),
-  (asset: 'assets/trainers/acetrainer-gen1.png',    label: 'Ace Trainer ♂'),
-  (asset: 'assets/trainers/acetrainerf-gen1.png',   label: 'Ace Trainer ♀'),
-  (asset: 'assets/trainers/youngster-gen1.png',     label: 'Youngster'),
-  (asset: 'assets/trainers/lass-gen1.png',          label: 'Lass'),
-  (asset: 'assets/trainers/bugcatcher-gen1.png',    label: 'Bug Catcher'),
-  (asset: 'assets/trainers/fisherman-gen1.png',     label: 'Fisherman'),
-  (asset: 'assets/trainers/hiker-gen1.png',         label: 'Hiker'),
-  (asset: 'assets/trainers/blackbelt-gen1.png',     label: 'Black Belt'),
-  (asset: 'assets/trainers/birdkeeper-gen1.png',    label: 'Bird Keeper'),
-  (asset: 'assets/trainers/sailor-gen1.png',        label: 'Sailor'),
-  (asset: 'assets/trainers/camper.png',             label: 'Camper'),
-  (asset: 'assets/trainers/gambler-gen1.png',       label: 'Gambler'),
-  (asset: 'assets/trainers/scientist-gen1.png',     label: 'Scientist'),
-  (asset: 'assets/trainers/channeler-gen1.png',     label: 'Channeler'),
-  (asset: 'assets/trainers/teamrocket.png',         label: 'Team Rocket'),
+  (asset: 'assets/golfers/red-lgpe.png',           label: 'Red'),
+  (asset: 'assets/golfers/blue-lgpe.png',          label: 'Blue'),
+  (asset: 'assets/golfers/ethan.png',              label: 'Ethan'),
+  (asset: 'assets/golfers/dawn.png',               label: 'Dawn'),
+  (asset: 'assets/golfers/brendan-rs.png',         label: 'Brendan'),
+  (asset: 'assets/golfers/acegolfer.png',         label: 'Ace Golfer'),
+  (asset: 'assets/golfers/acegolfer-gen1.png',    label: 'Ace Golfer ♂'),
+  (asset: 'assets/golfers/acegolferf-gen1.png',   label: 'Ace Golfer ♀'),
+  (asset: 'assets/golfers/youngster-gen1.png',     label: 'Youngster'),
+  (asset: 'assets/golfers/lass-gen1.png',          label: 'Lass'),
+  (asset: 'assets/golfers/bugcatcher-gen1.png',    label: 'Bug Catcher'),
+  (asset: 'assets/golfers/fisherman-gen1.png',     label: 'Fisherman'),
+  (asset: 'assets/golfers/hiker-gen1.png',         label: 'Hiker'),
+  (asset: 'assets/golfers/blackbelt-gen1.png',     label: 'Black Belt'),
+  (asset: 'assets/golfers/birdkeeper-gen1.png',    label: 'Bird Keeper'),
+  (asset: 'assets/golfers/sailor-gen1.png',        label: 'Sailor'),
+  (asset: 'assets/golfers/camper.png',             label: 'Camper'),
+  (asset: 'assets/golfers/gambler-gen1.png',       label: 'Gambler'),
+  (asset: 'assets/golfers/scientist-gen1.png',     label: 'Scientist'),
+  (asset: 'assets/golfers/channeler-gen1.png',     label: 'Channeler'),
+  (asset: 'assets/golfers/teamrocket.png',         label: 'Team Rocket'),
 ];
 
 class ProfileScreen extends StatelessWidget {
@@ -36,10 +36,10 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = PokemonGolfScope.of(context);
+    final store = BogeybeastGolfScope.of(context);
     final theme = Theme.of(context);
-    final String? tag = trainerTagForCaughtDex(store.caughtDexNumbers);
-    final TrainerTeam? currentTeam = TrainerTeam.fromDb(store.trainerTeam);
+    final String? tag = golferTagForCaughtDex(store.caughtDexNumbers);
+    final GolferTeam? currentTeam = GolferTeam.fromDb(store.golferTeam);
     final Color accentColor = teamColor(currentTeam);
 
     return SafeArea(
@@ -73,13 +73,13 @@ class ProfileScreen extends StatelessWidget {
                           width: 2.5,
                         ),
                       ),
-                      child: store.trainerSprite != null
+                      child: store.golferSprite != null
                           ? ClipOval(
                               child: OverflowBox(
                                 maxWidth: 96 * 1.4,
                                 maxHeight: 96 * 1.4,
                                 child: Image.asset(
-                                  store.trainerSprite!,
+                                  store.golferSprite!,
                                   fit: BoxFit.contain,
                                   errorBuilder: (_, __, ___) => Icon(
                                     Icons.person,
@@ -106,7 +106,7 @@ class ProfileScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          store.trainerSprite != null ? 'Change avatar' : 'Choose avatar',
+                          store.golferSprite != null ? 'Change avatar' : 'Choose avatar',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.primary.withValues(alpha: 0.7),
                           ),
@@ -118,13 +118,13 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            if (store.trainerName != null)
+            if (store.golferName != null)
               Center(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     Text(
-                      store.trainerName!,
+                      store.golferName!,
                       style: theme.textTheme.titleLarge?.copyWith(
                         color: theme.colorScheme.primary,
                         fontWeight: FontWeight.w700,
@@ -227,7 +227,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Future<void> _confirmTeamChange(
-      BuildContext context, PokemonGolfStore store, TrainerTeam? team) async {
+      BuildContext context, BogeybeastGolfStore store, GolferTeam? team) async {
     if (team == null) {
       // Leaving a team — still confirm
       final confirmed = await showDialog<bool>(
@@ -247,7 +247,7 @@ class ProfileScreen extends StatelessWidget {
         ),
       );
       if (confirmed == true) {
-        store.setTrainerTeam(null);
+        store.setGolferTeam(null);
       }
       return;
     }
@@ -293,11 +293,11 @@ class ProfileScreen extends StatelessWidget {
       },
     );
     if (confirmed == true) {
-      store.setTrainerTeam(team.dbValue);
+      store.setGolferTeam(team.dbValue);
     }
   }
 
-  void _showHcpEditor(BuildContext context, PokemonGolfStore store) {
+  void _showHcpEditor(BuildContext context, BogeybeastGolfStore store) {
     final controller = TextEditingController(
       text: store.playerHcpDisplay,
     );
@@ -350,7 +350,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             FilledButton(
               onPressed: () {
-                final val = double.tryParse(controller.text);
+                final val = double.tryParse(controller.text.replaceAll(',', '.'));
                 if (val != null && val >= 0 && val <= 54) {
                   store.setHcpOverride((val * 10).round() / 10.0);
                 }
@@ -364,7 +364,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  void _showSpritePicker(BuildContext context, PokemonGolfStore store) {
+  void _showSpritePicker(BuildContext context, BogeybeastGolfStore store) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -373,9 +373,9 @@ class ProfileScreen extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => _SpritePicker(
-        current: store.trainerSprite,
+        current: store.golferSprite,
         onSelected: (sprite) {
-          store.setTrainerSprite(sprite);
+          store.setGolferSprite(sprite);
           Navigator.of(ctx).pop();
         },
       ),
@@ -411,7 +411,7 @@ class _SpritePicker extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Choose your Trainer',
+            'Choose your Golfer',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
             ),
@@ -502,10 +502,10 @@ class _TeamSelector extends StatelessWidget {
     required this.onChanged,
   });
 
-  final TrainerTeam? current;
+  final GolferTeam? current;
   final bool canChange;
   final int daysLeft;
-  final ValueChanged<TrainerTeam?> onChanged;
+  final ValueChanged<GolferTeam?> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -541,12 +541,12 @@ class _TeamSelector extends StatelessWidget {
           ),
         ),
         Row(
-          children: TrainerTeam.values.map((team) {
+          children: GolferTeam.values.map((team) {
             final selected = team == current;
             return Expanded(
               child: Padding(
                 padding: EdgeInsets.only(
-                  right: team != TrainerTeam.values.last ? 8 : 0,
+                  right: team != GolferTeam.values.last ? 8 : 0,
                 ),
                 child: GestureDetector(
                   onTap: locked && !selected ? null : () => onChanged(selected ? null : team),
