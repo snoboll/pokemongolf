@@ -866,10 +866,21 @@ class _GymCard extends StatelessWidget {
                   children: [
                     for (final p in leader!.team.take(3))
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.15),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(3),
                           child: Image.asset(
                             p.assetPath,
                             fit: BoxFit.contain,

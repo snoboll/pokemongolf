@@ -614,6 +614,7 @@ class _CourseDetail extends StatelessWidget {
     required this.onBattle,
     required this.onGym,
     this.onSetHome,
+    this.showHeader = true,
   });
 
   final GolfCourse course;
@@ -623,6 +624,7 @@ class _CourseDetail extends StatelessWidget {
   final VoidCallback onBattle;
   final VoidCallback onGym;
   final VoidCallback? onSetHome;
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context) {
@@ -637,24 +639,26 @@ class _CourseDetail extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          course.name,
-          style: theme.textTheme.titleLarge
-              ?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        if (totalPar != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              '$holeCount holes  ·  Par $totalPar',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+        if (showHeader) ...[
+          Text(
+            course.name,
+            style: theme.textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          if (totalPar != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                '$holeCount holes  ·  Par $totalPar',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
               ),
             ),
-          ),
-        const SizedBox(height: 14),
+          const SizedBox(height: 16),
+        ],
         _LeaderBanner(leader: leader),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
@@ -955,8 +959,8 @@ class _DetailMarker extends StatelessWidget {
               const SizedBox(height: 6),
               _LeaderBanner(
                 leader: leader,
-                avatarSize: 36,
-                beastSize: 24,
+                avatarSize: 44,
+                beastSize: 48,
                 compact: true,
                 showLabel: false,
               ),
@@ -1107,6 +1111,7 @@ class _CourseCardState extends State<_CourseCard> {
         onBattle: widget.onBattle,
         onGym: widget.onChallenge,
         onSetHome: widget.onSetHome,
+        showHeader: false,
       ),
     );
   }
@@ -1154,8 +1159,8 @@ class _GolferAvatar extends StatelessWidget {
 class _LeaderBanner extends StatelessWidget {
   const _LeaderBanner({
     required this.leader,
-    this.avatarSize = 56,
-    this.beastSize = 36,
+    this.avatarSize = 72,
+    this.beastSize = 68,
     this.compact = false,
     this.showLabel = true,
     this.onTap,
@@ -1248,10 +1253,21 @@ class _LeaderBanner extends StatelessWidget {
           ),
           for (final b in leader.team)
             Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: SizedBox(
+              padding: const EdgeInsets.only(left: 6),
+              child: Container(
                 width: beastSize,
                 height: beastSize,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+                padding: EdgeInsets.all(beastSize * 0.08),
                 child: Image.asset(
                   b.assetPath,
                   fit: BoxFit.contain,
