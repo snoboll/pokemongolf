@@ -251,8 +251,8 @@ class _LeaderSprite extends StatelessWidget {
       height: 40,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white,
-        border: Border.all(color: color.withValues(alpha: 0.6), width: 1.5),
+        color: color.withValues(alpha: 0.12),
+        border: Border.all(color: color.withValues(alpha: 0.5), width: 1.5),
       ),
       clipBehavior: Clip.antiAlias,
       child: sprite != null

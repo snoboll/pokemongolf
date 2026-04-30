@@ -919,9 +919,9 @@ class _GolferSprite extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white,
+        color: const Color(0xFFFFD700).withValues(alpha: 0.12),
         border: Border.all(
-          color: const Color(0xFFFFD700).withValues(alpha: 0.6),
+          color: const Color(0xFFFFD700).withValues(alpha: 0.5),
           width: 1.5,
         ),
       ),

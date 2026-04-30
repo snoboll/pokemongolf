@@ -1132,9 +1132,9 @@ class _GolferAvatar extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white,
+        color: (borderColor ?? const Color(0xFFFFD700)).withValues(alpha: 0.12),
         border: Border.all(
-          color: (borderColor ?? const Color(0xFFFFD700)).withValues(alpha: 0.6),
+          color: (borderColor ?? const Color(0xFFFFD700)).withValues(alpha: 0.5),
           width: 1.5,
         ),
       ),

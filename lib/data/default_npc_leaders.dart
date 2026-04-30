@@ -9,8 +9,8 @@ class _Npc {
   final String sprite;
 }
 
-const String _m = 'assets/golfers/male';
-const String _f = 'assets/golfers/female';
+const String _m = 'assets/golfers/male/transparent_bg';
+const String _f = 'assets/golfers/female/transparent_bg';
 
 // Course leaders — ranked by HCP, assigned to courses in sorted order
 const List<_Npc> _gymLeaders = [
