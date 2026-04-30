@@ -5,330 +5,331 @@ import '../models/bogeybeast_type.dart';
 typedef _P = BogeybeastType;
 
 const List<List<BogeybeastType>> _types = <List<BogeybeastType>>[
-  [_P.grass, _P.poison],     // 1  Bulbasaur
-  [_P.grass, _P.poison],     // 2  Ivysaur
-  [_P.grass, _P.poison],     // 3  Venusaur
-  [_P.fire],                  // 4  Charmander
-  [_P.fire],                  // 5  Charmeleon
-  [_P.fire, _P.flying],      // 6  Charizard
-  [_P.water],                 // 7  Squirtle
-  [_P.water],                 // 8  Wartortle
-  [_P.water],                 // 9  Blastoise
-  [_P.bug],                   // 10 Caterpie
-  [_P.bug],                   // 11 Metapod
-  [_P.bug, _P.flying],       // 12 Butterfree
-  [_P.bug, _P.poison],       // 13 Weedle
-  [_P.bug, _P.poison],       // 14 Kakuna
-  [_P.bug, _P.poison],       // 15 Beedrill
-  [_P.normal, _P.flying],    // 16 Pidgey
-  [_P.normal, _P.flying],    // 17 Pidgeotto
-  [_P.normal, _P.flying],    // 18 Pidgeot
-  [_P.normal],                // 19 Rattata
-  [_P.normal],                // 20 Raticate
-  [_P.normal, _P.flying],    // 21 Spearow
-  [_P.normal, _P.flying],    // 22 Fearow
-  [_P.poison],                // 23 Ekans
-  [_P.poison],                // 24 Arbok
-  [_P.electric],              // 25 Pikachu
-  [_P.electric],              // 26 Raichu
-  [_P.ground],                // 27 Sandshrew
-  [_P.ground],                // 28 Sandslash
-  [_P.poison],                // 29 Nidoran F
-  [_P.poison],                // 30 Nidorina
-  [_P.poison, _P.ground],    // 31 Nidoqueen
-  [_P.poison],                // 32 Nidoran M
-  [_P.poison],                // 33 Nidorino
-  [_P.poison, _P.ground],    // 34 Nidoking
-  [_P.fairy],                 // 35 Clefairy
-  [_P.fairy],                 // 36 Clefable
-  [_P.fire],                  // 37 Vulpix
-  [_P.fire],                  // 38 Ninetales
-  [_P.normal, _P.fairy],     // 39 Jigglypuff
-  [_P.normal, _P.fairy],     // 40 Wigglytuff
-  [_P.poison, _P.flying],    // 41 Zubat
-  [_P.poison, _P.flying],    // 42 Golbat
-  [_P.grass, _P.poison],     // 43 Oddish
-  [_P.grass, _P.poison],     // 44 Gloom
-  [_P.grass, _P.poison],     // 45 Vileplume
-  [_P.bug, _P.grass],        // 46 Paras
-  [_P.bug, _P.grass],        // 47 Parasect
-  [_P.bug, _P.poison],       // 48 Venonat
-  [_P.bug, _P.poison],       // 49 Venomoth
-  [_P.ground],                // 50 Diglett
-  [_P.ground],                // 51 Dugtrio
-  [_P.normal],                // 52 Meowth
-  [_P.normal],                // 53 Persian
-  [_P.water],                 // 54 Psyduck
-  [_P.water],                 // 55 Golduck
-  [_P.fighting],              // 56 Mankey
-  [_P.fighting],              // 57 Primeape
-  [_P.fire],                  // 58 Growlithe
-  [_P.fire],                  // 59 Arcanine
-  [_P.water],                 // 60 Poliwag
-  [_P.water],                 // 61 Poliwhirl
-  [_P.water, _P.fighting],   // 62 Poliwrath
-  [_P.psychic],               // 63 Abra
-  [_P.psychic],               // 64 Kadabra
-  [_P.psychic],               // 65 Alakazam
-  [_P.fighting],              // 66 Machop
-  [_P.fighting],              // 67 Machoke
-  [_P.fighting],              // 68 Machamp
-  [_P.grass, _P.poison],     // 69 Bellsprout
-  [_P.grass, _P.poison],     // 70 Weepinbell
-  [_P.grass, _P.poison],     // 71 Victreebel
-  [_P.water, _P.poison],     // 72 Tentacool
-  [_P.water, _P.poison],     // 73 Tentacruel
-  [_P.rock, _P.ground],      // 74 Geodude
-  [_P.rock, _P.ground],      // 75 Graveler
-  [_P.rock, _P.ground],      // 76 Golem
-  [_P.fire],                  // 77 Ponyta
-  [_P.fire],                  // 78 Rapidash
-  [_P.water, _P.psychic],    // 79 Slowpoke
-  [_P.water, _P.psychic],    // 80 Slowbro
-  [_P.electric],              // 81 Magnemite
-  [_P.electric],              // 82 Magneton
-  [_P.normal, _P.flying],    // 83 Farfetch'd
-  [_P.normal, _P.flying],    // 84 Doduo
-  [_P.normal, _P.flying],    // 85 Dodrio
-  [_P.water],                 // 86 Seel
-  [_P.water, _P.ice],        // 87 Dewgong
-  [_P.poison],                // 88 Grimer
-  [_P.poison],                // 89 Muk
-  [_P.water],                 // 90 Shellder
-  [_P.water, _P.ice],        // 91 Cloyster
-  [_P.ghost, _P.poison],     // 92 Gastly
-  [_P.ghost, _P.poison],     // 93 Haunter
-  [_P.ghost, _P.poison],     // 94 Gengar
-  [_P.rock, _P.ground],      // 95 Onix
-  [_P.psychic],               // 96 Drowzee
-  [_P.psychic],               // 97 Hypno
-  [_P.water],                 // 98 Krabby
-  [_P.water],                 // 99 Kingler
-  [_P.electric],              // 100 Voltorb
-  [_P.electric],              // 101 Electrode
-  [_P.grass, _P.psychic],    // 102 Exeggcute
-  [_P.grass, _P.psychic],    // 103 Exeggutor
-  [_P.ground],                // 104 Cubone
-  [_P.ground],                // 105 Marowak
-  [_P.fighting],              // 106 Hitmonlee
-  [_P.fighting],              // 107 Hitmonchan
-  [_P.normal],                // 108 Lickitung
-  [_P.poison],                // 109 Koffing
-  [_P.poison],                // 110 Weezing
-  [_P.ground, _P.rock],      // 111 Rhyhorn
-  [_P.ground, _P.rock],      // 112 Rhydon
-  [_P.normal],                // 113 Chansey
-  [_P.grass],                 // 114 Tangela
-  [_P.normal],                // 115 Kangaskhan
-  [_P.water],                 // 116 Horsea
-  [_P.water],                 // 117 Seadra
-  [_P.water],                 // 118 Goldeen
-  [_P.water],                 // 119 Seaking
-  [_P.water],                 // 120 Staryu
-  [_P.water, _P.psychic],    // 121 Starmie
-  [_P.psychic, _P.fairy],    // 122 Mr. Mime
-  [_P.bug, _P.flying],       // 123 Scyther
-  [_P.ice, _P.psychic],      // 124 Jynx
-  [_P.electric],              // 125 Electabuzz
-  [_P.fire],                  // 126 Magmar
-  [_P.bug],                   // 127 Pinsir
-  [_P.normal],                // 128 Tauros
-  [_P.water],                 // 129 Magikarp
-  [_P.water, _P.flying],     // 130 Gyarados
-  [_P.water, _P.ice],        // 131 Lapras
-  [_P.normal],                // 132 Ditto
-  [_P.normal],                // 133 Eevee
-  [_P.water],                 // 134 Vaporeon
-  [_P.electric],              // 135 Jolteon
-  [_P.fire],                  // 136 Flareon
-  [_P.normal],                // 137 Porygon
-  [_P.rock, _P.water],       // 138 Omanyte
-  [_P.rock, _P.water],       // 139 Omastar
-  [_P.rock, _P.water],       // 140 Kabuto
-  [_P.rock, _P.water],       // 141 Kabutops
-  [_P.rock, _P.flying],      // 142 Aerodactyl
-  [_P.normal],                // 143 Snorlax
-  [_P.ice, _P.flying],       // 144 Articuno
-  [_P.electric, _P.flying],  // 145 Zapdos
-  [_P.fire, _P.flying],      // 146 Moltres
-  [_P.dragon],                // 147 Dratini
-  [_P.dragon],                // 148 Dragonair
-  [_P.dragon, _P.flying],    // 149 Dragonite
-  [_P.psychic],               // 150 Mewtwo
-  [_P.psychic],               // 151 Mew
+  [_P.grass],                 // 1   Puttling
+  [_P.grass],                 // 2   Fairwyn
+  [_P.grass, _P.poison],     // 3   Teelord
+  [_P.fire],                  // 4   Bogferno
+  [_P.fire],                  // 5   Blazepar
+  [_P.fire, _P.flying],      // 6   Emberdie
+  [_P.water],                 // 7   Droptooth
+  [_P.water],                 // 8   Bladogator
+  [_P.water],                 // 9   Hookodile
+  [_P.grass],                 // 10  Roughrat
+  [_P.grass],                 // 11  Growdent
+  [_P.flying, _P.ice],       // 12  Crisprdie
+  [_P.flying, _P.ice],       // 13  Chilleagle
+  [_P.flying, _P.ice],       // 14  Albafrosst
+  [_P.normal],                // 15  Babydraw
+  [_P.normal],                // 16  Snaphook
+  [_P.normal],                // 17  Tinyfade
+  [_P.normal],                // 18  Bautaslice
+  [_P.normal],                // 19  Tappin
+  [_P.normal],                // 20  Stimpee
+  [_P.bug],                   // 21  Missuno
+  [_P.bug],                   // 22  Adidos
+  [_P.bug, _P.poison],       // 23  Titliestres
+  [_P.poison, _P.flying],    // 24  Owtofbouns
+  [_P.poison, _P.flying],    // 25  Strekathol
+  [_P.ground],                // 26  Tristlie
+  [_P.ground],                // 27  Horchunk
+  [_P.rock],                  // 28  Stenfan
+  [_P.rock],                  // 29  Sabakloba
+  [_P.ground],                // 30  Bongker
+  [_P.rock],                  // 31  Naynayron
+  [_P.rock],                  // 32  Sevenayron
+  [_P.rock],                  // 33  Fayvayron
+  [_P.water],                 // 34  Splish
+  [_P.water, _P.ice],        // 35  Plooms
+  [_P.water, _P.grass],      // 36  Pinnhai
+  [_P.water],                 // 37  Komindo
+  [_P.water, _P.electric],   // 38  Denharvi
+  [_P.fire],                  // 39  Laypup
+  [_P.water, _P.poison],     // 40  Stingler
+  [_P.water, _P.poison],     // 41  Stungyard
+  [_P.bug, _P.poison],       // 42  Bugbag
+  [_P.bug, _P.poison],       // 43  Acicart
+  [_P.bug, _P.poison],       // 44  Toxicaddie
+  [_P.ice],                   // 45  Bogistragl
+  [_P.ice],                   // 46  Bawrapawr
+  [_P.fire, _P.flying],      // 47  Lipowlt
+  [_P.fire, _P.flying],      // 48  Lagphoot
+  [_P.electric, _P.ground],  // 49  Rongclub
+  [_P.electric, _P.fire],    // 50  Hotstreek
+  [_P.electric, _P.fire],    // 51  Holeoblaze
+  [_P.electric],              // 52  Zapwedge
+  [_P.electric],              // 53  Greeninreg
+  [_P.electric, _P.flying],  // 54  Skaiad
+  [_P.electric, _P.flying],  // 55  Skaimarx
+  [_P.grass, _P.dark],       // 56  Secondcat
+  [_P.grass, _P.dark],       // 57  Frincheetah
+  [_P.grass, _P.dark],       // 58  Tigerwudz
+  [_P.dark],                  // 59  Spinbite
+  [_P.dragon],                // 60  Kortosne
+  [_P.dragon],                // 61  Longorak
+  [_P.ice],                   // 62  Seet
+  [_P.ice, _P.flying],       // 63  Menstanado
+  [_P.electric],              // 64  Elektrindor
+  [_P.electric],              // 65  Voltrakman
+  [_P.flying],                // 66  Undulathon
+  [_P.ground],                // 67  Zepestance
+  [_P.grass, _P.ground],     // 68  Rovtchip
+  [_P.fighting, _P.ice],     // 69  Shankey
+  [_P.fighting, _P.ice],     // 70  Socketfeil
+  [_P.ground],                // 71  Dumduff
+  [_P.ground],                // 72  Deevot
+  [_P.psychic],               // 73  OBwan
+  [_P.psychic],               // 74  Proveewan
+  [_P.psychic, _P.dragon],   // 75  Holinwangenobi
+  [_P.water, _P.normal],     // 76  Peboll
+  [_P.water, _P.flying],     // 77  Profsoorfisk
+  [_P.grass, _P.fighting],   // 78  Lawnshangle
+  [_P.grass, _P.fighting],   // 79  Spinrayt
+  [_P.grass, _P.fighting],   // 80  Smashfakdurr
+  [_P.psychic],               // 81  Jinx
+  [_P.ghost, _P.poison],     // 82  Skobra
+  [_P.ghost, _P.poison],     // 83  Skrixon
+  [_P.ghost, _P.poison],     // 84  Skullaway
+  [_P.dragon],                // 85  Rangewhelp
+  [_P.dragon],                // 86  Yardrake
+  [_P.dragon],                // 87  Carryhazard
+  [_P.grass, _P.ground],     // 88  Ofdedeck
+  [_P.grass, _P.ground],     // 89  Pangdrayv
+  [_P.ground, _P.dragon],    // 90  Drayvagreen
+  [_P.bug, _P.fighting],     // 91  Teetaim
+  [_P.bug, _P.fighting],     // 92  Penaltee
+  [_P.bug, _P.fighting],     // 93  Teeboxer
+  [_P.flying],                // 94  Chipin
+  [_P.flying, _P.rock],      // 95  Flopshot
+  [_P.rock, _P.psychic],     // 96  Clarva
+  [_P.rock, _P.psychic],     // 97  Denneclar
+  [_P.ice, _P.normal],       // 98  Gripslip
+  [_P.fire, _P.water],       // 99  Skrambell
+  [_P.psychic],               // 100 Alsquare
+  [_P.psychic],               // 101 Doormee
+  [_P.psychic],               // 102 Jossi
+  [_P.psychic, _P.flying],   // 103 Suooja
+  [_P.ghost],                 // 104 Gubbchip
+  [_P.ghost],                 // 105 Bumpandran
+  [_P.ghost, _P.dark],       // 106 Upandawn
+  [_P.dark, _P.poison],      // 107 Grinfee
+  [_P.psychic],               // 108 Bladagast
+  [_P.psychic, _P.grass],    // 109 Muligandalf
+  [_P.flying],                // 110 Strekstrek
+  [_P.flying],                // 111 Bogibardi
+  [_P.ghost, _P.fighting],   // 112 Ritebreak
+  [_P.ground],                // 113 Linkskors
+  [_P.rock],                  // 114 Thindit
+  [_P.rock],                  // 115 Fuooor
+  [_P.fire, _P.psychic],     // 116 Lagpoot
+  [_P.fire, _P.psychic],     // 117 Indaahowl
+  [_P.bug, _P.ground],       // 118 Plugfuk
+  [_P.grass, _P.fighting],   // 119 Legdog
+  [_P.dark],                  // 120 Trigglett
+  [_P.dark],                  // 121 Gigatilt
+  [_P.water],                 // 122 Fairwhayle
+  [_P.normal],                // 123 Foreplayer
+  [_P.fighting],              // 124 Punnchad
+  [_P.normal],                // 125 Flatpitch
+  [_P.fire],                  // 126 Pyrepitch
+  [_P.water],                 // 127 Tidepitch
+  [_P.electric],              // 128 Elepitch
+  [_P.flying],                // 129 Flayerlie
+  [_P.ice, _P.grass],        // 130 Wintergreenor
+  [_P.ghost],                 // 131 Waggler
+  [_P.ghost, _P.fighting],   // 132 Proofswing
+  [_P.ground],                // 133 Sandstroke
+  [_P.electric, _P.water],   // 134 Fittnylle
+  [_P.electric, _P.poison],  // 135 Yewlachit
+  [_P.psychic, _P.ice],      // 136 Owberg
+  [_P.dragon, _P.rock],      // 137 Roary
+  [_P.psychic, _P.water],    // 138 Shefflor
+  [_P.fire, _P.dark],        // 139 Braizon
+  [_P.fire, _P.bug],         // 140 Hee-Oh
+  [_P.water, _P.bug],        // 141 Shee-Oh
+  [_P.ghost],                 // 142 Bogeyman
+  [_P.grass, _P.flying],     // 143 Saintandroos
+  [_P.fire],                  // 144 Frontanine
+  [_P.dark],                  // 145 Bakanine
+  [_P.normal],                // 146 Touritslag
+  [_P.fire, _P.flying],      // 147 Yuessowpen
+  [_P.ice, _P.flying],       // 148 Deeowpen
+  [_P.dragon, _P.fighting],  // 149 Pegeaychamp
+  [_P.dark],                  // 150 Agustamastr
+  [_P.flying, _P.dragon],    // 151 Kuondor
 ];
 
 const List<String> _bogeybeastNames = <String>[
-  'Bulbasaur',
-  'Ivysaur',
-  'Venusaur',
-  'Charmander',
-  'Charmeleon',
-  'Charizard',
-  'Squirtle',
-  'Wartortle',
-  'Blastoise',
-  'Caterpie',
-  'Metapod',
-  'Butterfree',
-  'Weedle',
-  'Kakuna',
-  'Beedrill',
-  'Pidgey',
-  'Pidgeotto',
-  'Pidgeot',
-  'Rattata',
-  'Raticate',
-  'Spearow',
-  'Fearow',
-  'Ekans',
-  'Arbok',
-  'Pikachu',
-  'Raichu',
-  'Sandshrew',
-  'Sandslash',
-  'Nidoran F',
-  'Nidorina',
-  'Nidoqueen',
-  'Nidoran M',
-  'Nidorino',
-  'Nidoking',
-  'Clefairy',
-  'Clefable',
-  'Vulpix',
-  'Ninetales',
-  'Jigglypuff',
-  'Wigglytuff',
-  'Zubat',
-  'Golbat',
-  'Oddish',
-  'Gloom',
-  'Vileplume',
-  'Paras',
-  'Parasect',
-  'Venonat',
-  'Venomoth',
-  'Diglett',
-  'Dugtrio',
-  'Meowth',
-  'Persian',
-  'Psyduck',
-  'Golduck',
-  'Mankey',
-  'Primeape',
-  'Growlithe',
-  'Arcanine',
-  'Poliwag',
-  'Poliwhirl',
-  'Poliwrath',
-  'Abra',
-  'Kadabra',
-  'Alakazam',
-  'Machop',
-  'Machoke',
-  'Machamp',
-  'Bellsprout',
-  'Weepinbell',
-  'Victreebel',
-  'Tentacool',
-  'Tentacruel',
-  'Geodude',
-  'Graveler',
-  'Golem',
-  'Ponyta',
-  'Rapidash',
-  'Slowpoke',
-  'Slowbro',
-  'Magnemite',
-  'Magneton',
-  'Farfetchd',
-  'Doduo',
-  'Dodrio',
-  'Seel',
-  'Dewgong',
-  'Grimer',
-  'Muk',
-  'Shellder',
-  'Cloyster',
-  'Gastly',
-  'Haunter',
-  'Gengar',
-  'Onix',
-  'Drowzee',
-  'Hypno',
-  'Krabby',
-  'Kingler',
-  'Voltorb',
-  'Electrode',
-  'Exeggcute',
-  'Exeggutor',
-  'Cubone',
-  'Marowak',
-  'Hitmonlee',
-  'Hitmonchan',
-  'Lickitung',
-  'Koffing',
-  'Weezing',
-  'Rhyhorn',
-  'Rhydon',
-  'Chansey',
-  'Tangela',
-  'Kangaskhan',
-  'Horsea',
-  'Seadra',
-  'Goldeen',
-  'Seaking',
-  'Staryu',
-  'Starmie',
-  'Mr. Mime',
-  'Scyther',
-  'Jynx',
-  'Electabuzz',
-  'Magmar',
-  'Pinsir',
-  'Tauros',
-  'Magikarp',
-  'Gyarados',
-  'Lapras',
-  'Ditto',
-  'Eevee',
-  'Vaporeon',
-  'Jolteon',
-  'Flareon',
-  'Porygon',
-  'Omanyte',
-  'Omastar',
-  'Kabuto',
-  'Kabutops',
-  'Aerodactyl',
-  'Snorlax',
-  'Articuno',
-  'Zapdos',
-  'Moltres',
-  'Dratini',
-  'Dragonair',
-  'Dragonite',
-  'Mewtwo',
-  'Mew',
+  'Puttling',       // 1
+  'Fairwyn',        // 2
+  'Teelord',        // 3
+  'Bogferno',       // 4
+  'Blazepar',       // 5
+  'Emberdie',       // 6
+  'Droptooth',      // 7
+  'Bladogator',     // 8
+  'Hookodile',      // 9
+  'Roughrat',       // 10
+  'Growdent',       // 11
+  'Crisprdie',      // 12
+  'Chilleagle',     // 13
+  'Albafrosst',     // 14
+  'Babydraw',       // 15
+  'Snaphook',       // 16
+  'Tinyfade',       // 17
+  'Bautaslice',     // 18
+  'Tappin',         // 19
+  'Stimpee',        // 20
+  'Missuno',        // 21
+  'Adidos',         // 22
+  'Titliestres',    // 23
+  'Owtofbouns',     // 24
+  'Strekathol',     // 25
+  'Tristlie',       // 26
+  'Horchunk',       // 27
+  'Stenfan',        // 28
+  'Sabakloba',      // 29
+  'Bongker',        // 30
+  'Naynayron',      // 31
+  'Sevenayron',     // 32
+  'Fayvayron',      // 33
+  'Splish',         // 34
+  'Plooms',         // 35
+  'Pinnhai',        // 36
+  'Komindo',        // 37
+  'Denharvi',       // 38
+  'Laypup',         // 39
+  'Stingler',       // 40
+  'Stungyard',      // 41
+  'Bugbag',         // 42
+  'Acicart',        // 43
+  'Toxicaddie',     // 44
+  'Bogistragl',     // 45
+  'Bawrapawr',      // 46
+  'Lipowlt',        // 47
+  'Lagphoot',       // 48
+  'Rongclub',       // 49
+  'Hotstreek',      // 50
+  'Holeoblaze',     // 51
+  'Zapwedge',       // 52
+  'Greeninreg',     // 53
+  'Skaiad',         // 54
+  'Skaimarx',       // 55
+  'Secondcat',      // 56
+  'Frincheetah',    // 57
+  'Tigerwudz',      // 58
+  'Spinbite',       // 59
+  'Kortosne',       // 60
+  'Longorak',       // 61
+  'Seet',           // 62
+  'Menstanado',     // 63
+  'Elektrindor',    // 64
+  'Voltrakman',     // 65
+  'Undulathon',     // 66
+  'Zepestance',     // 67
+  'Rovtchip',       // 68
+  'Shankey',        // 69
+  'Socketfeil',     // 70
+  'Dumduff',        // 71
+  'Deevot',         // 72
+  'OBwan',          // 73
+  'Proveewan',      // 74
+  'Holinwangenobi', // 75
+  'Peboll',         // 76
+  'Profsoorfisk',   // 77
+  'Lawnshangle',    // 78
+  'Spinrayt',       // 79
+  'Smashfakdurr',   // 80
+  'Jinx',           // 81
+  'Skobra',         // 82
+  'Skrixon',        // 83
+  'Skullaway',      // 84
+  'Rangewhelp',     // 85
+  'Yardrake',       // 86
+  'Carryhazard',    // 87
+  'Ofdedeck',       // 88
+  'Pangdrayv',      // 89
+  'Drayvagreen',    // 90
+  'Teetaim',        // 91
+  'Penaltee',       // 92
+  'Teeboxer',       // 93
+  'Chipin',         // 94
+  'Flopshot',       // 95
+  'Clarva',         // 96
+  'Denneclar',      // 97
+  'Gripslip',       // 98
+  'Skrambell',      // 99
+  'Alsquare',       // 100
+  'Doormee',        // 101
+  'Jossi',          // 102
+  'Suooja',         // 103
+  'Gubbchip',       // 104
+  'Bumpandran',     // 105
+  'Upandawn',       // 106
+  'Grinfee',        // 107
+  'Bladagast',      // 108
+  'Muligandalf',    // 109
+  'Strekstrek',     // 110
+  'Bogibardi',      // 111
+  'Ritebreak',      // 112
+  'Linkskors',      // 113
+  'Thindit',        // 114
+  'Fuooor',         // 115
+  'Lagpoot',        // 116
+  'Indaahowl',      // 117
+  'Plugfuk',        // 118
+  'Legdog',         // 119
+  'Trigglett',      // 120
+  'Gigatilt',       // 121
+  'Fairwhayle',     // 122
+  'Foreplayer',     // 123
+  'Punnchad',       // 124
+  'Flatpitch',      // 125
+  'Pyrepitch',      // 126
+  'Tidepitch',      // 127
+  'Elepitch',       // 128
+  'Flayerlie',      // 129
+  'Wintergreenor',  // 130
+  'Waggler',        // 131
+  'Proofswing',     // 132
+  'Sandstroke',     // 133
+  'Fittnylle',      // 134
+  'Yewlachit',      // 135
+  'Owberg',         // 136
+  'Roary',          // 137
+  'Shefflor',       // 138
+  'Braizon',        // 139
+  'Hee-Oh',         // 140
+  'Shee-Oh',        // 141
+  'Bogeyman',       // 142
+  'Saintandroos',   // 143
+  'Frontanine',     // 144
+  'Bakanine',       // 145
+  'Touritslag',     // 146
+  'Yuessowpen',     // 147
+  'Deeowpen',       // 148
+  'Pegeaychamp',    // 149
+  'Agustamastr',    // 150
+  'Kuondor',        // 151
 ];
 
-const Set<int> _legendaryDexNumbers = <int>{144, 145, 146, 150, 151};
+const Set<int> _legendaryDexNumbers = <int>{147, 148, 149, 150, 151};
 
 const Set<int> _epicDexNumbers = <int>{
-  6, 9, 18, 31, 34, 38, 45, 59, 65, 68, 71, 73, 76, 80, 89, 91, 94,
-  103, 110, 112, 115, 121, 123, 124, 125, 126, 127, 128, 130, 131,
-  134, 135, 136, 137, 139, 141, 142, 143, 149,
+  6, 9, 75, 80, 84, 87, 106, 136, 140, 141, 144, 145,
 };
 
 const Set<int> _rareDexNumbers = <int>{
-  3, 5, 8, 12, 15, 17, 22, 24, 26, 28, 36, 40, 42, 47, 49, 51, 53,
-  55, 57, 62, 64, 67, 70, 75, 78, 82, 85, 87, 93, 97, 99, 101, 105,
-  107, 108, 113, 117, 119, 132, 138, 140, 147, 148,
+  3, 27, 29, 33, 35, 44, 46, 51, 58, 68, 74, 79, 81, 83,
+  97, 99, 101, 116, 117, 121, 122, 126, 127, 128, 132,
+  133, 134, 135, 139, 142,
 };
 
 const Set<int> _uncommonDexNumbers = <int>{
-  1, 2, 4, 7, 25, 29, 30, 32, 33, 35, 37, 39, 54, 58, 63, 72, 77,
-  79, 81, 86, 92, 95, 96, 104, 109, 111, 114, 116, 133,
+  1, 2, 4, 5, 7, 8, 14, 16, 18, 23, 25, 26, 28, 30, 32,
+  36, 38, 41, 43, 45, 48, 49, 50, 53, 55, 57, 59, 61, 63,
+  65, 66, 67, 70, 71, 73, 76, 82, 85, 86, 89, 90, 92, 93,
+  95, 96, 98, 100, 102, 103, 105, 109, 111, 113, 115, 118,
+  123, 124, 125, 131, 137, 138,
 };
 
 final List<BogeybeastSpecies> firstGenBogeybeast = List<BogeybeastSpecies>.unmodifiable(

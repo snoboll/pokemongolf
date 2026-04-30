@@ -286,8 +286,8 @@ class _BogeybeastResultPip extends StatelessWidget {
             SizedBox(
               width: 48,
               height: 48,
-              child: Image.network(
-                bogeybeast.imageUrl,
+              child: Image.asset(
+                bogeybeast.assetPath,
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) =>
                     const Icon(Icons.pets, size: 36),
@@ -510,7 +510,7 @@ class _EvolveRewardSectionState extends State<_EvolveRewardSection> {
           children: [
             SizedBox(
               width: 40, height: 40,
-              child: Image.network(_evolved!.imageUrl, fit: BoxFit.contain,
+              child: Image.asset(_evolved!.assetPath, fit: BoxFit.contain,
                   errorBuilder: (_, __, ___) => const Icon(Icons.pets)),
             ),
             Padding(
@@ -519,7 +519,7 @@ class _EvolveRewardSectionState extends State<_EvolveRewardSection> {
             ),
             SizedBox(
               width: 40, height: 40,
-              child: Image.network(_intoSpecies!.imageUrl, fit: BoxFit.contain,
+              child: Image.asset(_intoSpecies!.assetPath, fit: BoxFit.contain,
                   errorBuilder: (_, __, ___) => const Icon(Icons.pets)),
             ),
             const SizedBox(width: 12),
@@ -718,7 +718,7 @@ class _EvolvePickerSheet extends StatelessWidget {
                               children: [
                                 SizedBox(
                                   width: 44, height: 44,
-                                  child: Image.network(species.imageUrl, fit: BoxFit.contain,
+                                  child: Image.asset(species.assetPath, fit: BoxFit.contain,
                                       errorBuilder: (_, __, ___) => const Icon(Icons.pets)),
                                 ),
                                 const SizedBox(width: 10),
@@ -749,7 +749,7 @@ class _EvolvePickerSheet extends StatelessWidget {
                                         children: [
                                           SizedBox(
                                             width: 44, height: 44,
-                                            child: Image.network(t.imageUrl, fit: BoxFit.contain,
+                                            child: Image.asset(t.assetPath, fit: BoxFit.contain,
                                                 errorBuilder: (_, __, ___) => const Icon(Icons.pets)),
                                           ),
                                           Text(t.name,

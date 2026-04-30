@@ -69,6 +69,7 @@ flutter:
     - assets/icons/
     - assets/golfers/male/transparent_bg/
     - assets/golfers/female/transparent_bg/
+    - assets/bogeybeasts_imgs/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

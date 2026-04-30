@@ -28,8 +28,7 @@ class BattleBogeybeast {
   double get hpPercent => hpCurrent / hpMax;
 
   String get paddedDexNumber => dexNumber.toString().padLeft(3, '0');
-  String get imageUrl =>
-      'https://raw.githubusercontent.com/HybridShivam/Pokemon/master/assets/images/${dexNumber.toString().padLeft(4, '0')}.png';
+  String get assetPath => 'assets/bogeybeasts_imgs/$paddedDexNumber.png';
 
   BattleBogeybeast copyWith({int? hpCurrent}) => BattleBogeybeast(
         dexNumber: dexNumber,
@@ -319,6 +318,7 @@ String _typeToString(BogeybeastType t) {
     BogeybeastType.rock     => 'Rock',
     BogeybeastType.ghost    => 'Ghost',
     BogeybeastType.dragon   => 'Dragon',
+    BogeybeastType.dark     => 'Dark',
     BogeybeastType.fairy    => 'Fairy',
   };
 }

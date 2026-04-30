@@ -370,7 +370,7 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
                             );
                           },
                           child: BogeybeastArt(
-                            imageUrl: activeRound.currentEncounter.imageUrl,
+                            assetPath: activeRound.currentEncounter.assetPath,
                             height: 180,
                           ),
                         ),
@@ -878,7 +878,7 @@ class _HoleResolutionViewState extends State<_HoleResolutionView>
               SlideTransition(
                 position: _slideAnimation,
                 child: BogeybeastArt(
-                  imageUrl: result.bogeybeast.imageUrl,
+                  assetPath: result.bogeybeast.assetPath,
                   height: 200,
                 ),
               ),

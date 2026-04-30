@@ -1252,8 +1252,8 @@ class _LeaderBanner extends StatelessWidget {
               child: SizedBox(
                 width: beastSize,
                 height: beastSize,
-                child: Image.network(
-                  b.imageUrl,
+                child: Image.asset(
+                  b.assetPath,
                   fit: BoxFit.contain,
                   errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                 ),

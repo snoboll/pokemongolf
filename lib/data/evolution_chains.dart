@@ -1,189 +1,170 @@
-/// Gen 1 evolution chains.
+/// Bogeybeast evolution chains.
 /// Each entry is a list of stages; each stage is a list of dex numbers
-/// (branching evolutions like Eevee have multiple dex numbers in one stage).
+/// (branching evolutions like Flatpitch have multiple dex numbers in one stage).
 ///
 /// Single-stage Bogeybeasts are not included — callers get null and skip the section.
 const Map<int, List<List<int>>> _chains = {
-  // Bulbasaur line
+  // Puttling → Fairwyn → Teelord
   1: [[1], [2], [3]],
   2: [[1], [2], [3]],
   3: [[1], [2], [3]],
-  // Charmander line
+  // Bogferno → Blazepar → Emberdie
   4: [[4], [5], [6]],
   5: [[4], [5], [6]],
   6: [[4], [5], [6]],
-  // Squirtle line
+  // Droptooth → Bladogator → Hookodile
   7: [[7], [8], [9]],
   8: [[7], [8], [9]],
   9: [[7], [8], [9]],
-  // Caterpie line
-  10: [[10], [11], [12]],
-  11: [[10], [11], [12]],
-  12: [[10], [11], [12]],
-  // Weedle line
-  13: [[13], [14], [15]],
-  14: [[13], [14], [15]],
-  15: [[13], [14], [15]],
-  // Pidgey line
-  16: [[16], [17], [18]],
-  17: [[16], [17], [18]],
-  18: [[16], [17], [18]],
-  // Rattata line
-  19: [[19], [20]],
-  20: [[19], [20]],
-  // Spearow line
-  21: [[21], [22]],
-  22: [[21], [22]],
-  // Ekans line
-  23: [[23], [24]],
-  24: [[23], [24]],
-  // Bogeybeast #25 line
-  25: [[25], [26]],
-  26: [[25], [26]],
-  // Sandshrew line
-  27: [[27], [28]],
-  28: [[27], [28]],
-  // Nidoran F line
-  29: [[29], [30], [31]],
-  30: [[29], [30], [31]],
-  31: [[29], [30], [31]],
-  // Nidoran M line
-  32: [[32], [33], [34]],
-  33: [[32], [33], [34]],
-  34: [[32], [33], [34]],
-  // Clefairy line
-  35: [[35], [36]],
-  36: [[35], [36]],
-  // Vulpix line
+  // Roughrat → Growdent
+  10: [[10], [11]],
+  11: [[10], [11]],
+  // Crisprdie → Chilleagle → Albafrosst
+  12: [[12], [13], [14]],
+  13: [[12], [13], [14]],
+  14: [[12], [13], [14]],
+  // Babydraw → Snaphook
+  15: [[15], [16]],
+  16: [[15], [16]],
+  // Tinyfade → Bautaslice
+  17: [[17], [18]],
+  18: [[17], [18]],
+  // Missuno → Adidos → Titliestres
+  21: [[21], [22], [23]],
+  22: [[21], [22], [23]],
+  23: [[21], [22], [23]],
+  // Owtofbouns → Strekathol
+  24: [[24], [25]],
+  25: [[24], [25]],
+  // Tristlie → Horchunk
+  26: [[26], [27]],
+  27: [[26], [27]],
+  // Stenfan → Sabakloba
+  28: [[28], [29]],
+  29: [[28], [29]],
+  // Naynayron → Sevenayron → Fayvayron
+  31: [[31], [32], [33]],
+  32: [[31], [32], [33]],
+  33: [[31], [32], [33]],
+  // Splish → Plooms
+  34: [[34], [35]],
+  35: [[34], [35]],
+  // Komindo → Denharvi
   37: [[37], [38]],
   38: [[37], [38]],
-  // Jigglypuff line
-  39: [[39], [40]],
-  40: [[39], [40]],
-  // Zubat line
-  41: [[41], [42]],
-  42: [[41], [42]],
-  // Oddish line
-  43: [[43], [44], [45]],
-  44: [[43], [44], [45]],
-  45: [[43], [44], [45]],
-  // Paras line
-  46: [[46], [47]],
-  47: [[46], [47]],
-  // Venonat line
-  48: [[48], [49]],
-  49: [[48], [49]],
-  // Diglett line
+  // Stingler → Stungyard
+  40: [[40], [41]],
+  41: [[40], [41]],
+  // Bugbag → Acicart → Toxicaddie
+  42: [[42], [43], [44]],
+  43: [[42], [43], [44]],
+  44: [[42], [43], [44]],
+  // Bogistragl → Bawrapawr
+  45: [[45], [46]],
+  46: [[45], [46]],
+  // Lipowlt → Lagphoot
+  47: [[47], [48]],
+  48: [[47], [48]],
+  // Hotstreek → Holeoblaze
   50: [[50], [51]],
   51: [[50], [51]],
-  // Meowth line
+  // Zapwedge → Greeninreg
   52: [[52], [53]],
   53: [[52], [53]],
-  // Psyduck line
+  // Skaiad → Skaimarx
   54: [[54], [55]],
   55: [[54], [55]],
-  // Mankey line
-  56: [[56], [57]],
-  57: [[56], [57]],
-  // Growlithe line
-  58: [[58], [59]],
-  59: [[58], [59]],
-  // Poliwag line
-  60: [[60], [61], [62]],
-  61: [[60], [61], [62]],
-  62: [[60], [61], [62]],
-  // Abra line
-  63: [[63], [64], [65]],
-  64: [[63], [64], [65]],
-  65: [[63], [64], [65]],
-  // Machop line
-  66: [[66], [67], [68]],
-  67: [[66], [67], [68]],
-  68: [[66], [67], [68]],
-  // Bellsprout line
-  69: [[69], [70], [71]],
-  70: [[69], [70], [71]],
-  71: [[69], [70], [71]],
-  // Tentacool line
-  72: [[72], [73]],
-  73: [[72], [73]],
-  // Geodude line
-  74: [[74], [75], [76]],
-  75: [[74], [75], [76]],
-  76: [[74], [75], [76]],
-  // Ponyta line
-  77: [[77], [78]],
-  78: [[77], [78]],
-  // Slowpoke line
-  79: [[79], [80]],
-  80: [[79], [80]],
-  // Magnemite line
-  81: [[81], [82]],
-  82: [[81], [82]],
-  // Doduo line
-  84: [[84], [85]],
-  85: [[84], [85]],
-  // Seel line
-  86: [[86], [87]],
-  87: [[86], [87]],
-  // Grimer line
-  88: [[88], [89]],
-  89: [[88], [89]],
-  // Shellder line
-  90: [[90], [91]],
-  91: [[90], [91]],
-  // Gastly line
-  92: [[92], [93], [94]],
-  93: [[92], [93], [94]],
-  94: [[92], [93], [94]],
-  // Drowzee line
+  // Secondcat → Frincheetah → Tigerwudz
+  56: [[56], [57], [58]],
+  57: [[56], [57], [58]],
+  58: [[56], [57], [58]],
+  // Kortosne → Longorak
+  60: [[60], [61]],
+  61: [[60], [61]],
+  // Seet → Menstanado
+  62: [[62], [63]],
+  63: [[62], [63]],
+  // Elektrindor → Voltrakman
+  64: [[64], [65]],
+  65: [[64], [65]],
+  // Zepestance → Rovtchip
+  67: [[67], [68]],
+  68: [[67], [68]],
+  // Shankey → Socketfeil
+  69: [[69], [70]],
+  70: [[69], [70]],
+  // Dumduff → Deevot
+  71: [[71], [72]],
+  72: [[71], [72]],
+  // OBwan → Proveewan → Holinwangenobi
+  73: [[73], [74], [75]],
+  74: [[73], [74], [75]],
+  75: [[73], [74], [75]],
+  // Peboll → Profsoorfisk
+  76: [[76], [77]],
+  77: [[76], [77]],
+  // Lawnshangle → Spinrayt → Smashfakdurr
+  78: [[78], [79], [80]],
+  79: [[78], [79], [80]],
+  80: [[78], [79], [80]],
+  // Skobra → Skrixon → Skullaway
+  82: [[82], [83], [84]],
+  83: [[82], [83], [84]],
+  84: [[82], [83], [84]],
+  // Rangewhelp → Yardrake → Carryhazard
+  85: [[85], [86], [87]],
+  86: [[85], [86], [87]],
+  87: [[85], [86], [87]],
+  // Ofdedeck → Pangdrayv → Drayvagreen
+  88: [[88], [89], [90]],
+  89: [[88], [89], [90]],
+  90: [[88], [89], [90]],
+  // Teetaim → Penaltee → Teeboxer
+  91: [[91], [92], [93]],
+  92: [[91], [92], [93]],
+  93: [[91], [92], [93]],
+  // Chipin → Flopshot
+  94: [[94], [95]],
+  95: [[94], [95]],
+  // Clarva → Denneclar
   96: [[96], [97]],
   97: [[96], [97]],
-  // Krabby line
-  98: [[98], [99]],
-  99: [[98], [99]],
-  // Voltorb line
+  // Alsquare → Doormee
   100: [[100], [101]],
   101: [[100], [101]],
-  // Exeggcute line
+  // Jossi → Suooja
   102: [[102], [103]],
   103: [[102], [103]],
-  // Cubone line
-  104: [[104], [105]],
-  105: [[104], [105]],
-  // Koffing line
-  109: [[109], [110]],
-  110: [[109], [110]],
-  // Rhyhorn line
-  111: [[111], [112]],
-  112: [[111], [112]],
-  // Horsea line
+  // Gubbchip → Bumpandran → Upandawn
+  104: [[104], [105], [106]],
+  105: [[104], [105], [106]],
+  106: [[104], [105], [106]],
+  // Bladagast → Muligandalf
+  108: [[108], [109]],
+  109: [[108], [109]],
+  // Strekstrek → Bogibardi
+  110: [[110], [111]],
+  111: [[110], [111]],
+  // Thindit → Fuooor
+  114: [[114], [115]],
+  115: [[114], [115]],
+  // Lagpoot → Indaahowl
   116: [[116], [117]],
   117: [[116], [117]],
-  // Goldeen line
-  118: [[118], [119]],
-  119: [[118], [119]],
-  // Staryu line
+  // Trigglett → Gigatilt
   120: [[120], [121]],
   121: [[120], [121]],
-  // Magikarp line
-  129: [[129], [130]],
-  130: [[129], [130]],
-  // Eevee line (branching)
-  133: [[133], [134, 135, 136]],
-  134: [[133], [134, 135, 136]],
-  135: [[133], [134, 135, 136]],
-  136: [[133], [134, 135, 136]],
-  // Omanyte line
-  138: [[138], [139]],
-  139: [[138], [139]],
-  // Kabuto line
-  140: [[140], [141]],
-  141: [[140], [141]],
-  // Dratini line
-  147: [[147], [148], [149]],
-  148: [[147], [148], [149]],
-  149: [[147], [148], [149]],
+  // Flatpitch → Pyrepitch / Tidepitch / Elepitch (branching)
+  125: [[125], [126, 127, 128]],
+  126: [[125], [126, 127, 128]],
+  127: [[125], [126, 127, 128]],
+  128: [[125], [126, 127, 128]],
+  // Waggler → Proofswing
+  131: [[131], [132]],
+  132: [[131], [132]],
+  // Fittnylle → Yewlachit
+  134: [[134], [135]],
+  135: [[134], [135]],
 };
 
 /// Returns the evolution chain stages for [dexNumber], or null if it has none.

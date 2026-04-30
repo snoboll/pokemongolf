@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 class BogeybeastArt extends StatelessWidget {
   const BogeybeastArt({
     super.key,
-    required this.imageUrl,
+    required this.assetPath,
     this.height = 200,
     this.fit = BoxFit.contain,
   });
 
-  final String imageUrl;
+  final String assetPath;
   final double height;
   final BoxFit fit;
 
@@ -16,26 +16,9 @@ class BogeybeastArt extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: height,
-      child: Image.network(
-        imageUrl,
+      child: Image.asset(
+        assetPath,
         fit: fit,
-        loadingBuilder: (
-          BuildContext context,
-          Widget child,
-          ImageChunkEvent? loadingProgress,
-        ) {
-          if (loadingProgress == null) {
-            return child;
-          }
-
-          return Center(
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          );
-        },
         errorBuilder: (
           BuildContext context,
           Object error,

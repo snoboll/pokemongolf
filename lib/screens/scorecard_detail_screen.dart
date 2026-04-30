@@ -378,8 +378,8 @@ class _BogeybeastCell extends StatelessWidget {
           child: SizedBox(
             width: 28,
             height: 28,
-            child: Image.network(
-              result.bogeybeast.imageUrl,
+            child: Image.asset(
+              result.bogeybeast.assetPath,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stack) => Icon(
                 Icons.pets,

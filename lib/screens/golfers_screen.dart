@@ -8,6 +8,7 @@ import '../models/bogeybeast_species.dart';
 import '../models/golfer_team.dart';
 import '../services/supabase_service.dart';
 import '../state/bogeybeasts_golf_store.dart';
+import '../widgets/white_bg_image.dart';
 import '../widgets/bogeybeast_art.dart';
 
 class GolfersScreen extends StatefulWidget {
@@ -235,13 +236,27 @@ class _GolferCard extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: borderColor, width: 1.5),
               ),
-              child: Icon(
-                Icons.sports_golf_rounded,
-                color: isComplete
-                    ? const Color(0xFFFFB300)
-                    : theme.colorScheme.primary,
-                size: 24,
-              ),
+              clipBehavior: Clip.antiAlias,
+              child: golfer.golferSprite != null
+                  ? WhiteBgImage(
+                      asset: golfer.golferSprite!,
+                      width: 52,
+                      height: 52,
+                      placeholder: Icon(
+                        Icons.sports_golf_rounded,
+                        color: isComplete
+                            ? const Color(0xFFFFB300)
+                            : theme.colorScheme.primary,
+                        size: 24,
+                      ),
+                    )
+                  : Icon(
+                      Icons.sports_golf_rounded,
+                      color: isComplete
+                          ? const Color(0xFFFFB300)
+                          : theme.colorScheme.primary,
+                      size: 24,
+                    ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -538,7 +553,7 @@ class _GolferBogeydexTile extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: caught
-                      ? BogeybeastArt(imageUrl: bogeybeast.imageUrl, height: 100)
+                      ? BogeybeastArt(assetPath: bogeybeast.assetPath, height: 100)
                       : Center(
                           child: Icon(
                             Icons.pets,

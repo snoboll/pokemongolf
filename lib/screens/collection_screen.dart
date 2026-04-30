@@ -272,11 +272,11 @@ class _BogeydexTile extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: caught
-                        ? BogeybeastArt(imageUrl: bogeybeast.imageUrl, height: 100)
+                        ? BogeybeastArt(assetPath: bogeybeast.assetPath, height: 100)
                         : seen
                             ? ColorFiltered(
                                 colorFilter: grayscaleColorFilter(1.0),
-                                child: BogeybeastArt(imageUrl: bogeybeast.imageUrl, height: 100),
+                                child: BogeybeastArt(assetPath: bogeybeast.assetPath, height: 100),
                               )
                             : Center(
                                 child: Icon(
@@ -291,14 +291,16 @@ class _BogeydexTile extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
                   child: Text(
-                    caught ? bogeybeast.name : '???',
+                    (caught || seen) ? bogeybeast.name : '???',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: caught
                           ? theme.colorScheme.onSurface
-                          : theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                          : seen
+                              ? theme.colorScheme.onSurface.withValues(alpha: 0.5)
+                              : theme.colorScheme.onSurface.withValues(alpha: 0.3),
                     ),
                   ),
                 ),
@@ -398,7 +400,7 @@ class _BogeybeastDetailSheet extends StatelessWidget {
                 Expanded(
                   flex: 4,
                   child: Center(
-                    child: BogeybeastArt(imageUrl: bogeybeast.imageUrl, height: 160),
+                    child: BogeybeastArt(assetPath: bogeybeast.assetPath, height: 160),
                   ),
                 ),
                 // chart
@@ -515,6 +517,7 @@ class _TypeChip extends StatelessWidget {
     BogeybeastType.rock     => const Color(0xFFBCAAA4),
     BogeybeastType.ghost    => const Color(0xFF9575CD),
     BogeybeastType.dragon   => const Color(0xFF7986CB),
+    BogeybeastType.dark     => const Color(0xFF5D4037),
     BogeybeastType.fairy    => const Color(0xFFF8BBD0),
     BogeybeastType.normal   => const Color(0xFF9E9E9E),
   };
@@ -785,13 +788,14 @@ class _EvoNode extends StatelessWidget {
     final seenColor = theme.colorScheme.onSurface.withValues(alpha: 0.5);
 
     final Widget sprite;
+    final assetPath = species?.assetPath ??
+        'assets/bogeybeasts_imgs/${dex.toString().padLeft(3, '0')}.png';
     if (isCaught) {
       sprite = SizedBox(
         width: 44,
         height: 44,
-        child: Image.network(
-          species?.imageUrl ??
-              'https://raw.githubusercontent.com/HybridShivam/Pokemon/master/assets/images/${dex.toString().padLeft(4, '0')}.png',
+        child: Image.asset(
+          assetPath,
           fit: BoxFit.contain,
           errorBuilder: (_, __, ___) => Icon(Icons.pets, size: 28, color: color),
         ),
@@ -807,9 +811,8 @@ class _EvoNode extends StatelessWidget {
             0.2126, 0.7152, 0.0722, 0, 0,
             0,      0,      0,      1, 0,
           ]),
-          child: Image.network(
-            species?.imageUrl ??
-                'https://raw.githubusercontent.com/HybridShivam/Pokemon/master/assets/images/${dex.toString().padLeft(4, '0')}.png',
+          child: Image.asset(
+            assetPath,
             fit: BoxFit.contain,
             errorBuilder: (_, __, ___) => Icon(Icons.pets, size: 28, color: seenColor),
           ),

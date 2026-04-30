@@ -145,8 +145,8 @@ class _EvolveAnimationScreenState extends State<EvolveAnimationScreen>
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            Image.network(
-                              species.imageUrl,
+                            Image.asset(
+                              species.assetPath,
                               fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) =>
                                   Icon(Icons.pets, size: 80, color: _purple),

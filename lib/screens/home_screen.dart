@@ -870,8 +870,8 @@ class _GymCard extends StatelessWidget {
                         child: SizedBox(
                           width: 20,
                           height: 20,
-                          child: Image.network(
-                            p.imageUrl,
+                          child: Image.asset(
+                            p.assetPath,
                             fit: BoxFit.contain,
                             errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                           ),

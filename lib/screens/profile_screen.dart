@@ -4,8 +4,40 @@ import '../app.dart';
 import '../data/golfer_tags.dart';
 import '../models/golfer_team.dart';
 import '../state/bogeybeasts_golf_store.dart';
+import '../widgets/white_bg_image.dart';
 import 'history_screen.dart';
 import 'my_bag_screen.dart';
+
+const List<({String asset, String label})> _availableSprites = [
+  (asset: 'assets/golfers/male/transparent_bg/ace.png',          label: 'Ace ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/ace.png',        label: 'Ace ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/chipper.png',      label: 'Chipper ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/chipper.png',    label: 'Chipper ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/drawer.png',       label: 'Drawer ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/drawer.png',     label: 'Drawer ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/slicer.png',       label: 'Slicer ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/slicer.png',     label: 'Slicer ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/hooker.png',       label: 'Hooker ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/hooker.png',     label: 'Hooker ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/flyer.png',        label: 'Flyer ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/flyer.png',      label: 'Flyer ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/fisher.png',       label: 'Fisher ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/fisher.png',     label: 'Fisher ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/longdriver.png',   label: 'Longdriver ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/longdriver.png', label: 'Longdriver ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/hotshot.png',      label: 'Hotshot ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/hotshot.png',    label: 'Hotshot ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/roughrunner.png',  label: 'Roughrunner ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/roughrunner.png',label: 'Roughrunner ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/bunkerdigger.png', label: 'Bunkerboy ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/bunkerdigger.png',label: 'Bunkerboy ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/greenkeeper.png',  label: 'Greenkeeper ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/greenkeeper.png',label: 'Greenkeeper ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/psycher.png',      label: 'Psych ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/psycher.png',    label: 'Psych ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/manager.png',      label: 'Manager ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/manager.png',    label: 'Manager ♀'),
+];
 
 
 class ProfileScreen extends StatelessWidget {
@@ -35,21 +67,55 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Center(
-              child: Container(
-                width: 96,
-                height: 96,
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.10),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: accentColor.withValues(alpha: 0.5),
-                    width: 2.5,
-                  ),
-                ),
-                child: Icon(
-                  Icons.sports_golf_rounded,
-                  size: 48,
-                  color: accentColor,
+              child: GestureDetector(
+                onTap: () => _showSpritePicker(context, store),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 96,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        color: accentColor.withValues(alpha: 0.10),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: accentColor.withValues(alpha: 0.5),
+                          width: 2.5,
+                        ),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: store.golferSprite != null
+                          ? WhiteBgImage(
+                              asset: store.golferSprite!,
+                              width: 96,
+                              height: 96,
+                              placeholder: Icon(
+                                Icons.sports_golf_rounded,
+                                size: 48,
+                                color: accentColor,
+                              ),
+                            )
+                          : Icon(
+                              Icons.sports_golf_rounded,
+                              size: 48,
+                              color: accentColor,
+                            ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.edit, size: 13,
+                            color: theme.colorScheme.primary.withValues(alpha: 0.6)),
+                        const SizedBox(width: 4),
+                        Text(
+                          store.golferSprite != null ? 'Change avatar' : 'Choose avatar',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -300,6 +366,113 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  void _showSpritePicker(BuildContext context, BogeybeastGolfStore store) {
+    showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _SpritePicker(current: store.golferSprite),
+    ).then((selected) {
+      if (selected != null) {
+        store.setGolferSprite(selected.isEmpty ? null : selected);
+      }
+    });
+  }
+}
+
+class _SpritePicker extends StatelessWidget {
+  const _SpritePicker({this.current});
+  final String? current;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return DraggableScrollableSheet(
+      initialChildSize: 0.55,
+      minChildSize: 0.35,
+      maxChildSize: 0.85,
+      expand: false,
+      builder: (ctx, scroll) => Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 10, bottom: 4),
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text('Choose Avatar',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700)),
+          ),
+          Expanded(
+            child: GridView.builder(
+              controller: scroll,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.78,
+              ),
+              itemCount: _availableSprites.length,
+              itemBuilder: (ctx, i) {
+                final entry = _availableSprites[i];
+                final isSelected = current == entry.asset;
+                return GestureDetector(
+                  onTap: () => Navigator.of(ctx).pop(entry.asset),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isSelected
+                              ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                              : theme.colorScheme.surfaceContainerHighest,
+                          border: Border.all(
+                            color: isSelected
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.outlineVariant,
+                            width: isSelected ? 2.5 : 1,
+                          ),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: WhiteBgImage(
+                          asset: entry.asset,
+                          width: 64,
+                          height: 64,
+                          placeholder: const Icon(Icons.sports_golf_rounded),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        entry.label,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: isSelected ? FontWeight.w700 : null,
+                          color: isSelected
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _TeamSelector extends StatelessWidget {

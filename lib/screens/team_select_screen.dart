@@ -211,8 +211,8 @@ class _VsLeaderBanner extends StatelessWidget {
                           child: SizedBox(
                             width: 28,
                             height: 28,
-                            child: Image.network(
-                              b.imageUrl,
+                            child: Image.asset(
+                              b.assetPath,
                               fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) =>
                                   Icon(Icons.pets, size: 20, color: color.withValues(alpha: 0.4)),
@@ -311,8 +311,8 @@ class _BogeybeastSelectTile extends StatelessWidget {
               SizedBox(
                 width: 48,
                 height: 48,
-                child: Image.network(
-                  species.imageUrl,
+                child: Image.asset(
+                  species.assetPath,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) =>
                       const Icon(Icons.pets, size: 32),
@@ -489,8 +489,8 @@ class _MiniBogeybeastChip extends StatelessWidget {
           color: theme.colorScheme.primaryContainer,
         ),
         child: ClipOval(
-          child: Image.network(
-            species.imageUrl,
+          child: Image.asset(
+            species.assetPath,
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) =>
                 const Icon(Icons.pets, size: 20),
@@ -547,6 +547,7 @@ class _TypeBadge extends StatelessWidget {
       BogeybeastType.rock     => const Color(0xFFBCAAA4),
       BogeybeastType.ghost    => const Color(0xFF9575CD),
       BogeybeastType.dragon   => const Color(0xFF7986CB),
+      BogeybeastType.dark     => const Color(0xFF5D4037),
       BogeybeastType.fairy    => const Color(0xFFF8BBD0),
       BogeybeastType.normal   => const Color(0xFF9E9E9E),
     };

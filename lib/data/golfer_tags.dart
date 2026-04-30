@@ -17,6 +17,7 @@ const Map<BogeybeastType, String> _typeToTag = <BogeybeastType, String>{
   BogeybeastType.dragon: 'Ace Golfer',
   BogeybeastType.ice: 'Ace Golfer',
   BogeybeastType.electric: 'Hotshot',
+  BogeybeastType.dark: 'Slicer',
 };
 
 /// Returns the golfer class tag for a set of caught dex numbers,

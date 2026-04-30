@@ -59,8 +59,12 @@ double _singleMult(BogeybeastType atk, BogeybeastType def) {
       if (def == BogeybeastType.normal) { return 0.5; }
     case BogeybeastType.dragon:
       if (def == BogeybeastType.dragon) { return 2.0; }
+    case BogeybeastType.dark:
+      if (def == BogeybeastType.psychic || def == BogeybeastType.ghost) { return 2.0; }
+      if (def == BogeybeastType.fighting || def == BogeybeastType.dark || def == BogeybeastType.fairy) { return 0.5; }
     case BogeybeastType.fairy:
-      break; // Gen 1: no fairy effectiveness
+      if (def == BogeybeastType.fighting || def == BogeybeastType.dragon || def == BogeybeastType.dark) { return 2.0; }
+      if (def == BogeybeastType.fire || def == BogeybeastType.poison) { return 0.5; }
   }
   return 1.0;
 }

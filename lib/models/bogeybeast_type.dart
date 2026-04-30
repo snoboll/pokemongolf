@@ -14,5 +14,6 @@ enum BogeybeastType {
   rock,
   ghost,
   dragon,
+  dark,
   fairy,
 }
