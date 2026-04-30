@@ -9,62 +9,59 @@ class _Npc {
   final String sprite;
 }
 
-// Gym Leaders + Elite Four — each must appear on exactly one course
-const List<_Npc> _gymLeaders = [
-  // Gym Leaders (HCP 24 → 10)
-  _Npc('Brock',        24, [50, 74, 95],    'assets/trainers/brock-lgpe.png'),
-  _Npc('Misty',        22, [54, 120, 121],   'assets/trainers/misty-lgpe.png'),
-  _Npc('Lt. Surge',    20, [100, 25, 26],    'assets/trainers/ltsurge.png'),
-  _Npc('Erika',        18, [71, 114, 45],    'assets/trainers/erika-lgpe.png'),
-  _Npc('Koga',         16, [109, 89, 110],   'assets/trainers/koga-lgpe.png'),
-  _Npc('Sabrina',      14, [64, 122, 65],    'assets/trainers/sabrina-lgpe.png'),
-  _Npc('Blaine',       12, [77, 78, 59],     'assets/trainers/blaine-lgpe.png'),
-  _Npc('Giovanni',     10, [111, 31, 34],    'assets/trainers/giovanni-lgpe.png'),
-  // Elite Four (HCP 8 → 5)
-  _Npc('Lorelei',       8, [87, 91, 131],   'assets/trainers/lorelei-lgpe.png'),
-  _Npc('Bruno',         7, [57, 68, 106],   'assets/trainers/bruno.png'),
-  _Npc('Agatha',        6, [93, 94, 110],   'assets/trainers/agatha-lgpe.png'),
-  _Npc('Lance',         5, [130, 142, 149], 'assets/trainers/lance-lgpe.png'),
-  // Champions (HCP 4 → 0)
-  _Npc('Gary',          4, [28, 65, 103],    'assets/trainers/blue-lgpe.png'),
-  _Npc('Prof. Oak',     2, [128, 59, 130],   'assets/trainers/oak.png'),
-  _Npc('Red',           0, [3, 9, 6],        'assets/trainers/red-lgpe.png'),
-];
+const String _m = 'assets/golfers/male';
+const String _f = 'assets/golfers/female';
 
-// Team Rocket
-const List<_Npc> _teamRocket = [
-  _Npc('Jessie',  15, [23, 24, 52],   'assets/trainers/teamrocket.png'),
-  _Npc('James',   15, [109, 110, 52], 'assets/trainers/teamrocket.png'),
+// Course leaders — ranked by HCP, assigned to courses in sorted order
+const List<_Npc> _gymLeaders = [
+  // Club Pros (HCP 24 → 10)
+  _Npc('Bunkerboy Cliff',     24, [50, 74, 95],    '$_m/bunkerdigger.png'),
+  _Npc('Fisherman Marina',    22, [54, 120, 121],   '$_f/fisher.png'),
+  _Npc('Hotshot Bolt',        20, [100, 25, 26],    '$_m/hotshot.png'),
+  _Npc('Greenkeeper Lily',    18, [71, 114, 45],    '$_f/greenkeeper.png'),
+  _Npc('Slicer Vince',        16, [109, 89, 110],   '$_m/slicer.png'),
+  _Npc('Psych Selene',        14, [64, 122, 65],    '$_f/psycher.png'),
+  _Npc('Flyer Ashton',        12, [77, 78, 59],     '$_m/flyer.png'),
+  _Npc('Club Manager Don',    10, [111, 31, 34],    '$_m/manager.png'),
+  // Scratch Golfers (HCP 8 → 5)
+  _Npc('Ace Golfer Freja',     8, [87, 91, 131],   '$_f/ace.png'),
+  _Npc('Longdriver Titan',     7, [57, 68, 106],   '$_m/longdriver.png'),
+  _Npc('Psych Morrigan',       6, [93, 94, 110],   '$_f/psycher.png'),
+  _Npc('Ace Golfer Drake',     5, [130, 142, 149], '$_m/ace.png'),
+  // Tour Pros (HCP 4 → 0)
+  _Npc('Ace Golfer Niko',      4, [28, 65, 103],    '$_m/ace.png'),
+  _Npc('Club Manager Birch',   2, [128, 59, 130],   '$_m/manager.png'),
+  _Npc('Ace Golfer Blaze',     0, [3, 9, 6],        '$_m/ace.png'),
 ];
 
 // Generic golfer classes (may repeat across courses)
 const List<_Npc> _golfers = [
-  _Npc('Chipper Joey',       34, [19, 20, 53],    'assets/trainers/youngster-gen1.png'),
-  _Npc('Chipper Ben',        32, [21, 29, 30],    'assets/trainers/youngster-gen1.png'),
-  _Npc('Roughrunner Rick',   36, [10, 12, 15],    'assets/trainers/bugcatcher-gen1.png'),
-  _Npc('Roughrunner Doug',   35, [13, 46, 49],    'assets/trainers/bugcatcher-gen1.png'),
-  _Npc('Fisherman Ralph',    30, [118, 119, 129], 'assets/trainers/fisherman-gen1.png'),
-  _Npc('Fisherman Hubert',   28, [72, 99, 117],   'assets/trainers/fisherman-gen1.png'),
-  _Npc('Longdriver Kiyo',    22, [56, 57, 68],    'assets/trainers/blackbelt-gen1.png'),
-  _Npc('Longdriver Koichi',  24, [66, 67, 106],   'assets/trainers/blackbelt-gen1.png'),
-  _Npc('Flyer Hank',         26, [16, 17, 18],    'assets/trainers/birdkeeper-gen1.png'),
-  _Npc('Flyer Perry',        24, [21, 22, 85],    'assets/trainers/birdkeeper-gen1.png'),
-  _Npc('Bunkerboy Marcos',   28, [74, 75, 76],    'assets/trainers/hiker-gen1.png'),
-  _Npc('Bunkerboy Lenny',    30, [104, 105, 95],  'assets/trainers/hiker-gen1.png'),
-  _Npc('Drawer Robin',       32, [35, 36, 39],    'assets/trainers/lass-gen1.png'),
-  _Npc('Drawer Haley',       30, [37, 38, 113],   'assets/trainers/lass-gen1.png'),
-  _Npc('Slicer Edmond',      26, [66, 67, 73],    'assets/trainers/sailor-gen1.png'),
-  _Npc('Hotshot Stan',       28, [100, 101, 137], 'assets/trainers/gambler-gen1.png'),
-  _Npc('Club Manager Taylor', 22, [81, 82, 101],  'assets/trainers/scientist-gen1.png'),
-  _Npc('Psych Hope',         26, [92, 93, 94],    'assets/trainers/channeler-gen1.png'),
-  _Npc('Ace Golfer Jake',    18, [134, 135, 136], 'assets/trainers/acetrainer-gen1.png'),
-  _Npc('Ace Golfer Lola',    16, [131, 62, 76],   'assets/trainers/acetrainerf-gen1.png'),
-  _Npc('Ace Golfer Sam',     14, [115, 123, 127], 'assets/trainers/acetrainer-gen1.png'),
-  _Npc('Ace Golfer Gwen',    12, [148, 139, 91],  'assets/trainers/acetrainerf-gen1.png'),
-  _Npc('Bladelover',         20, [123, 141, 28],  'assets/trainers/acetrainer-gen1.png'),
+  _Npc('Chipper Joey',        34, [19, 20, 53],    '$_m/chipper.png'),
+  _Npc('Chipper Ben',         32, [21, 29, 30],    '$_m/chipper.png'),
+  _Npc('Roughrunner Rick',    36, [10, 12, 15],    '$_m/roughrunner.png'),
+  _Npc('Roughrunner Doug',    35, [13, 46, 49],    '$_m/roughrunner.png'),
+  _Npc('Fisherman Ralph',     30, [118, 119, 129], '$_m/fisher.png'),
+  _Npc('Fisherman Hubert',    28, [72, 99, 117],   '$_m/fisher.png'),
+  _Npc('Longdriver Kiyo',     22, [56, 57, 68],    '$_m/longdriver.png'),
+  _Npc('Longdriver Koichi',   24, [66, 67, 106],   '$_m/longdriver.png'),
+  _Npc('Flyer Hank',          26, [16, 17, 18],    '$_m/flyer.png'),
+  _Npc('Flyer Perry',         24, [21, 22, 85],    '$_m/flyer.png'),
+  _Npc('Bunkerboy Marcos',    28, [74, 75, 76],    '$_m/bunkerdigger.png'),
+  _Npc('Bunkerboy Lenny',     30, [104, 105, 95],  '$_m/bunkerdigger.png'),
+  _Npc('Drawer Robin',        32, [35, 36, 39],    '$_m/drawer.png'),
+  _Npc('Drawer Haley',        30, [37, 38, 113],   '$_f/drawer.png'),
+  _Npc('Slicer Edmond',       26, [66, 67, 73],    '$_m/slicer.png'),
+  _Npc('Hotshot Stan',        28, [100, 101, 137], '$_m/hotshot.png'),
+  _Npc('Club Manager Taylor', 22, [81, 82, 101],   '$_m/manager.png'),
+  _Npc('Psych Hope',          26, [92, 93, 94],    '$_f/psycher.png'),
+  _Npc('Ace Golfer Jake',     18, [134, 135, 136], '$_m/ace.png'),
+  _Npc('Ace Golfer Lola',     16, [131, 62, 76],   '$_f/ace.png'),
+  _Npc('Ace Golfer Sam',      14, [115, 123, 127], '$_m/ace.png'),
+  _Npc('Ace Golfer Gwen',     12, [148, 139, 91],  '$_f/ace.png'),
+  _Npc('Slicer Blade',        20, [123, 141, 28],  '$_m/slicer.png'),
 ];
 
-final List<_Npc> _fillerPool = [..._teamRocket, ..._golfers];
+final List<_Npc> _fillerPool = _golfers;
 
 CourseLeader _npcToLeader(String courseId, _Npc npc) {
   return CourseLeader(
@@ -77,8 +74,8 @@ CourseLeader _npcToLeader(String courseId, _Npc npc) {
   );
 }
 
-/// Builds a deterministic mapping so each gym leader appears on exactly one
-/// course. Remaining courses get Team Rocket or generic golfers.
+/// Builds a deterministic mapping so each course leader appears on exactly one
+/// course. Remaining courses get hookers or generic golfers.
 Map<String, CourseLeader> buildDefaultLeaders(List<String> courseIds) {
   final sorted = List<String>.from(courseIds)..sort();
   final result = <String, CourseLeader>{};

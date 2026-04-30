@@ -11,6 +11,7 @@ import '../models/course_leader.dart';
 import '../models/golf_course.dart';
 import '../models/golfer_team.dart';
 import '../state/bogeybeasts_golf_store.dart';
+import '../widgets/white_bg_image.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -900,31 +901,39 @@ class _GymCard extends StatelessWidget {
 }
 
 class _GolferSprite extends StatelessWidget {
-  const _GolferSprite({required this.sprite, this.size = 32});
+  const _GolferSprite({this.sprite, this.size = 32});
 
   final String? sprite;
   final double size;
 
   @override
   Widget build(BuildContext context) {
-    if (sprite == null) {
-      return Icon(Icons.person, size: size * 0.7, color: const Color(0xFFFFD700));
-    }
-    final inner = size * 1.5;
-    return SizedBox(
+    final fallback = Icon(
+      Icons.sports_golf_rounded,
+      size: size * 0.45,
+      color: const Color(0xFFFFD700),
+    );
+
+    return Container(
       width: size,
       height: size,
-      child: OverflowBox(
-        maxWidth: inner,
-        maxHeight: inner,
-        child: Image.asset(
-          sprite!,
-          fit: BoxFit.contain,
-          filterQuality: FilterQuality.medium,
-          errorBuilder: (_, __, ___) =>
-              Icon(Icons.person, size: size * 0.7, color: const Color(0xFFFFD700)),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        border: Border.all(
+          color: const Color(0xFFFFD700).withValues(alpha: 0.6),
+          width: 1.5,
         ),
       ),
+      clipBehavior: Clip.antiAlias,
+      child: sprite == null
+          ? Center(child: fallback)
+          : WhiteBgImage(
+              asset: sprite!,
+              width: size,
+              height: size,
+              placeholder: fallback,
+            ),
     );
   }
 }

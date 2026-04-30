@@ -7,29 +7,6 @@ import '../state/bogeybeasts_golf_store.dart';
 import 'history_screen.dart';
 import 'my_bag_screen.dart';
 
-const List<({String asset, String label})> _availableSprites = [
-  (asset: 'assets/trainers/red-lgpe.png',           label: 'Red'),
-  (asset: 'assets/trainers/blue-lgpe.png',          label: 'Blue'),
-  (asset: 'assets/trainers/ethan.png',              label: 'Ethan'),
-  (asset: 'assets/trainers/dawn.png',               label: 'Dawn'),
-  (asset: 'assets/trainers/brendan-rs.png',         label: 'Brendan'),
-  (asset: 'assets/trainers/acetrainer.png',         label: 'Ace Golfer'),
-  (asset: 'assets/trainers/acetrainer-gen1.png',    label: 'Ace Golfer ♂'),
-  (asset: 'assets/trainers/acetrainerf-gen1.png',   label: 'Ace Golfer ♀'),
-  (asset: 'assets/trainers/youngster-gen1.png',     label: 'Chipper'),
-  (asset: 'assets/trainers/lass-gen1.png',          label: 'Drawer'),
-  (asset: 'assets/trainers/bugcatcher-gen1.png',    label: 'Roughrunner'),
-  (asset: 'assets/trainers/fisherman-gen1.png',     label: 'Fisherman'),
-  (asset: 'assets/trainers/hiker-gen1.png',         label: 'Bunkerboy'),
-  (asset: 'assets/trainers/blackbelt-gen1.png',     label: 'Longdriver'),
-  (asset: 'assets/trainers/birdkeeper-gen1.png',    label: 'Flyer'),
-  (asset: 'assets/trainers/sailor-gen1.png',        label: 'Slicer'),
-  (asset: 'assets/trainers/camper.png',             label: 'Greenkeeper'),
-  (asset: 'assets/trainers/gambler-gen1.png',       label: 'Hotshot'),
-  (asset: 'assets/trainers/scientist-gen1.png',     label: 'Club Manager'),
-  (asset: 'assets/trainers/channeler-gen1.png',     label: 'Psych'),
-  (asset: 'assets/trainers/teamrocket.png',         label: 'Hooker'),
-];
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -58,62 +35,21 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Center(
-              child: GestureDetector(
-                onTap: () => _showSpritePicker(context, store),
-                child: Column(
-                  children: <Widget>[
-                    Container(
-                      width: 96,
-                      height: 96,
-                      decoration: BoxDecoration(
-                        color: accentColor.withValues(alpha: 0.10),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: accentColor.withValues(alpha: 0.5),
-                          width: 2.5,
-                        ),
-                      ),
-                      child: store.golferSprite != null
-                          ? ClipOval(
-                              child: OverflowBox(
-                                maxWidth: 96 * 1.4,
-                                maxHeight: 96 * 1.4,
-                                child: Image.asset(
-                                  store.golferSprite!,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => Icon(
-                                    Icons.person,
-                                    size: 48,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                ),
-                              ),
-                            )
-                          : Icon(
-                              Icons.person,
-                              size: 48,
-                              color: theme.colorScheme.primary,
-                            ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Icon(
-                          Icons.edit,
-                          size: 14,
-                          color: theme.colorScheme.primary.withValues(alpha: 0.7),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          store.golferSprite != null ? 'Change avatar' : 'Choose avatar',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+              child: Container(
+                width: 96,
+                height: 96,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.10),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: accentColor.withValues(alpha: 0.5),
+                    width: 2.5,
+                  ),
+                ),
+                child: Icon(
+                  Icons.sports_golf_rounded,
+                  size: 48,
+                  color: accentColor,
                 ),
               ),
             ),
@@ -364,134 +300,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  void _showSpritePicker(BuildContext context, BogeybeastGolfStore store) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => _SpritePicker(
-        current: store.golferSprite,
-        onSelected: (sprite) {
-          store.setGolferSprite(sprite);
-          Navigator.of(ctx).pop();
-        },
-      ),
-    );
-  }
-}
-
-class _SpritePicker extends StatelessWidget {
-  const _SpritePicker({required this.current, required this.onSelected});
-
-  final String? current;
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return DraggableScrollableSheet(
-      initialChildSize: 0.55,
-      minChildSize: 0.35,
-      maxChildSize: 0.85,
-      expand: false,
-      builder: (_, controller) => Column(
-        children: <Widget>[
-          const SizedBox(height: 12),
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Choose your Golfer',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: GridView.builder(
-              controller: controller,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.75,
-              ),
-              itemCount: _availableSprites.length,
-              itemBuilder: (_, i) {
-                final entry = _availableSprites[i];
-                final isSelected = entry.asset == current;
-                return GestureDetector(
-                  onTap: () => onSelected(entry.asset),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? theme.colorScheme.primary.withValues(alpha: 0.15)
-                          : theme.cardTheme.color,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? theme.colorScheme.primary
-                            : const Color(0xFF243024),
-                        width: isSelected ? 2 : 1,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        SizedBox(
-                          width: 52,
-                          height: 52,
-                          child: OverflowBox(
-                            maxWidth: 52 * 1.4,
-                            maxHeight: 52 * 1.4,
-                            child: Image.asset(
-                              entry.asset,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => const Icon(
-                                Icons.broken_image,
-                                size: 28,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: Text(
-                            entry.label,
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                              color: isSelected
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _TeamSelector extends StatelessWidget {

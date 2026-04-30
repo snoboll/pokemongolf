@@ -16,7 +16,6 @@ class GolferProfile {
     required this.golferName,
     required this.caughtCount,
     this.homeCourseId,
-    this.golferSprite,
     this.golferTeam,
   });
 
@@ -24,7 +23,6 @@ class GolferProfile {
   final String golferName;
   final int caughtCount;
   final String? homeCourseId;
-  final String? golferSprite;
   final String? golferTeam;
 }
 
@@ -79,26 +77,6 @@ class SupabaseService {
     );
   }
 
-  Future<String?> fetchGolferSprite() async {
-    final uid = currentUserId;
-    if (uid == null) return null;
-
-    final List<Map<String, dynamic>> rows = await _client
-        .from('profiles')
-        .select('golfer_sprite')
-        .eq('user_id', uid)
-        .limit(1);
-
-    if (rows.isEmpty) return null;
-    return rows.first['golfer_sprite'] as String?;
-  }
-
-  Future<void> updateGolferSprite(String? sprite) async {
-    await _client.from('profiles').update(
-      {'golfer_sprite': sprite},
-    ).eq('user_id', currentUserId!);
-  }
-
   Future<({String? team, DateTime? changedAt})> fetchGolferTeam() async {
     final uid = currentUserId;
     if (uid == null) return (team: null, changedAt: null);
@@ -148,7 +126,7 @@ class SupabaseService {
   Future<List<GolferProfile>> fetchAllGolfers() async {
     final List<Map<String, dynamic>> profiles = await _client
         .from('profiles')
-        .select('user_id, golfer_name, home_course_id, golfer_sprite, golfer_team')
+        .select('user_id, golfer_name, home_course_id, golfer_team')
         .order('created_at');
 
     if (profiles.isEmpty) return <GolferProfile>[];
@@ -168,7 +146,6 @@ class SupabaseService {
         golferName: p['golfer_name'] as String,
         caughtCount: countMap[uid] ?? 0,
         homeCourseId: p['home_course_id'] as String?,
-        golferSprite: p['golfer_sprite'] as String?,
         golferTeam: p['golfer_team'] as String?,
       );
     }).toList()

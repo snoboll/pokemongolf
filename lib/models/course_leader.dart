@@ -41,7 +41,6 @@ class CourseLeader {
       claimedAt: json['claimed_at'] != null
           ? DateTime.parse(json['claimed_at'] as String)
           : null,
-      golferSprite: json['golfer_sprite'] as String?,
       golferTeam: json['golfer_team'] as String?,
     );
   }

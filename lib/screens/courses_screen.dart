@@ -12,6 +12,7 @@ import '../services/battle_service.dart';
 import '../services/supabase_service.dart';
 import '../state/battle_store.dart';
 import 'battle_round_screen.dart';
+import '../widgets/white_bg_image.dart';
 import 'battles_screen.dart';
 import 'round_screen.dart';
 import 'team_select_screen.dart';
@@ -305,6 +306,8 @@ class _CoursesScreenState extends State<CoursesScreen>
                   onStartBattle: _startBattle,
                   onChallengeLeader: _challengeLeader,
                   leaderForCourse: store.leaderForCourse,
+                  homeCourseId: store.homeCourseId,
+                  onSetHome: _setHomeCourse,
                 )
               : CustomScrollView(
               slivers: <Widget>[
@@ -417,6 +420,8 @@ class _CourseMap extends StatefulWidget {
     required this.onStartBattle,
     required this.onChallengeLeader,
     required this.leaderForCourse,
+    required this.homeCourseId,
+    required this.onSetHome,
   });
 
   final List<GolfCourse> courses;
@@ -424,6 +429,8 @@ class _CourseMap extends StatefulWidget {
   final void Function(GolfCourse) onStartBattle;
   final void Function(GolfCourse) onChallengeLeader;
   final CourseLeader Function(String courseId) leaderForCourse;
+  final String? homeCourseId;
+  final void Function(GolfCourse) onSetHome;
 
   @override
   State<_CourseMap> createState() => _CourseMapState();
@@ -461,6 +468,7 @@ class _CourseMapState extends State<_CourseMap> {
 
   void _openCourseActions(GolfCourse course) {
     final leader = widget.leaderForCourse(course.id);
+    final isHome = course.id == widget.homeCourseId;
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -470,6 +478,7 @@ class _CourseMapState extends State<_CourseMap> {
       builder: (_) => _CourseActionSheet(
         course: course,
         leader: leader,
+        isHome: isHome,
         onCatch: () {
           Navigator.of(context).pop();
           widget.onStartRound(course);
@@ -481,6 +490,10 @@ class _CourseMapState extends State<_CourseMap> {
         onGym: () {
           Navigator.of(context).pop();
           widget.onChallengeLeader(course);
+        },
+        onSetHome: () {
+          Navigator.of(context).pop();
+          widget.onSetHome(course);
         },
       ),
     );
@@ -592,20 +605,24 @@ class _CourseMapState extends State<_CourseMap> {
 
 // ── Course action sheet (Catch / PvP / Gym) ─────────────────────────────────
 
-class _CourseActionSheet extends StatelessWidget {
-  const _CourseActionSheet({
+class _CourseDetail extends StatelessWidget {
+  const _CourseDetail({
     required this.course,
     required this.leader,
+    required this.isHome,
     required this.onCatch,
     required this.onBattle,
     required this.onGym,
+    this.onSetHome,
   });
 
   final GolfCourse course;
   final CourseLeader leader;
+  final bool isHome;
   final VoidCallback onCatch;
   final VoidCallback onBattle;
   final VoidCallback onGym;
+  final VoidCallback? onSetHome;
 
   @override
   Widget build(BuildContext context) {
@@ -615,6 +632,103 @@ class _CourseActionSheet extends StatelessWidget {
         ? null
         : course.flatPars.reduce((a, b) => a + b);
     final holeCount = course.flatPars.length;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          course.name,
+          style: theme.textTheme.titleLarge
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        if (totalPar != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              '$holeCount holes  ·  Par $totalPar',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+          ),
+        const SizedBox(height: 14),
+        _LeaderBanner(leader: leader),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: _ActionButton(
+                icon: Icons.pets,
+                label: 'Catch',
+                color: theme.colorScheme.primary,
+                subtitle: 'Play a round',
+                onTap: onCatch,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ActionButton(
+                icon: Icons.videogame_asset_rounded,
+                label: 'PvP',
+                color: Colors.redAccent,
+                subtitle: 'PvP challenge',
+                onTap: onBattle,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ActionButton(
+                icon: GolferTeam.fromDb(leader.golferTeam)?.icon ?? Icons.shield,
+                label: 'Gym',
+                color: leaderColor,
+                subtitle: 'Challenge leader',
+                onTap: onGym,
+              ),
+            ),
+          ],
+        ),
+        if (!isHome && onSetHome != null) ...[
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: onSetHome,
+              icon: const Icon(Icons.home_outlined, size: 18),
+              label: const Text('Set as home'),
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _CourseActionSheet extends StatelessWidget {
+  const _CourseActionSheet({
+    required this.course,
+    required this.leader,
+    required this.isHome,
+    required this.onCatch,
+    required this.onBattle,
+    required this.onGym,
+    this.onSetHome,
+  });
+
+  final GolfCourse course;
+  final CourseLeader leader;
+  final bool isHome;
+  final VoidCallback onCatch;
+  final VoidCallback onBattle;
+  final VoidCallback onGym;
+  final VoidCallback? onSetHome;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -634,109 +748,14 @@ class _CourseActionSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          Text(
-            course.name,
-            style: theme.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          if (totalPar != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                '$holeCount holes  ·  Par $totalPar',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
-            ),
-          const SizedBox(height: 16),
-
-          // Leader info
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: leaderColor.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: leaderColor.withValues(alpha: 0.2)),
-            ),
-            child: Row(
-              children: [
-                _GolferAvatar(sprite: leader.golferSprite, size: 36),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        leader.leaderName,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: leaderColor,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      Text(
-                        'HCP ${leader.hcp}',
-                        style: TextStyle(
-                          color: leaderColor.withValues(alpha: 0.6),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                for (final p in leader.team)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: SizedBox(
-                      width: 28,
-                      height: 28,
-                      child: Image.network(
-                        p.imageUrl,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.pets, size: 18),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Three action buttons
-          Row(
-            children: [
-              Expanded(
-                child: _ActionButton(
-                  icon: Icons.pets,
-                  label: 'Catch',
-                  color: theme.colorScheme.primary,
-                  subtitle: 'Play a round',
-                  onTap: onCatch,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _ActionButton(
-                  icon: Icons.videogame_asset_rounded,
-                  label: 'PvP',
-                  color: Colors.redAccent,
-                  subtitle: 'PvP challenge',
-                  onTap: onBattle,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _ActionButton(
-                  icon: GolferTeam.fromDb(leader.golferTeam)?.icon ?? Icons.shield,
-                  label: 'Gym',
-                  color: leaderColor,
-                  subtitle: 'Challenge leader',
-                  onTap: onGym,
-                ),
-              ),
-            ],
+          _CourseDetail(
+            course: course,
+            leader: leader,
+            isHome: isHome,
+            onCatch: onCatch,
+            onBattle: onBattle,
+            onGym: onGym,
+            onSetHome: onSetHome,
           ),
         ],
       ),
@@ -901,16 +920,14 @@ class _DetailMarker extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _GolferAvatar(sprite: leader.golferSprite, size: 56),
-              const SizedBox(width: 10),
-              Flexible(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       course.name,
@@ -932,39 +949,16 @@ class _DetailMarker extends StatelessWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${leader.leaderName}  ·  HCP ${leader.hcp}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: leaderColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (final p in leader.team)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 4),
-                            child: SizedBox(
-                              width: 32,
-                              height: 32,
-                              child: Image.network(
-                                p.imageUrl,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, __, ___) =>
-                                    const SizedBox.shrink(),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 6),
+              _LeaderBanner(
+                leader: leader,
+                avatarSize: 36,
+                beastSize: 24,
+                compact: true,
+                showLabel: false,
               ),
             ],
           ),
@@ -1105,213 +1099,174 @@ class _CourseCardState extends State<_CourseCard> {
   Widget _buildExpanded(ThemeData theme, GolfCourse course, Color dim) {
     return Padding(
       padding: const EdgeInsets.only(top: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _LeaderSection(leader: widget.leader, onChallenge: widget.onChallenge),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _ActionButton(
-                  icon: Icons.pets,
-                  label: 'Catch',
-                  color: theme.colorScheme.primary,
-                  subtitle: 'Play a round',
-                  onTap: widget.onPlay,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _ActionButton(
-                  icon: Icons.videogame_asset_rounded,
-                  label: 'PvP',
-                  color: Colors.redAccent,
-                  subtitle: 'PvP challenge',
-                  onTap: widget.onBattle,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          if (!widget.isHome)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: widget.onSetHome,
-                icon: const Icon(Icons.home_outlined, size: 18),
-                label: const Text('Set as home'),
-                style: TextButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LeaderSection extends StatelessWidget {
-  const _LeaderSection({required this.leader, required this.onChallenge});
-
-  final CourseLeader leader;
-  final VoidCallback onChallenge;
-
-  @override
-  Widget build(BuildContext context) {
-    final leaderColor = teamColor(GolferTeam.fromDb(leader.golferTeam));
-    final roleLabel = leader.isNpc
-        ? 'Gym Leader'
-        : (GolferTeam.fromDb(leader.golferTeam)?.label ?? 'Gym Leader');
-
-    return GestureDetector(
-      onTap: onChallenge,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: leaderColor.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: leaderColor.withValues(alpha: 0.45), width: 1.5),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _GolferAvatar(sprite: leader.golferSprite, size: 52),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.shield_rounded, size: 11, color: leaderColor.withValues(alpha: 0.7)),
-                      const SizedBox(width: 4),
-                      Text(
-                        roleLabel,
-                        style: TextStyle(
-                          color: leaderColor.withValues(alpha: 0.7),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      Text(
-                        leader.leaderName,
-                        style: TextStyle(
-                          color: leaderColor,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: leaderColor.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'HCP ${leader.hcp}',
-                          style: TextStyle(
-                            color: leaderColor.withValues(alpha: 0.8),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (leader.team.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        for (final b in leader.team)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: SizedBox(
-                              width: 32,
-                              height: 32,
-                              child: Image.network(
-                                b.imageUrl,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, __, ___) =>
-                                    const Icon(Icons.pets, size: 18),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: leaderColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: leaderColor.withValues(alpha: 0.4)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.shield_rounded, color: leaderColor, size: 18),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Gym',
-                    style: TextStyle(
-                      color: leaderColor,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      child: _CourseDetail(
+        course: course,
+        leader: widget.leader,
+        isHome: widget.isHome,
+        onCatch: widget.onPlay,
+        onBattle: widget.onBattle,
+        onGym: widget.onChallenge,
+        onSetHome: widget.onSetHome,
       ),
     );
   }
 }
 
 class _GolferAvatar extends StatelessWidget {
-  const _GolferAvatar({required this.sprite, this.size = 32});
+  const _GolferAvatar({this.sprite, this.size = 32, this.borderColor});
 
   final String? sprite;
   final double size;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
-    if (sprite == null) {
-      return Icon(Icons.person, size: size * 0.7, color: const Color(0xFFFFD700));
-    }
-    // Showdown sprites have ~40% transparent padding baked into the canvas,
-    // so we render at a larger internal size to fill the visual space.
-    final inner = size * 1.5;
-    return SizedBox(
+    final fallback = Icon(
+      Icons.sports_golf_rounded,
+      size: size * 0.45,
+      color: const Color(0xFFFFD700),
+    );
+
+    return Container(
       width: size,
       height: size,
-      child: OverflowBox(
-        maxWidth: inner,
-        maxHeight: inner,
-        child: Image.asset(
-          sprite!,
-          fit: BoxFit.contain,
-          filterQuality: FilterQuality.medium,
-          errorBuilder: (_, __, ___) =>
-              Icon(Icons.person, size: size * 0.7, color: const Color(0xFFFFD700)),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        border: Border.all(
+          color: (borderColor ?? const Color(0xFFFFD700)).withValues(alpha: 0.6),
+          width: 1.5,
         ),
       ),
+      clipBehavior: Clip.antiAlias,
+      child: sprite == null
+          ? Center(child: fallback)
+          : WhiteBgImage(
+              asset: sprite!,
+              width: size,
+              height: size,
+              placeholder: fallback,
+            ),
     );
+  }
+}
+
+class _LeaderBanner extends StatelessWidget {
+  const _LeaderBanner({
+    required this.leader,
+    this.avatarSize = 56,
+    this.beastSize = 36,
+    this.compact = false,
+    this.showLabel = true,
+    this.onTap,
+  });
+
+  final CourseLeader leader;
+  final double avatarSize;
+  final double beastSize;
+  final bool compact;
+  final bool showLabel;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final leaderColor = teamColor(GolferTeam.fromDb(leader.golferTeam));
+
+    final banner = Container(
+      padding: EdgeInsets.all(compact ? 8 : 12),
+      decoration: BoxDecoration(
+        color: leaderColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: leaderColor.withValues(alpha: 0.30)),
+      ),
+      child: Row(
+        children: [
+          _GolferAvatar(
+            sprite: leader.golferSprite,
+            size: avatarSize,
+            borderColor: leaderColor,
+          ),
+          SizedBox(width: compact ? 8 : 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (showLabel) ...[
+                  Row(
+                    children: [
+                      Icon(Icons.shield_rounded, size: compact ? 10 : 11,
+                          color: leaderColor.withValues(alpha: 0.6)),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Course Leader',
+                        style: TextStyle(
+                          color: leaderColor.withValues(alpha: 0.6),
+                          fontSize: compact ? 9 : 10,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: compact ? 2 : 3),
+                ],
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        leader.leaderName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: leaderColor,
+                          fontSize: compact ? 13 : 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: leaderColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Text(
+                        'HCP ${leader.hcp}',
+                        style: TextStyle(
+                          color: leaderColor.withValues(alpha: 0.8),
+                          fontSize: compact ? 9 : 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          for (final b in leader.team)
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: SizedBox(
+                width: beastSize,
+                height: beastSize,
+                child: Image.network(
+                  b.imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+
+    if (onTap != null) {
+      return GestureDetector(onTap: onTap, child: banner);
+    }
+    return banner;
   }
 }
 

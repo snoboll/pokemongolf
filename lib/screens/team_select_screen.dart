@@ -6,6 +6,7 @@ import '../models/bogeybeast_species.dart';
 import '../models/bogeybeast_type.dart';
 import '../models/course_leader.dart';
 import '../models/golfer_team.dart';
+import '../widgets/white_bg_image.dart';
 
 class TeamSelectScreen extends StatefulWidget {
   const TeamSelectScreen({
@@ -239,27 +240,33 @@ class _VsLeaderBanner extends StatelessWidget {
 }
 
 class _LeaderSprite extends StatelessWidget {
-  const _LeaderSprite({required this.sprite, required this.color});
+  const _LeaderSprite({this.sprite, required this.color});
   final String? sprite;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    if (sprite != null) {
-      return SizedBox(
-        width: 40,
-        height: 40,
-        child: Image.network(
-          sprite!,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => _fallback(),
-        ),
-      );
-    }
-    return _fallback();
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        border: Border.all(color: color.withValues(alpha: 0.6), width: 1.5),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: sprite != null
+          ? WhiteBgImage(
+              asset: sprite!,
+              width: 40,
+              height: 40,
+              placeholder: _fallback(),
+            )
+          : Center(child: _fallback()),
+    );
   }
 
-  Widget _fallback() => Icon(Icons.shield_rounded, color: color, size: 36);
+  Widget _fallback() => Icon(Icons.sports_golf_rounded, color: color, size: 22);
 }
 
 // ── _BogeybeastSelectTile ────────────────────────────────────────────────────────

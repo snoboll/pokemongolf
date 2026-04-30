@@ -34,7 +34,6 @@ class BogeybeastGolfStore extends ChangeNotifier {
   ActiveRound? _activeRound;
   final Set<int> _pendingCatches = <int>{};
   String? _golferName;
-  String? _golferSprite;
   String? _golferTeam;
   DateTime? _teamChangedAt;
   double? _hcpOverride;
@@ -47,7 +46,6 @@ class BogeybeastGolfStore extends ChangeNotifier {
 
   ActiveRound? get activeRound => _activeRound;
   String? get golferName => _golferName;
-  String? get golferSprite => _golferSprite;
   String? get golferTeam => _golferTeam;
   DateTime? get teamChangedAt => _teamChangedAt;
   String? get homeCourseId => _homeCourseId;
@@ -157,14 +155,6 @@ class BogeybeastGolfStore extends ChangeNotifier {
     return null;
   }
 
-  void setGolferSprite(String? sprite) {
-    _golferSprite = sprite;
-    notifyListeners();
-    _supabaseService?.updateGolferSprite(sprite).catchError((e) {
-      debugPrint('Failed to update golfer sprite: $e');
-    });
-  }
-
   void setGolferTeam(String? team) {
     if (!canChangeTeam) return;
     _golferTeam = team;
@@ -224,12 +214,6 @@ class BogeybeastGolfStore extends ChangeNotifier {
         ..clear()
         ..addAll(results[1] as List<GolfRoundSummary>);
       _golferName = results[2] as String?;
-
-      try {
-        _golferSprite = await supa.fetchGolferSprite();
-      } catch (e) {
-        debugPrint('Failed to load golfer sprite: $e');
-      }
 
       try {
         final teamData = await supa.fetchGolferTeam();
@@ -353,7 +337,6 @@ class BogeybeastGolfStore extends ChangeNotifier {
     _completedRounds.clear();
     _activeRound = null;
     _golferName = null;
-    _golferSprite = null;
     _golferTeam = null;
     _teamChangedAt = null;
     _hcpOverride = null;

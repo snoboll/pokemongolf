@@ -235,31 +235,13 @@ class _GolferCard extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: borderColor, width: 1.5),
               ),
-              child: golfer.golferSprite != null
-                  ? ClipOval(
-                      child: OverflowBox(
-                        maxWidth: 52 * 1.4,
-                        maxHeight: 52 * 1.4,
-                        child: Image.asset(
-                          golfer.golferSprite!,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => Icon(
-                            Icons.pets,
-                            color: isComplete
-                                ? const Color(0xFFFFB300)
-                                : theme.colorScheme.primary,
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    )
-                  : Icon(
-                      Icons.pets,
-                      color: isComplete
-                          ? const Color(0xFFFFB300)
-                          : theme.colorScheme.primary,
-                      size: 24,
-                    ),
+              child: Icon(
+                Icons.sports_golf_rounded,
+                color: isComplete
+                    ? const Color(0xFFFFB300)
+                    : theme.colorScheme.primary,
+                size: 24,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
