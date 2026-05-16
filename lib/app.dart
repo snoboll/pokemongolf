@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../widgets/beast_icon.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -9,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models/battle_models.dart';
 import 'models/golf_course.dart';
+import 'models/round_models.dart';
 import 'screens/auth_screen.dart';
 import 'screens/battle_round_screen.dart';
 import 'screens/battles_screen.dart';
@@ -19,6 +21,7 @@ import 'screens/round_screen.dart';
 import 'screens/courses_screen.dart';
 import 'screens/team_select_screen.dart';
 import 'screens/golfers_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'services/battle_service.dart';
 import 'services/supabase_service.dart';
 import 'state/battle_store.dart';
@@ -49,33 +52,31 @@ class _BogeybeastGolfAppState extends State<BogeybeastGolfApp> {
       _loading = false;
     }
 
-    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen(
-      (AuthState state) {
-        final bool wasAuthenticated = _isAuthenticated;
-        final bool nowAuthenticated = state.session != null;
+    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((
+      AuthState state,
+    ) {
+      final bool wasAuthenticated = _isAuthenticated;
+      final bool nowAuthenticated = state.session != null;
 
-        if (!wasAuthenticated && nowAuthenticated) {
-          setState(() {
-            _isAuthenticated = true;
-            _loading = true;
-          });
-          _initStore();
-        } else if (wasAuthenticated && !nowAuthenticated) {
-          _store?.dispose();
-          setState(() {
-            _store = null;
-            _isAuthenticated = false;
-            _loading = false;
-          });
-        }
-      },
-    );
+      if (!wasAuthenticated && nowAuthenticated) {
+        setState(() {
+          _isAuthenticated = true;
+          _loading = true;
+        });
+        _initStore();
+      } else if (wasAuthenticated && !nowAuthenticated) {
+        _store?.dispose();
+        setState(() {
+          _store = null;
+          _isAuthenticated = false;
+          _loading = false;
+        });
+      }
+    });
   }
 
   Future<void> _initStore() async {
-    final store = BogeybeastGolfStore(
-      supabaseService: SupabaseService(),
-    );
+    final store = BogeybeastGolfStore(supabaseService: SupabaseService());
     await store.loadUserData();
     if (mounted) {
       setState(() {
@@ -99,22 +100,23 @@ class _BogeybeastGolfAppState extends State<BogeybeastGolfApp> {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00A651),
-          brightness: Brightness.dark,
-        ).copyWith(
-          primary: const Color(0xFF57F287),
-          onPrimary: const Color(0xFF003915),
-          primaryContainer: const Color(0xFF00531F),
-          onPrimaryContainer: const Color(0xFF7EFFA8),
-          secondary: const Color(0xFFFFD700),
-          onSecondary: const Color(0xFF3B2F00),
-          surface: const Color(0xFF141F14),
-          onSurface: const Color(0xFFDCEEDC),
-          surfaceContainerHighest: const Color(0xFF263226),
-          outline: const Color(0xFF4A5E4A),
-          outlineVariant: const Color(0xFF2C3C2C),
-        ),
+        colorScheme:
+            ColorScheme.fromSeed(
+              seedColor: const Color(0xFF00A651),
+              brightness: Brightness.dark,
+            ).copyWith(
+              primary: const Color(0xFF57F287),
+              onPrimary: const Color(0xFF003915),
+              primaryContainer: const Color(0xFF00531F),
+              onPrimaryContainer: const Color(0xFF7EFFA8),
+              secondary: const Color(0xFFFFD700),
+              onSecondary: const Color(0xFF3B2F00),
+              surface: const Color(0xFF141F14),
+              onSurface: const Color(0xFFDCEEDC),
+              surfaceContainerHighest: const Color(0xFF263226),
+              outline: const Color(0xFF4A5E4A),
+              outlineVariant: const Color(0xFF2C3C2C),
+            ),
         scaffoldBackgroundColor: const Color(0xFF0C150C),
         cardTheme: CardThemeData(
           elevation: 0,
@@ -131,7 +133,11 @@ class _BogeybeastGolfAppState extends State<BogeybeastGolfApp> {
           height: 68,
           labelTextStyle: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF57F287));
+              return const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF57F287),
+              );
             }
             return const TextStyle(fontSize: 12, fontWeight: FontWeight.w500);
           }),
@@ -182,15 +188,15 @@ class _BogeybeastGolfAppState extends State<BogeybeastGolfApp> {
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Color(0xFF57F287), width: 1.5),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
         ),
       ),
       builder: (BuildContext context, Widget? child) {
         if (_store != null) {
-          return BogeybeastGolfScope(
-            notifier: _store!,
-            child: child!,
-          );
+          return BogeybeastGolfScope(notifier: _store!, child: child!);
         }
         return child!;
       },
@@ -200,13 +206,20 @@ class _BogeybeastGolfAppState extends State<BogeybeastGolfApp> {
 
   Widget _buildHome() {
     if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (!_isAuthenticated || _store == null) {
       return const AuthScreen();
+    }
+
+    if (_store!.golferSprite == null) {
+      return OnboardingScreen(
+        store: _store!,
+        onComplete: () {
+          if (mounted) setState(() {});
+        },
+      );
     }
 
     return const BogeybeastGolfShell();
@@ -221,8 +234,8 @@ class BogeybeastGolfScope extends InheritedNotifier<BogeybeastGolfStore> {
   }) : super(notifier: notifier);
 
   static BogeybeastGolfStore of(BuildContext context) {
-    final BogeybeastGolfScope? scope =
-        context.dependOnInheritedWidgetOfExactType<BogeybeastGolfScope>();
+    final BogeybeastGolfScope? scope = context
+        .dependOnInheritedWidgetOfExactType<BogeybeastGolfScope>();
     assert(scope != null, 'BogeybeastGolfScope not found in widget tree.');
     return scope!.notifier!;
   }
@@ -279,7 +292,8 @@ class _BogeybeastGolfShellState extends State<BogeybeastGolfShell> {
 
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (BuildContext context) => const RoundScreen(),
+        builder: (BuildContext context) =>
+            const RoundScreen(skipEncounterIntro: true),
       ),
     );
   }
@@ -298,7 +312,9 @@ class _BogeybeastGolfShellState extends State<BogeybeastGolfShell> {
 
     if (store.caughtDexNumbers.length < 3) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Catch at least 3 Bogeybeast to challenge a leader')),
+        const SnackBar(
+          content: Text('Catch at least 3 Bogeybeast to challenge a leader'),
+        ),
       );
       return;
     }
@@ -334,28 +350,33 @@ class _BogeybeastGolfShellState extends State<BogeybeastGolfShell> {
       if (!context.mounted) return;
 
       battleStore.watchBattle(battle.id);
-      Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => BattleScope(
-          notifier: battleStore,
-          child: BattleRoundScreen(battleId: battle.id),
-        ),
-      )).then((_) {
-        battleStore.stopWatching();
-        if (context.mounted) {
-          BogeybeastGolfScope.of(context).refreshCourseLeaders();
-        }
-      });
+      Navigator.of(context)
+          .push(
+            MaterialPageRoute(
+              builder: (_) => BattleScope(
+                notifier: battleStore,
+                child: BattleRoundScreen(battleId: battle.id),
+              ),
+            ),
+          )
+          .then((_) {
+            battleStore.stopWatching();
+            if (context.mounted) {
+              BogeybeastGolfScope.of(context).refreshCourseLeaders();
+            }
+          });
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final store = BogeybeastGolfScope.of(context);
     final List<Widget> pages = <Widget>[
       const CollectionScreen(),
       const GolfersScreen(),
@@ -363,7 +384,7 @@ class _BogeybeastGolfShellState extends State<BogeybeastGolfShell> {
         onPlay: () => setState(() => _selectedIndex = 3),
         onResumeRound: () => _resumeRound(context),
         onBattleMode: () => _openBattleMode(context),
-        onGymChallenge: (course) => _challengeLeader(context, course),
+        onLeaderChallenge: (course) => _challengeLeader(context, course),
       ),
       const CoursesScreen(),
       const ProfileScreen(),
@@ -374,17 +395,27 @@ class _BogeybeastGolfShellState extends State<BogeybeastGolfShell> {
         children: [
           if (_hasUpdate)
             GestureDetector(
-              onTap: () => launchUrl(Uri.parse(_installUrl), mode: LaunchMode.externalApplication),
+              onTap: () => launchUrl(
+                Uri.parse(_installUrl),
+                mode: LaunchMode.externalApplication,
+              ),
               child: Container(
                 width: double.infinity,
                 color: const Color(0xFFFFD700),
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 16,
+                ),
                 child: const SafeArea(
                   bottom: false,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.system_update, size: 16, color: Color(0xFF3B2F00)),
+                      Icon(
+                        Icons.system_update,
+                        size: 16,
+                        color: Color(0xFF3B2F00),
+                      ),
                       SizedBox(width: 8),
                       Text(
                         'Update available — tap to install',
@@ -399,11 +430,13 @@ class _BogeybeastGolfShellState extends State<BogeybeastGolfShell> {
                 ),
               ),
             ),
-          Expanded(
-            child: IndexedStack(
-              index: _selectedIndex,
-              children: pages,
+          if (store.activeRound != null)
+            _ActiveRoundBanner(
+              round: store.activeRound!,
+              onTap: () => _resumeRound(context),
             ),
+          Expanded(
+            child: IndexedStack(index: _selectedIndex, children: pages),
           ),
         ],
       ),
@@ -411,8 +444,8 @@ class _BogeybeastGolfShellState extends State<BogeybeastGolfShell> {
         selectedIndex: _selectedIndex,
         destinations: const <NavigationDestination>[
           NavigationDestination(
-            icon: Icon(Icons.pets),
-            selectedIcon: Icon(Icons.pets),
+            icon: DexIcon(),
+            selectedIcon: DexIcon(),
             label: 'Bogeydex',
           ),
           NavigationDestination(
@@ -441,6 +474,77 @@ class _BogeybeastGolfShellState extends State<BogeybeastGolfShell> {
             _selectedIndex = index;
           });
         },
+      ),
+    );
+  }
+}
+
+class _ActiveRoundBanner extends StatelessWidget {
+  const _ActiveRoundBanner({required this.round, required this.onTap});
+
+  final ActiveRound round;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final subtitle = [
+      if (round.courseName != null) round.courseName!,
+      'Hole ${round.currentHoleNumber} of ${round.holeCount}',
+    ].join(' · ');
+
+    return Material(
+      color: theme.colorScheme.primaryContainer,
+      child: InkWell(
+        onTap: onTap,
+        child: SafeArea(
+          top: true,
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              children: <Widget>[
+                Icon(
+                  Icons.play_circle_fill_rounded,
+                  color: theme.colorScheme.primary,
+                  size: 22,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        'Resume round',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer
+                              .withValues(alpha: 0.75),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: theme.colorScheme.onPrimaryContainer.withValues(
+                    alpha: 0.75,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

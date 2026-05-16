@@ -21,7 +21,7 @@ class GolfersScreen extends StatefulWidget {
 class _GolfersScreenState extends State<GolfersScreen> {
   List<GolferProfile>? _golfers;
   Map<String, String> _golferTags = <String, String>{};
-  Map<String, int> _gymCounts = <String, int>{};
+  Map<String, int> _leadershipCounts = <String, int>{};
   bool _loading = true;
   String? _error;
 
@@ -77,17 +77,15 @@ class _GolfersScreenState extends State<GolfersScreen> {
       final List<Object> results = await Future.wait(<Future<Object>>[
         service.fetchAllGolfers(),
         service.fetchAllCaughtDexNumbers(),
-        service.fetchGymOwnershipCounts(),
+        service.fetchCourseLeadershipCounts(),
       ]);
       if (!mounted || generation != _fetchGeneration) {
         return;
       }
-      final List<GolferProfile> golfers =
-          results[0] as List<GolferProfile>;
+      final List<GolferProfile> golfers = results[0] as List<GolferProfile>;
       final Map<String, Set<int>> allCaught =
           results[1] as Map<String, Set<int>>;
-      final Map<String, int> gymCounts =
-          results[2] as Map<String, int>;
+      final Map<String, int> leadershipCounts = results[2] as Map<String, int>;
 
       final Map<String, String> tags = <String, String>{};
       for (final GolferProfile golfer in golfers) {
@@ -103,7 +101,7 @@ class _GolfersScreenState extends State<GolfersScreen> {
       setState(() {
         _golfers = golfers;
         _golferTags = tags;
-        _gymCounts = gymCounts;
+        _leadershipCounts = leadershipCounts;
         _loading = false;
       });
     } catch (e, st) {
@@ -128,51 +126,58 @@ class _GolfersScreenState extends State<GolfersScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
-                      const SizedBox(height: 12),
-                      FilledButton.tonal(
-                        onPressed: _loadGolfers,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    _error!,
+                    style: TextStyle(color: theme.colorScheme.error),
                   ),
-                )
-              : _golfers == null || _golfers!.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No golfers yet',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                        ),
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadGolfers,
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        itemCount: _golfers!.length,
-                        separatorBuilder: (context, _) => const SizedBox(height: 8),
-                        itemBuilder: (context, index) {
-                          final golfer = _golfers![index];
-                          final progress = golfer.caughtCount / total;
+                  const SizedBox(height: 12),
+                  FilledButton.tonal(
+                    onPressed: _loadGolfers,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : _golfers == null || _golfers!.isEmpty
+          ? Center(
+              child: Text(
+                'No golfers yet',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadGolfers,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                itemCount: _golfers!.length,
+                separatorBuilder: (context, _) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final golfer = _golfers![index];
+                  final progress = golfer.caughtCount / total;
 
-                          return _GolferCard(
-                            rank: index + 1,
-                            golfer: golfer,
-                            total: total,
-                            progress: progress,
-                            homeCourseName: BogeybeastGolfScope.of(context)
-                                .courseNameForId(golfer.homeCourseId),
-                            tag: _golferTags[golfer.userId],
-                            gymCount: _gymCounts[golfer.userId] ?? 0,
-                          );
-                        },
-                      ),
-                    ),
+                  return _GolferCard(
+                    rank: index + 1,
+                    golfer: golfer,
+                    total: total,
+                    progress: progress,
+                    homeCourseName: BogeybeastGolfScope.of(
+                      context,
+                    ).courseNameForId(golfer.homeCourseId),
+                    tag: _golferTags[golfer.userId],
+                    leadershipCount: _leadershipCounts[golfer.userId] ?? 0,
+                  );
+                },
+              ),
+            ),
     );
   }
 }
@@ -183,7 +188,7 @@ class _GolferCard extends StatelessWidget {
     required this.golfer,
     required this.total,
     required this.progress,
-    required this.gymCount,
+    required this.leadershipCount,
     this.homeCourseName,
     this.tag,
   });
@@ -192,7 +197,7 @@ class _GolferCard extends StatelessWidget {
   final GolferProfile golfer;
   final int total;
   final double progress;
-  final int gymCount;
+  final int leadershipCount;
   final String? homeCourseName;
   final String? tag;
 
@@ -214,177 +219,196 @@ class _GolferCard extends StatelessWidget {
           ),
         ),
         child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: <Widget>[
-            SizedBox(
-              width: 32,
-              child: Text(
-                '#$rank',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: _rankColor(rank),
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: <Widget>[
+              SizedBox(
+                width: 32,
+                child: Text(
+                  '#$rank',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: _rankColor(rank),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: (tTeam?.color ?? theme.colorScheme.primary).withValues(alpha: 0.10),
-                shape: BoxShape.circle,
-                border: Border.all(color: borderColor, width: 1.5),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: golfer.golferSprite != null
-                  ? WhiteBgImage(
-                      asset: golfer.golferSprite!,
-                      width: 52,
-                      height: 52,
-                      placeholder: Icon(
+              const SizedBox(width: 12),
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: (tTeam?.color ?? theme.colorScheme.primary).withValues(
+                    alpha: 0.10,
+                  ),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: borderColor, width: 1.5),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: golfer.golferSprite != null
+                    ? WhiteBgImage(
+                        asset: golfer.golferSprite!,
+                        width: 52,
+                        height: 52,
+                        placeholder: Icon(
+                          Icons.sports_golf_rounded,
+                          color: isComplete
+                              ? const Color(0xFFFFB300)
+                              : theme.colorScheme.primary,
+                          size: 24,
+                        ),
+                      )
+                    : Icon(
                         Icons.sports_golf_rounded,
                         color: isComplete
                             ? const Color(0xFFFFB300)
                             : theme.colorScheme.primary,
                         size: 24,
                       ),
-                    )
-                  : Icon(
-                      Icons.sports_golf_rounded,
-                      color: isComplete
-                          ? const Color(0xFFFFB300)
-                          : theme.colorScheme.primary,
-                      size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      golfer.golferName,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    golfer.golferName,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (homeCourseName != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        homeCourseName!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                    if (homeCourseName != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          homeCourseName!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.4,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  if (tTeam != null || tag != null || gymCount > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: <Widget>[
-                          if (tTeam != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: tTeam.color.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                tTeam.label,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: tTeam.color,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 9,
+                    if (tTeam != null || tag != null || leadershipCount > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: <Widget>[
+                            if (tTeam != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
                                 ),
-                              ),
-                            ),
-                          if (gymCount > 0)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFB300).withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
-                                  const Icon(Icons.shield, size: 10, color: Color(0xFFFFB300)),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    '$gymCount ${gymCount == 1 ? 'gym' : 'gyms'}',
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: const Color(0xFFFFB300),
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 9,
-                                    ),
+                                decoration: BoxDecoration(
+                                  color: tTeam.color.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  tTeam.label,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: tTeam.color,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 9,
                                   ),
-                                ],
-                              ),
-                            ),
-                          if (tag != null)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.secondary
-                                    .withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                tag!,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.secondary,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 9,
                                 ),
                               ),
-                            ),
-                        ],
+                            if (leadershipCount > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFFFFB300,
+                                  ).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    const Icon(
+                                      Icons.shield,
+                                      size: 10,
+                                      color: Color(0xFFFFB300),
+                                    ),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      '$leadershipCount ${leadershipCount == 1 ? 'course' : 'courses'}',
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: const Color(0xFFFFB300),
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 9,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            if (tag != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.secondary.withValues(
+                                    alpha: 0.15,
+                                  ),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  tag!,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: theme.colorScheme.secondary,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 9,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
+                        color: isComplete
+                            ? const Color(0xFFFFB300)
+                            : theme.colorScheme.primary,
+                        minHeight: 6,
                       ),
                     ),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                      color: isComplete
-                          ? const Color(0xFFFFB300)
-                          : theme.colorScheme.primary,
-                      minHeight: 6,
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: <Widget>[
+                  Text(
+                    '${golfer.caughtCount}',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    '/ $total',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: <Widget>[
-                Text(
-                  '${golfer.caughtCount}',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  '/ $total',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -419,16 +443,21 @@ class _GolferBogeydexScreenState extends State<GolferBogeydexScreen> {
     SupabaseService()
         .fetchGolferCaughtDexNumbers(widget.golfer.userId)
         .then((numbers) {
-      if (mounted) {
-        setState(() {
-          _caughtDexNumbers = numbers;
-          _tag = golferTagForCaughtDex(numbers);
-          _loading = false;
+          if (mounted) {
+            setState(() {
+              _caughtDexNumbers = numbers;
+              _tag = golferTagForCaughtDex(numbers);
+              _loading = false;
+            });
+          }
+        })
+        .catchError((_) {
+          if (mounted)
+            setState(() {
+              _caughtDexNumbers = {};
+              _loading = false;
+            });
         });
-      }
-    }).catchError((_) {
-      if (mounted) setState(() { _caughtDexNumbers = {}; _loading = false; });
-    });
   }
 
   @override
@@ -457,10 +486,13 @@ class _GolferBogeydexScreenState extends State<GolferBogeydexScreen> {
                   const SizedBox(width: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.secondary
-                          .withValues(alpha: 0.15),
+                      color: theme.colorScheme.secondary.withValues(
+                        alpha: 0.15,
+                      ),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -490,8 +522,13 @@ class _GolferBogeydexScreenState extends State<GolferBogeydexScreen> {
               itemCount: firstGenBogeybeast.length,
               itemBuilder: (context, index) {
                 final BogeybeastSpecies bogeybeast = firstGenBogeybeast[index];
-                final bool caught = _caughtDexNumbers!.contains(bogeybeast.dexNumber);
-                return _GolferBogeydexTile(bogeybeast: bogeybeast, caught: caught);
+                final bool caught = _caughtDexNumbers!.contains(
+                  bogeybeast.dexNumber,
+                );
+                return _GolferBogeydexTile(
+                  bogeybeast: bogeybeast,
+                  caught: caught,
+                );
               },
             ),
     );
@@ -553,12 +590,17 @@ class _GolferBogeydexTile extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: caught
-                      ? BogeybeastArt(assetPath: bogeybeast.assetPath, height: 100)
+                      ? BogeybeastArt(
+                          assetPath: bogeybeast.assetPath,
+                          height: 100,
+                        )
                       : Center(
                           child: Icon(
                             Icons.pets,
                             size: 48,
-                            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                            color: theme.colorScheme.outlineVariant.withValues(
+                              alpha: 0.3,
+                            ),
                           ),
                         ),
                 ),

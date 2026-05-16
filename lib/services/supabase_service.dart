@@ -53,8 +53,7 @@ class SupabaseService {
 
   Future<void> signOut() => _client.auth.signOut();
 
-  Stream<AuthState> get onAuthStateChange =>
-      _client.auth.onAuthStateChange;
+  Stream<AuthState> get onAuthStateChange => _client.auth.onAuthStateChange;
 
   // ── Profiles ────────────────────────────────────────────────────────
 
@@ -73,10 +72,9 @@ class SupabaseService {
   }
 
   Future<void> upsertGolferName(String name) async {
-    await _client.from('profiles').upsert(
-      {'golfer_name': name},
-      onConflict: 'user_id',
-    );
+    await _client.from('profiles').upsert({
+      'golfer_name': name,
+    }, onConflict: 'user_id');
   }
 
   Future<String?> fetchGolferSprite() async {
@@ -94,9 +92,21 @@ class SupabaseService {
   }
 
   Future<void> updateGolferSprite(String? sprite) async {
-    await _client.from('profiles').update(
-      {'golfer_sprite': sprite},
-    ).eq('user_id', currentUserId!);
+    await _client
+        .from('profiles')
+        .update({'golfer_sprite': sprite})
+        .eq('user_id', currentUserId!);
+  }
+
+  Future<String?> fetchGolferSpriteForUser(String userId) async {
+    final List<Map<String, dynamic>> rows = await _client
+        .from('profiles')
+        .select('golfer_sprite')
+        .eq('user_id', userId)
+        .limit(1);
+
+    if (rows.isEmpty) return null;
+    return rows.first['golfer_sprite'] as String?;
   }
 
   Future<({String? team, DateTime? changedAt})> fetchGolferTeam() async {
@@ -120,9 +130,13 @@ class SupabaseService {
   }
 
   Future<void> updateGolferTeam(String? team) async {
-    await _client.from('profiles').update(
-      {'golfer_team': team, 'team_changed_at': DateTime.now().toUtc().toIso8601String()},
-    ).eq('user_id', currentUserId!);
+    await _client
+        .from('profiles')
+        .update({
+          'golfer_team': team,
+          'team_changed_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('user_id', currentUserId!);
   }
 
   Future<String?> fetchHomeCourseId() async {
@@ -140,21 +154,25 @@ class SupabaseService {
   }
 
   Future<void> setHomeCourse(String courseId) async {
-    await _client.from('profiles').update(
-      {'home_course_id': courseId},
-    ).eq('user_id', currentUserId!);
+    await _client
+        .from('profiles')
+        .update({'home_course_id': courseId})
+        .eq('user_id', currentUserId!);
   }
 
   Future<List<GolferProfile>> fetchAllGolfers() async {
     final List<Map<String, dynamic>> profiles = await _client
         .from('profiles')
-        .select('user_id, golfer_name, home_course_id, golfer_team, golfer_sprite')
+        .select(
+          'user_id, golfer_name, home_course_id, golfer_team, golfer_sprite',
+        )
         .order('created_at');
 
     if (profiles.isEmpty) return <GolferProfile>[];
 
-    final List<Map<String, dynamic>> catchCounts = await _client
-        .rpc('get_golfer_catch_counts');
+    final List<Map<String, dynamic>> catchCounts = await _client.rpc(
+      'get_golfer_catch_counts',
+    );
 
     final Map<String, int> countMap = <String, int>{};
     for (final row in catchCounts) {
@@ -171,8 +189,7 @@ class SupabaseService {
         golferTeam: p['golfer_team'] as String?,
         golferSprite: p['golfer_sprite'] as String?,
       );
-    }).toList()
-      ..sort((a, b) => b.caughtCount.compareTo(a.caughtCount)));
+    }).toList()..sort((a, b) => b.caughtCount.compareTo(a.caughtCount)));
   }
 
   Future<Set<int>> fetchGolferCaughtDexNumbers(String userId) async {
@@ -212,15 +229,19 @@ class SupabaseService {
         final Map<String, dynamic> layout = switch (rawLayout) {
           final Map<String, dynamic> m => m,
           final Map m => Map<String, dynamic>.from(m),
-          _ => throw FormatException('catalog_courses.layout must be a JSON object'),
+          _ => throw FormatException(
+            'catalog_courses.layout must be a JSON object',
+          ),
         };
-        courses.add(GolfCourse.fromCatalogRow(
-          id: row['id'] as String,
-          name: row['name'] as String,
-          layout: layout,
-          lat: (row['lat'] as num?)?.toDouble(),
-          lng: (row['lng'] as num?)?.toDouble(),
-        ));
+        courses.add(
+          GolfCourse.fromCatalogRow(
+            id: row['id'] as String,
+            name: row['name'] as String,
+            layout: layout,
+            lat: (row['lat'] as num?)?.toDouble(),
+            lng: (row['lng'] as num?)?.toDouble(),
+          ),
+        );
       } catch (e, st) {
         debugPrint('Skipping catalog course row ${row['id']}: $e\n$st');
       }
@@ -236,28 +257,31 @@ class SupabaseService {
         .select()
         .order('created_at');
 
-    return rows.map((row) {
-      final List<dynamic> parsRaw = row['pars'] as List<dynamic>;
-      final List<int> pars = parsRaw.map((e) => (e as num).toInt()).toList();
+    return rows
+        .map((row) {
+          final List<dynamic> parsRaw = row['pars'] as List<dynamic>;
+          final List<int> pars = parsRaw
+              .map((e) => (e as num).toInt())
+              .toList();
 
-      return GolfCourse(
-        id: row['id'] as String,
-        name: row['name'] as String,
-        loops: <CourseLoop>[
-          CourseLoop(
-            name: '',
-            holes: pars.map((int p) => CourseHole(par: p)).toList(growable: false),
-          ),
-        ],
-      );
-    }).toList(growable: false);
+          return GolfCourse(
+            id: row['id'] as String,
+            name: row['name'] as String,
+            loops: <CourseLoop>[
+              CourseLoop(
+                name: '',
+                holes: pars
+                    .map((int p) => CourseHole(par: p))
+                    .toList(growable: false),
+              ),
+            ],
+          );
+        })
+        .toList(growable: false);
   }
 
   Future<void> insertUserCourse(String name, List<int> pars) async {
-    await _client.from('user_courses').insert({
-      'name': name,
-      'pars': pars,
-    });
+    await _client.from('user_courses').insert({'name': name, 'pars': pars});
   }
 
   // ── Caught Bogeybeast ──────────────────────────────────────────────────
@@ -281,8 +305,9 @@ class SupabaseService {
         .select('id')
         .eq('user_id', uid);
 
-    final List<dynamic> roundIds =
-        roundRows.map((Map<String, dynamic> r) => r['id']).toList();
+    final List<dynamic> roundIds = roundRows
+        .map((Map<String, dynamic> r) => r['id'])
+        .toList();
 
     // PostgREST `in.()` with an empty list is invalid; skip when there are no rounds.
     if (roundIds.isNotEmpty) {
@@ -305,10 +330,9 @@ class SupabaseService {
   }
 
   Future<void> insertCaughtBogeybeast(int dexNumber) async {
-    await _client.from('caught_bogeybeast').upsert(
-      {'dex_number': dexNumber},
-      onConflict: 'user_id,dex_number',
-    );
+    await _client.from('caught_bogeybeast').upsert({
+      'dex_number': dexNumber,
+    }, onConflict: 'user_id,dex_number');
   }
 
   // ── Clubs (bag) ────────────────────────────────────────────────────
@@ -319,42 +343,52 @@ class SupabaseService {
         .select()
         .order('sort_order');
 
-    return rows.map((Map<String, dynamic> r) => Club(
-      id: r['id'] as String,
-      name: r['name'] as String,
-      carryDistance: r['carry_distance'] as int?,
-      totalDistance: r['total_distance'] as int?,
-    )).toList();
+    return rows
+        .map(
+          (Map<String, dynamic> r) => Club(
+            id: r['id'] as String,
+            name: r['name'] as String,
+            carryDistance: r['carry_distance'] as int?,
+            totalDistance: r['total_distance'] as int?,
+          ),
+        )
+        .toList();
   }
 
   Future<List<Club>> seedDefaultClubs() async {
     final List<Club> defaults = Club.defaults;
     final List<Map<String, dynamic>> rows = <Map<String, dynamic>>[];
     for (int i = 0; i < defaults.length; i++) {
-      rows.add(<String, dynamic>{
-        'name': defaults[i].name,
-        'sort_order': i,
-      });
+      rows.add(<String, dynamic>{'name': defaults[i].name, 'sort_order': i});
     }
-    final List<Map<String, dynamic>> inserted =
-        await _client.from('clubs').insert(rows).select();
+    final List<Map<String, dynamic>> inserted = await _client
+        .from('clubs')
+        .insert(rows)
+        .select();
 
-    return inserted.map((Map<String, dynamic> r) => Club(
-      id: r['id'] as String,
-      name: r['name'] as String,
-      carryDistance: r['carry_distance'] as int?,
-      totalDistance: r['total_distance'] as int?,
-    )).toList();
+    return inserted
+        .map(
+          (Map<String, dynamic> r) => Club(
+            id: r['id'] as String,
+            name: r['name'] as String,
+            carryDistance: r['carry_distance'] as int?,
+            totalDistance: r['total_distance'] as int?,
+          ),
+        )
+        .toList();
   }
 
   Future<Club> insertClub(Club club, int sortOrder) async {
-    final Map<String, dynamic> row =
-        await _client.from('clubs').insert(<String, dynamic>{
-      'name': club.name,
-      'carry_distance': club.carryDistance,
-      'total_distance': club.totalDistance,
-      'sort_order': sortOrder,
-    }).select().single();
+    final Map<String, dynamic> row = await _client
+        .from('clubs')
+        .insert(<String, dynamic>{
+          'name': club.name,
+          'carry_distance': club.carryDistance,
+          'total_distance': club.totalDistance,
+          'sort_order': sortOrder,
+        })
+        .select()
+        .single();
 
     return Club(
       id: row['id'] as String,
@@ -365,11 +399,14 @@ class SupabaseService {
   }
 
   Future<void> updateClub(Club club) async {
-    await _client.from('clubs').update(<String, dynamic>{
-      'name': club.name,
-      'carry_distance': club.carryDistance,
-      'total_distance': club.totalDistance,
-    }).eq('id', club.id!);
+    await _client
+        .from('clubs')
+        .update(<String, dynamic>{
+          'name': club.name,
+          'carry_distance': club.carryDistance,
+          'total_distance': club.totalDistance,
+        })
+        .eq('id', club.id!);
   }
 
   Future<void> deleteClub(String clubId) async {
@@ -394,40 +431,44 @@ class SupabaseService {
           .eq('round_id', roundId)
           .order('hole_number');
 
-      final List<HoleResult> holes = holeRows.map((h) {
-        final int dex = h['bogeybeast_dex'] as int;
-        final species = dex == 0
-            ? battleSentinelBogeybeast
-            : firstGenBogeybeast.firstWhere((p) => p.dexNumber == dex);
+      final List<HoleResult> holes = holeRows
+          .map((h) {
+            final int dex = h['bogeybeast_dex'] as int;
+            final species = dex == 0
+                ? battleSentinelBogeybeast
+                : firstGenBogeybeast.firstWhere((p) => p.dexNumber == dex);
 
-        return HoleResult(
-          holeNumber: h['hole_number'] as int,
-          par: h['par'] as int,
-          strokes: h['strokes'] as int,
-          bogeybeast: species,
-          score: GolfScore.values.firstWhere(
-            (s) => s.name == h['score'],
-            orElse: () => GolfScore.par,
-          ),
-          catchChance: h['catch_chance'] as int,
-          caught: h['caught'] as bool,
-          stats: HoleStats(
-            onePutt: h['on_putt'] as bool,
-            bunker: h['bunker'] as bool,
-            water: h['water'] as bool,
-            rough: h['rough'] as bool,
-          ),
-        );
-      }).toList(growable: false);
+            return HoleResult(
+              holeNumber: h['hole_number'] as int,
+              par: h['par'] as int,
+              strokes: h['strokes'] as int,
+              bogeybeast: species,
+              score: GolfScore.values.firstWhere(
+                (s) => s.name == h['score'],
+                orElse: () => GolfScore.par,
+              ),
+              catchChance: h['catch_chance'] as int,
+              caught: h['caught'] as bool,
+              stats: HoleStats(
+                onePutt: h['on_putt'] as bool,
+                bunker: h['bunker'] as bool,
+                water: h['water'] as bool,
+                rough: h['rough'] as bool,
+              ),
+            );
+          })
+          .toList(growable: false);
 
-      summaries.add(GolfRoundSummary(
-        id: roundId,
-        completedAt: DateTime.parse(roundRow['completed_at'] as String),
-        holeCount: roundRow['hole_count'] as int,
-        holes: holes,
-        courseName: roundRow['course_name'] as String?,
-        isBattle: (roundRow['round_type'] as String?) == 'battle',
-      ));
+      summaries.add(
+        GolfRoundSummary(
+          id: roundId,
+          completedAt: DateTime.parse(roundRow['completed_at'] as String),
+          holeCount: roundRow['hole_count'] as int,
+          holes: holes,
+          courseName: roundRow['course_name'] as String?,
+          isBattle: (roundRow['round_type'] as String?) == 'battle',
+        ),
+      );
     }
 
     return summaries;
@@ -439,32 +480,37 @@ class SupabaseService {
   }
 
   Future<void> insertRound(GolfRoundSummary summary) async {
-    final Map<String, dynamic> roundRow =
-        await _client.from('rounds').insert({
-      'hole_count': summary.holeCount,
-      'completed_at': summary.completedAt.toUtc().toIso8601String(),
-      if (summary.isBattle) 'round_type': 'battle',
-      if (summary.courseName != null) 'course_name': summary.courseName,
-    }).select().single();
+    final Map<String, dynamic> roundRow = await _client
+        .from('rounds')
+        .insert({
+          'hole_count': summary.holeCount,
+          'completed_at': summary.completedAt.toUtc().toIso8601String(),
+          if (summary.isBattle) 'round_type': 'battle',
+          if (summary.courseName != null) 'course_name': summary.courseName,
+        })
+        .select()
+        .single();
 
     final String roundId = roundRow['id'] as String;
 
-    final List<Map<String, dynamic>> holeRows = summary.holes.map((h) {
-      return <String, dynamic>{
-        'round_id': roundId,
-        'hole_number': h.holeNumber,
-        'par': h.par,
-        'strokes': h.strokes,
-        'score': h.score.name,
-        'catch_chance': h.catchChance,
-        'caught': h.caught,
-        'bogeybeast_dex': h.bogeybeast.dexNumber,
-        'on_putt': h.stats.onePutt,
-        'bunker': h.stats.bunker,
-        'water': h.stats.water,
-        'rough': h.stats.rough,
-      };
-    }).toList(growable: false);
+    final List<Map<String, dynamic>> holeRows = summary.holes
+        .map((h) {
+          return <String, dynamic>{
+            'round_id': roundId,
+            'hole_number': h.holeNumber,
+            'par': h.par,
+            'strokes': h.strokes,
+            'score': h.score.name,
+            'catch_chance': h.catchChance,
+            'caught': h.caught,
+            'bogeybeast_dex': h.bogeybeast.dexNumber,
+            'on_putt': h.stats.onePutt,
+            'bunker': h.stats.bunker,
+            'water': h.stats.water,
+            'rough': h.stats.rough,
+          };
+        })
+        .toList(growable: false);
 
     await _client.from('hole_results').insert(holeRows);
   }
@@ -472,8 +518,9 @@ class SupabaseService {
   // ── Course Leaders ───────────────────────────────────────────────────
 
   Future<Map<String, CourseLeader>> fetchCourseLeaders() async {
-    final List<Map<String, dynamic>> rows =
-        await _client.from('course_leaders').select();
+    final List<Map<String, dynamic>> rows = await _client
+        .from('course_leaders')
+        .select();
 
     final Map<String, CourseLeader> map = {};
     for (final row in rows) {
@@ -487,7 +534,7 @@ class SupabaseService {
     return map;
   }
 
-  Future<Map<String, int>> fetchGymOwnershipCounts() async {
+  Future<Map<String, int>> fetchCourseLeadershipCounts() async {
     final List<Map<String, dynamic>> rows = await _client
         .from('course_leaders')
         .select('user_id')
@@ -504,9 +551,10 @@ class SupabaseService {
   // ── Player HCP ─────────────────────────────────────────────────────
 
   Future<void> updateHcp(int hcp) async {
-    await _client.from('profiles').update(
-      {'hcp': hcp},
-    ).eq('user_id', currentUserId!);
+    await _client
+        .from('profiles')
+        .update({'hcp': hcp})
+        .eq('user_id', currentUserId!);
   }
 
   Future<double?> fetchHcpOverride() async {
@@ -525,8 +573,9 @@ class SupabaseService {
   }
 
   Future<void> updateHcpOverride(double? hcp) async {
-    await _client.from('profiles').update(
-      {'hcp_override': hcp},
-    ).eq('user_id', currentUserId!);
+    await _client
+        .from('profiles')
+        .update({'hcp_override': hcp})
+        .eq('user_id', currentUserId!);
   }
 }

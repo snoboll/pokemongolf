@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../app.dart';
 import '../models/battle_models.dart';
 import '../models/golf_score.dart';
 import '../state/battle_store.dart';
+import '../widgets/battle_player_widgets.dart';
 import '../widgets/score_picker.dart';
 import 'battle_result_screen.dart';
 
@@ -50,7 +52,9 @@ class _BattleRoundScreenState extends State<BattleRoundScreen>
       builder: (context, _) {
         final battle = store.watchedBattle;
         if (battle == null) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         if (battle.isCompleted && _pendingEvent == null) {
@@ -60,12 +64,28 @@ class _BattleRoundScreenState extends State<BattleRoundScreen>
         }
 
         final uid = store.currentUserId!;
+        final golfStore = BogeybeastGolfScope.of(context);
         final isChallenger = battle.challengerId == uid;
-        final myName = isChallenger ? battle.challengerName : (battle.opponentName ?? 'You');
-        final theirName = isChallenger ? (battle.opponentName ?? 'Opponent') : battle.challengerName;
+        final myName = isChallenger
+            ? battle.challengerName
+            : (battle.opponentName ?? 'You');
+        final theirName = isChallenger
+            ? (battle.opponentName ?? 'Opponent')
+            : battle.challengerName;
+        final myUserId = isChallenger ? battle.challengerId : battle.opponentId;
+        final theirUserId = isChallenger
+            ? battle.opponentId
+            : battle.challengerId;
+        final theirSprite = battle.isLeaderChallenge && isChallenger
+            ? golfStore.leaderForCourse(battle.courseId).golferSprite
+            : null;
 
-        final myTeam = isChallenger ? battle.currentChallengerTeam : battle.currentOpponentTeam;
-        final theirTeam = isChallenger ? battle.currentOpponentTeam : battle.currentChallengerTeam;
+        final myTeam = isChallenger
+            ? battle.currentChallengerTeam
+            : battle.currentOpponentTeam;
+        final theirTeam = isChallenger
+            ? battle.currentOpponentTeam
+            : battle.currentChallengerTeam;
         final resolvedHoles = battle.resolvedHoles;
         final myNextHole = battle.myNextHole(isChallenger);
         final isWaiting = battle.isWaiting(isChallenger);
@@ -76,10 +96,20 @@ class _BattleRoundScreenState extends State<BattleRoundScreen>
           appBar: AppBar(
             title: Column(
               children: [
-                Text(battle.courseName,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-                Text('Hole $currentHole/${battle.holeCount}',
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                Text(
+                  battle.courseName,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  'Hole $currentHole/${battle.holeCount}',
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ],
             ),
             centerTitle: true,
@@ -96,180 +126,225 @@ class _BattleRoundScreenState extends State<BattleRoundScreen>
             children: [
               // ── Tab 0: Battle ──────────────────────────────────────────
               SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ── Team HP bars ───────────────────────────────────────────
-                _TeamHpSection(
-                  label: myName,
-                  team: myTeam,
-                  isMe: true,
-                  activeIndex: _activeIndex(myTeam),
-                ),
-                const SizedBox(height: 8),
-                _TeamHpSection(
-                  label: theirName,
-                  team: theirTeam,
-                  isMe: false,
-                  activeIndex: _activeIndex(theirTeam),
-                ),
-                const SizedBox(height: 28),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // ── Team HP bars ───────────────────────────────────────────
+                    _TeamHpSection(
+                      label: myName,
+                      userId: myUserId,
+                      team: myTeam,
+                      isMe: true,
+                      activeIndex: _activeIndex(myTeam),
+                    ),
+                    const SizedBox(height: 8),
+                    _TeamHpSection(
+                      label: theirName,
+                      userId: theirUserId,
+                      avatarSprite: theirSprite,
+                      team: theirTeam,
+                      isMe: false,
+                      activeIndex: _activeIndex(theirTeam),
+                    ),
+                    const SizedBox(height: 28),
 
-                // ── Pending event (show until dismissed) ───────────────────
-                if (_pendingEvent != null) ...[
-                  _HoleResultCard(
-                    event:          _pendingEvent!,
-                    isChallenger:   isChallenger,
-                    myName:         myName,
-                    theirName:      theirName,
-                    onDismiss: () {
-                      setState(() {
-                        _pendingEvent = null;
-                        _selectedScore = GolfScore.par;
-                      });
-                      if (battle.isCompleted) _goToResult(context, store);
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                ] else if (battle.isPending) ...[
-                  // ── Waiting for opponent to accept ─────────────────────────
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
-                    ),
-                    child: Column(
-                      children: [
-                        SizedBox(
-                          width: 20, height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                    // ── Pending event (show until dismissed) ───────────────────
+                    if (_pendingEvent != null) ...[
+                      _HoleResultCard(
+                        event: _pendingEvent!,
+                        isChallenger: isChallenger,
+                        myName: myName,
+                        theirName: theirName,
+                        onDismiss: () {
+                          setState(() {
+                            _pendingEvent = null;
+                            _selectedScore = GolfScore.par;
+                          });
+                          if (battle.isCompleted) _goToResult(context, store);
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                    ] else if (battle.isPending) ...[
+                      // ── Waiting for opponent to accept ─────────────────────────
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest
+                              .withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant.withValues(
+                              alpha: 0.5,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 14),
-                        Text(
-                          'Waiting for $theirName to accept...',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Share your golfer name so they can find the challenge.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                ] else ...[
-                  // ── Hole info ──────────────────────────────────────────────
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        child: Column(
                           children: [
-                            Text('Hole $currentHole',
-                                style: theme.textTheme.headlineSmall
-                                    ?.copyWith(fontWeight: FontWeight.w800)),
-                            const SizedBox(width: 16),
-                            Text('Par $par',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.w700,
-                                )),
-                          ],
-                        ),
-                        if (isWaiting) ...[
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.6,
                                 ),
                               ),
-                              const SizedBox(width: 10),
-                              Text(
-                                'Waiting for $theirName...',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              'Waiting for $theirName to accept...',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.7,
+                                ),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Share your golfer name so they can find the challenge.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.4,
+                                ),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      // ── Hole info ──────────────────────────────────────────────
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest
+                              .withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Hole $currentHole',
+                                  style: theme.textTheme.headlineSmall
+                                      ?.copyWith(fontWeight: FontWeight.w800),
+                                ),
+                                const SizedBox(width: 16),
+                                Text(
+                                  'Par $par',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (isWaiting) ...[
+                              const SizedBox(height: 20),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: theme.colorScheme.primary
+                                          .withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'Waiting for $theirName...',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ] else ...[
+                              const SizedBox(height: 20),
+                              ScorePicker(
+                                par: par,
+                                selected: _selectedScore,
+                                onChanged: (s) =>
+                                    setState(() => _selectedScore = s),
+                              ),
+                              const SizedBox(height: 20),
+                              SizedBox(
+                                width: double.infinity,
+                                child: FilledButton.icon(
+                                  onPressed: _submitting
+                                      ? null
+                                      : () => _submit(
+                                          context,
+                                          store,
+                                          battle,
+                                          myNextHole,
+                                          par,
+                                        ),
+                                  icon: _submitting
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Icon(Icons.send_rounded),
+                                  label: Text(
+                                    _submitting
+                                        ? 'Submitting...'
+                                        : 'Submit Hole $myNextHole',
+                                  ),
                                 ),
                               ),
                             ],
-                          ),
-                        ] else ...[
-                          const SizedBox(height: 20),
-                          ScorePicker(
-                            par: par,
-                            selected: _selectedScore,
-                            onChanged: (s) => setState(() => _selectedScore = s),
-                          ),
-                          const SizedBox(height: 20),
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton.icon(
-                              onPressed: _submitting
-                                  ? null
-                                  : () => _submit(context, store, battle, myNextHole, par),
-                              icon: _submitting
-                                  ? const SizedBox(width: 18, height: 18,
-                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                  : const Icon(Icons.send_rounded),
-                              label: Text(_submitting ? 'Submitting...' : 'Submit Hole $myNextHole'),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
 
-                // ── Hole log ───────────────────────────────────────────────
-                if (battle.holeLog.isNotEmpty) ...[
-                  Text('History',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                      )),
-                  const SizedBox(height: 8),
-                  for (final event in battle.holeLog.reversed)
-                    _HoleLogTile(
-                      event:        event,
-                      isChallenger: isChallenger,
-                      myName:       myName,
-                      theirName:    theirName,
-                    ),
-                ],
-              ],
-            ),
-          ),
+                    // ── Hole log ───────────────────────────────────────────────
+                    if (battle.holeLog.isNotEmpty) ...[
+                      Text(
+                        'History',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      for (final event in battle.holeLog.reversed)
+                        _HoleLogTile(
+                          event: event,
+                          isChallenger: isChallenger,
+                          myName: myName,
+                          theirName: theirName,
+                        ),
+                    ],
+                  ],
+                ),
+              ),
               // ── Tab 1: Scorecard ───────────────────────────────────────
               _BattleScorecardTab(
-                battle:       battle,
+                battle: battle,
                 isChallenger: isChallenger,
-                myName:       myName,
-                theirName:    theirName,
+                myName: myName,
+                theirName: theirName,
               ),
             ],
           ),
@@ -294,14 +369,14 @@ class _BattleRoundScreenState extends State<BattleRoundScreen>
       if (battle.isLeaderChallenge) {
         updated = await store.submitLeaderChallengeScore(
           battleId: widget.battleId,
-          hole:     hole,
-          strokes:  strokes,
+          hole: hole,
+          strokes: strokes,
         );
       } else {
         updated = await store.submitHoleScore(
           battleId: widget.battleId,
-          hole:     hole,
-          strokes:  strokes,
+          hole: hole,
+          strokes: strokes,
         );
       }
 
@@ -335,12 +410,16 @@ class _BattleRoundScreenState extends State<BattleRoundScreen>
 class _TeamHpSection extends StatelessWidget {
   const _TeamHpSection({
     required this.label,
+    this.userId,
+    this.avatarSprite,
     required this.team,
     required this.isMe,
     required this.activeIndex,
   });
 
   final String label;
+  final String? userId;
+  final String? avatarSprite;
   final List<BattleBogeybeast> team;
   final bool isMe;
   final int activeIndex;
@@ -365,24 +444,52 @@ class _TeamHpSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: isMe
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              )),
+          Row(
+            children: <Widget>[
+              BattlePlayerAvatar(
+                name: label,
+                userId: userId,
+                sprite: avatarSprite,
+                size: 42,
+                isMe: isMe,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      label,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: isMe
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    BattleTeamPreview(team: team, size: 24),
+                  ],
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 10),
           if (team.isEmpty)
-            Text('No team data yet',
-                style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4)))
+            Text(
+              'No team data yet',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
+            )
           else
             for (int i = 0; i < team.length; i++)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: _BogeybeastHpBar(
-                  bogeybeast:  team[i],
+                  bogeybeast: team[i],
                   isActive: i == activeIndex,
                 ),
               ),
@@ -406,8 +513,8 @@ class _BogeybeastHpBar extends StatelessWidget {
     final color = frac > 0.5
         ? theme.colorScheme.primary
         : frac > 0.25
-            ? const Color(0xFFFFD700)
-            : theme.colorScheme.error;
+        ? const Color(0xFFFFD700)
+        : theme.colorScheme.error;
 
     return Opacity(
       opacity: bogeybeast.isAlive ? 1.0 : 0.4,
@@ -417,8 +524,13 @@ class _BogeybeastHpBar extends StatelessWidget {
           SizedBox(
             width: 12,
             child: isActive
-                ? Icon(Icons.play_arrow,
-                    size: 12, color: bogeybeast.isAlive ? const Color(0xFFFFD700) : Colors.transparent)
+                ? Icon(
+                    Icons.play_arrow,
+                    size: 12,
+                    color: bogeybeast.isAlive
+                        ? const Color(0xFFFFD700)
+                        : Colors.transparent,
+                  )
                 : null,
           ),
           SizedBox(
@@ -438,9 +550,12 @@ class _BogeybeastHpBar extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(bogeybeast.name,
-                        style: theme.textTheme.labelMedium
-                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      bogeybeast.name,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const Spacer(),
                     Text(
                       bogeybeast.isAlive
@@ -448,7 +563,9 @@ class _BogeybeastHpBar extends StatelessWidget {
                           : 'KO',
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: bogeybeast.isAlive
-                            ? theme.colorScheme.onSurface.withValues(alpha: 0.55)
+                            ? theme.colorScheme.onSurface.withValues(
+                                alpha: 0.55,
+                              )
                             : theme.colorScheme.error,
                         fontWeight: FontWeight.w600,
                       ),
@@ -461,8 +578,8 @@ class _BogeybeastHpBar extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: frac,
                     minHeight: 6,
-                    backgroundColor:
-                        theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    backgroundColor: theme.colorScheme.outlineVariant
+                        .withValues(alpha: 0.3),
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ),
@@ -495,19 +612,28 @@ class _HoleResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final myStrokes = isChallenger ? event.challengerStrokes : event.opponentStrokes;
-    final theirStrokes = isChallenger ? event.opponentStrokes : event.challengerStrokes;
+    final myStrokes = isChallenger
+        ? event.challengerStrokes
+        : event.opponentStrokes;
+    final theirStrokes = isChallenger
+        ? event.opponentStrokes
+        : event.challengerStrokes;
 
-    final iWon = (isChallenger && event.result == BattleHoleResult.challengerWins) ||
+    final iWon =
+        (isChallenger && event.result == BattleHoleResult.challengerWins) ||
         (!isChallenger && event.result == BattleHoleResult.opponentWins);
     final isTie = event.result == BattleHoleResult.tie;
 
     Color headerColor = isTie
         ? theme.colorScheme.onSurface.withValues(alpha: 0.5)
         : iWon
-            ? theme.colorScheme.primary
-            : theme.colorScheme.error;
-    String headline = isTie ? 'Tie — no damage' : iWon ? 'You win the hole!' : '$theirName wins the hole';
+        ? theme.colorScheme.primary
+        : theme.colorScheme.error;
+    String headline = isTie
+        ? 'Tie — no damage'
+        : iWon
+        ? 'You win the hole!'
+        : '$theirName wins the hole';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -519,22 +645,40 @@ class _HoleResultCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Hole ${event.hole}',
-              style: theme.textTheme.labelMedium
-                  ?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
+          Text(
+            'Hole ${event.hole}',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(headline,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w800, color: headerColor)),
+          Text(
+            headline,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: headerColor,
+            ),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
-              _ScorePill(name: myName, strokes: myStrokes, isWinner: iWon && !isTie),
+              _ScorePill(
+                name: myName,
+                strokes: myStrokes,
+                isWinner: iWon && !isTie,
+              ),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 10),
-                child: Text('vs', style: TextStyle(fontWeight: FontWeight.w600)),
+                child: Text(
+                  'vs',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-              _ScorePill(name: theirName, strokes: theirStrokes, isWinner: !iWon && !isTie),
+              _ScorePill(
+                name: theirName,
+                strokes: theirStrokes,
+                isWinner: !iWon && !isTie,
+              ),
             ],
           ),
           if (!isTie) ...[
@@ -554,8 +698,9 @@ class _HoleResultCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               '${event.damage} damage dealt',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w700),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
           const SizedBox(height: 16),
@@ -587,10 +732,12 @@ class _ScorePill extends StatelessWidget {
     final theme = Theme.of(context);
     return Column(
       children: [
-        Text(name,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
-            )),
+        Text(
+          name,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+          ),
+        ),
         const SizedBox(height: 2),
         Text(
           '$strokes',
@@ -616,13 +763,13 @@ class _TypeMultBadge extends StatelessWidget {
     final color = isSuper
         ? const Color(0xFFFF6B35)
         : isResisted
-            ? const Color(0xFF90CAF9)
-            : theme.colorScheme.onSurface.withValues(alpha: 0.4);
+        ? const Color(0xFF90CAF9)
+        : theme.colorScheme.onSurface.withValues(alpha: 0.4);
     final label = isSuper
         ? '${mult.toStringAsFixed(mult == mult.truncate() ? 0 : 1)}× super!'
         : isResisted
-            ? '${mult.toStringAsFixed(mult == mult.truncate() ? 0 : 1)}× resisted'
-            : '1× neutral';
+        ? '${mult.toStringAsFixed(mult == mult.truncate() ? 0 : 1)}× resisted'
+        : '1× neutral';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -631,9 +778,14 @@ class _TypeMultBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withValues(alpha: 0.4), width: 0.5),
       ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 10, fontWeight: FontWeight.w700, color: color)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
     );
   }
 }
@@ -657,17 +809,22 @@ class _HoleLogTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isTie = event.result == BattleHoleResult.tie;
-    final iWon = (isChallenger && event.result == BattleHoleResult.challengerWins) ||
+    final iWon =
+        (isChallenger && event.result == BattleHoleResult.challengerWins) ||
         (!isChallenger && event.result == BattleHoleResult.opponentWins);
 
     final color = isTie
         ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
         : iWon
-            ? theme.colorScheme.primary
-            : theme.colorScheme.error;
+        ? theme.colorScheme.primary
+        : theme.colorScheme.error;
 
-    final myStrokes = isChallenger ? event.challengerStrokes : event.opponentStrokes;
-    final theirStrokes = isChallenger ? event.opponentStrokes : event.challengerStrokes;
+    final myStrokes = isChallenger
+        ? event.challengerStrokes
+        : event.opponentStrokes;
+    final theirStrokes = isChallenger
+        ? event.opponentStrokes
+        : event.challengerStrokes;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -675,9 +832,12 @@ class _HoleLogTile extends StatelessWidget {
         children: [
           SizedBox(
             width: 56,
-            child: Text('H${event.hole}',
-                style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
+            child: Text(
+              'H${event.hole}',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
           ),
           Container(
             width: 8,
@@ -690,8 +850,8 @@ class _HoleLogTile extends StatelessWidget {
               isTie
                   ? 'Tie ($myStrokes vs $theirStrokes)'
                   : iWon
-                      ? 'Won — dealt ${event.damage} dmg ($myStrokes vs $theirStrokes)'
-                      : 'Lost — took ${event.damage} dmg ($myStrokes vs $theirStrokes)',
+                  ? 'Won — dealt ${event.damage} dmg ($myStrokes vs $theirStrokes)'
+                  : 'Lost — took ${event.damage} dmg ($myStrokes vs $theirStrokes)',
               style: theme.textTheme.bodySmall,
             ),
           ),
@@ -757,9 +917,19 @@ class _BattleScorecardTab extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _ScoreStat(label: myName,    value: '$myTotal',    theme: theme, highlight: myTotal < theirTotal),
-              _ScoreStat(label: 'Par',     value: '$totalPar',   theme: theme),
-              _ScoreStat(label: theirName, value: '$theirTotal', theme: theme, highlight: theirTotal < myTotal),
+              _ScoreStat(
+                label: myName,
+                value: '$myTotal',
+                theme: theme,
+                highlight: myTotal < theirTotal,
+              ),
+              _ScoreStat(label: 'Par', value: '$totalPar', theme: theme),
+              _ScoreStat(
+                label: theirName,
+                value: '$theirTotal',
+                theme: theme,
+                highlight: theirTotal < myTotal,
+              ),
             ],
           ),
         ),
@@ -770,10 +940,23 @@ class _BattleScorecardTab extends StatelessWidget {
           child: Row(
             children: [
               SizedBox(width: 40, child: Text('Hole', style: headerStyle)),
-              SizedBox(width: 36, child: Text('Par',  style: headerStyle)),
-              Expanded(child: Text(myName,    style: headerStyle)),
-              Expanded(child: Text(theirName, style: headerStyle, textAlign: TextAlign.center)),
-              SizedBox(width: 44, child: Text('Result', style: headerStyle, textAlign: TextAlign.right)),
+              SizedBox(width: 36, child: Text('Par', style: headerStyle)),
+              Expanded(child: Text(myName, style: headerStyle)),
+              Expanded(
+                child: Text(
+                  theirName,
+                  style: headerStyle,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(
+                width: 44,
+                child: Text(
+                  'Result',
+                  style: headerStyle,
+                  textAlign: TextAlign.right,
+                ),
+              ),
             ],
           ),
         ),
@@ -796,19 +979,26 @@ class _BattleScorecardTab extends StatelessWidget {
                   theme: theme,
                 );
               }
-              final my    = isChallenger ? event.challengerStrokes : event.opponentStrokes;
-              final their = isChallenger ? event.opponentStrokes   : event.challengerStrokes;
-              final iWon = (isChallenger && event.result == BattleHoleResult.challengerWins) ||
-                  (!isChallenger && event.result == BattleHoleResult.opponentWins);
+              final my = isChallenger
+                  ? event.challengerStrokes
+                  : event.opponentStrokes;
+              final their = isChallenger
+                  ? event.opponentStrokes
+                  : event.challengerStrokes;
+              final iWon =
+                  (isChallenger &&
+                      event.result == BattleHoleResult.challengerWins) ||
+                  (!isChallenger &&
+                      event.result == BattleHoleResult.opponentWins);
               return _ScorecardRow(
-                holeNum:      holeNum,
-                par:          battle.parForHole(holeNum),
-                myStrokes:    my,
+                holeNum: holeNum,
+                par: battle.parForHole(holeNum),
+                myStrokes: my,
                 theirStrokes: their,
-                iWon:         iWon,
-                isTie:        event.result == BattleHoleResult.tie,
-                theme:        theme,
-                showDivider:  holeNum == 9 && battle.holeCount == 18,
+                iWon: iWon,
+                isTie: event.result == BattleHoleResult.tie,
+                theme: theme,
+                showDivider: holeNum == 9 && battle.holeCount == 18,
               );
             },
           ),
@@ -819,7 +1009,12 @@ class _BattleScorecardTab extends StatelessWidget {
 }
 
 class _ScoreStat extends StatelessWidget {
-  const _ScoreStat({required this.label, required this.value, required this.theme, this.highlight = false});
+  const _ScoreStat({
+    required this.label,
+    required this.value,
+    required this.theme,
+    this.highlight = false,
+  });
   final String label;
   final String value;
   final ThemeData theme;
@@ -829,15 +1024,19 @@ class _ScoreStat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: highlight ? theme.colorScheme.primary : null,
-            )),
-        Text(label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
-            )),
+        Text(
+          value,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: highlight ? theme.colorScheme.primary : null,
+          ),
+        ),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+          ),
+        ),
       ],
     );
   }
@@ -885,7 +1084,10 @@ class _ScorecardRow extends StatelessWidget {
     return Column(
       children: [
         if (showDivider)
-          Container(height: 3, color: theme.colorScheme.primary.withValues(alpha: 0.25)),
+          Container(
+            height: 3,
+            color: theme.colorScheme.primary.withValues(alpha: 0.25),
+          ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
           color: holeNum.isOdd
@@ -895,18 +1097,22 @@ class _ScorecardRow extends StatelessWidget {
             children: [
               SizedBox(
                 width: 40,
-                child: Text('$holeNum',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    )),
+                child: Text(
+                  '$holeNum',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
               ),
               SizedBox(
                 width: 36,
-                child: Text('$par',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
-                    )),
+                child: Text(
+                  '$par',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+                  ),
+                ),
               ),
               Expanded(
                 child: Text(
@@ -915,8 +1121,8 @@ class _ScorecardRow extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     color: myStrokes != null
                         ? iWon && !isTie
-                            ? theme.colorScheme.primary
-                            : null
+                              ? theme.colorScheme.primary
+                              : null
                         : dim,
                   ),
                 ),
@@ -929,8 +1135,8 @@ class _ScorecardRow extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     color: theirStrokes != null
                         ? !iWon && !isTie
-                            ? theme.colorScheme.error
-                            : null
+                              ? theme.colorScheme.error
+                              : null
                         : dim,
                   ),
                 ),

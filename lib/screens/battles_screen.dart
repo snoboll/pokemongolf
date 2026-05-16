@@ -5,6 +5,7 @@ import '../models/battle_models.dart';
 import '../models/golf_course.dart';
 import '../services/battle_service.dart';
 import '../state/battle_store.dart';
+import '../widgets/battle_player_widgets.dart';
 import 'team_select_screen.dart';
 import 'battle_round_screen.dart';
 import 'battle_result_screen.dart';
@@ -38,10 +39,7 @@ class _BattleFlowState extends State<BattleFlow> {
 
   @override
   Widget build(BuildContext context) {
-    return BattleScope(
-      notifier: _store,
-      child: const BattlesScreen(),
-    );
+    return BattleScope(notifier: _store, child: const BattlesScreen());
   }
 }
 
@@ -52,15 +50,12 @@ class BattlesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final battleStore  = BattleScope.of(context);
+    final battleStore = BattleScope.of(context);
     final bogeybeastStore = BogeybeastGolfScope.of(context);
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Battle Mode'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Battle Mode'), centerTitle: true),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _newBattle(context, bogeybeastStore, battleStore),
         icon: const Icon(Icons.add),
@@ -75,8 +70,12 @@ class BattlesScreen extends StatelessWidget {
 
           final uid = battleStore.currentUserId;
           final all = battleStore.battles;
-          final mine = all.where((b) => b.challengerId == uid || b.opponentId == uid).toList();
-          final open = all.where((b) => b.isPending && b.challengerId != uid).toList();
+          final mine = all
+              .where((b) => b.challengerId == uid || b.opponentId == uid)
+              .toList();
+          final open = all
+              .where((b) => b.isPending && b.challengerId != uid)
+              .toList();
 
           if (mine.isEmpty && open.isEmpty) {
             return Center(
@@ -85,20 +84,27 @@ class BattlesScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('⚔️',
-                        style: TextStyle(
-                          fontSize: 56,
-                          color: theme.colorScheme.primary.withValues(alpha: 0.6),
-                        )),
+                    Text(
+                      '⚔️',
+                      style: TextStyle(
+                        fontSize: 56,
+                        color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                      ),
+                    ),
                     const SizedBox(height: 16),
-                    Text('No battles yet',
-                        style: theme.textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.w700)),
+                    Text(
+                      'No battles yet',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       'Tap Challenge to invite another golfer.\nPick 3 Bogeybeast and a course.',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -117,9 +123,14 @@ class BattlesScreen extends StatelessWidget {
                   _sectionHeader(theme, 'Open challenges'),
                   for (final b in open)
                     _BattleCard(
-                      battle:      b,
-                      uid:         uid!,
-                      onTap:       () => _openChallenge(context, b, bogeybeastStore, battleStore),
+                      battle: b,
+                      uid: uid!,
+                      onTap: () => _openChallenge(
+                        context,
+                        b,
+                        bogeybeastStore,
+                        battleStore,
+                      ),
                     ),
                   const SizedBox(height: 16),
                 ],
@@ -127,9 +138,9 @@ class BattlesScreen extends StatelessWidget {
                   _sectionHeader(theme, 'My battles'),
                   for (final b in mine)
                     _BattleCard(
-                      battle:      b,
-                      uid:         uid!,
-                      onTap:       () => _openMine(context, b, battleStore),
+                      battle: b,
+                      uid: uid!,
+                      onTap: () => _openMine(context, b, battleStore),
                     ),
                 ],
               ],
@@ -141,35 +152,43 @@ class BattlesScreen extends StatelessWidget {
   }
 
   Widget _sectionHeader(ThemeData theme, String title) => Padding(
-        padding: const EdgeInsets.only(bottom: 8, top: 4),
-        child: Text(title,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-              letterSpacing: 0.8,
-            )),
-      );
+    padding: const EdgeInsets.only(bottom: 8, top: 4),
+    child: Text(
+      title,
+      style: theme.textTheme.labelLarge?.copyWith(
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+        letterSpacing: 0.8,
+      ),
+    ),
+  );
 
-  void _newBattle(BuildContext context, dynamic bogeybeastStore, BattleStore battleStore) async {
+  void _newBattle(
+    BuildContext context,
+    dynamic bogeybeastStore,
+    BattleStore battleStore,
+  ) async {
     final courses = (bogeybeastStore.catalogCourses as List<GolfCourse>)
         .where((c) => c.flatPars.isNotEmpty)
         .toList();
 
     if (courses.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No courses available')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No courses available')));
       return;
     }
 
     // Step 1: pick course + hole count
-    final pick = await showModalBottomSheet<({GolfCourse course, int holeCount})>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => _CoursePickerSheet(courses: courses),
-    );
+    final pick =
+        await showModalBottomSheet<({GolfCourse course, int holeCount})>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (_) => _CoursePickerSheet(courses: courses),
+        );
     if (pick == null || !context.mounted) return;
 
     // Step 2: pick team
@@ -189,28 +208,36 @@ class BattlesScreen extends StatelessWidget {
     try {
       final pars = pick.course.flatPars.take(pick.holeCount).toList();
       final battle = await battleStore.createBattle(
-        courseId:       pick.course.id,
-        courseName:     pick.course.name,
-        holeCount:      pick.holeCount,
-        coursePars:     pars,
-        team:           team,
+        courseId: pick.course.id,
+        courseName: pick.course.name,
+        holeCount: pick.holeCount,
+        coursePars: pars,
+        team: team,
         challengerName: bogeybeastStore.golferName ?? 'Golfer',
       );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Challenge created! Share with ${pick.course.name}')),
+          SnackBar(
+            content: Text('Challenge created! Share with ${pick.course.name}'),
+          ),
         );
         _openMine(context, battle, battleStore);
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
 
-  void _openChallenge(BuildContext context, Battle battle, dynamic bogeybeastStore, BattleStore battleStore) async {
+  void _openChallenge(
+    BuildContext context,
+    Battle battle,
+    dynamic bogeybeastStore,
+    BattleStore battleStore,
+  ) async {
     // Opponent joining: pick team then join
     final team = await Navigator.of(context).push<List<BattleBogeybeast>>(
       MaterialPageRoute(
@@ -228,36 +255,41 @@ class BattlesScreen extends StatelessWidget {
     try {
       final updated = await battleStore.joinBattle(
         battleId: battle.id,
-        team:     team,
+        team: team,
       );
       if (context.mounted) {
         _openMine(context, updated, battleStore);
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
 
   void _openMine(BuildContext context, Battle battle, BattleStore battleStore) {
     if (battle.isCompleted) {
-      Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => BattleScope(
-          notifier: battleStore,
-          child: BattleResultScreen(battleId: battle.id),
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => BattleScope(
+            notifier: battleStore,
+            child: BattleResultScreen(battleId: battle.id),
+          ),
         ),
-      ));
+      );
     } else {
       battleStore.watchBattle(battle.id);
       Navigator.of(context)
-          .push(MaterialPageRoute(
-            builder: (_) => BattleScope(
-              notifier: battleStore,
-              child: BattleRoundScreen(battleId: battle.id),
+          .push(
+            MaterialPageRoute(
+              builder: (_) => BattleScope(
+                notifier: battleStore,
+                child: BattleRoundScreen(battleId: battle.id),
+              ),
             ),
-          ))
+          )
           .then((_) => battleStore.stopWatching());
     }
   }
@@ -285,6 +317,17 @@ class _BattleCard extends StatelessWidget {
         : battle.challengerName;
     final isPending = battle.isPending;
     final isCompleted = battle.isCompleted;
+    final myName = isChallenger
+        ? battle.challengerName
+        : (battle.opponentName ?? 'You');
+    final myUserId = isChallenger ? battle.challengerId : battle.opponentId;
+    final otherUserId = isChallenger ? battle.opponentId : battle.challengerId;
+    final myTeam = isChallenger
+        ? battle.currentChallengerTeam
+        : battle.currentOpponentTeam;
+    final otherTeam = isChallenger
+        ? battle.currentOpponentTeam
+        : battle.currentChallengerTeam;
 
     Color statusColor = theme.colorScheme.primary;
     String statusLabel = 'Active';
@@ -307,44 +350,86 @@ class _BattleCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
+          child: Column(
             children: [
-              const Text('⚔️', style: TextStyle(fontSize: 24)),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isPending && !isChallenger
-                          ? 'From ${battle.challengerName}'
-                          : 'vs $otherName',
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w700),
+              Row(
+                children: [
+                  const Icon(Icons.sports_mma_rounded, size: 24),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isPending && !isChallenger
+                              ? 'From ${battle.challengerName}'
+                              : 'vs $otherName',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${battle.courseName} · ${battle.holeCount} holes',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.55,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${battle.courseName} · ${battle.holeCount} holes',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      statusLabel,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: statusColor,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  statusLabel,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: statusColor,
-                    fontWeight: FontWeight.w700,
                   ),
-                ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  BattlePlayerAvatar(
+                    name: myName,
+                    userId: myUserId,
+                    size: 40,
+                    isMe: true,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: BattleTeamPreview(team: myTeam, size: 30)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      'vs',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.45,
+                        ),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  BattlePlayerAvatar(
+                    name: otherName,
+                    userId: otherUserId,
+                    size: 40,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: BattleTeamPreview(team: otherTeam, size: 30)),
+                ],
               ),
             ],
           ),
@@ -381,14 +466,20 @@ class _CoursePickerSheetState extends State<_CoursePickerSheet> {
         child: Column(
           children: [
             Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: theme.colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(height: 16),
-            Text('Choose course', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              'Choose course',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -417,9 +508,14 @@ class _CoursePickerSheetState extends State<_CoursePickerSheet> {
                   final isSelected = _selected?.id == c.id;
                   return ListTile(
                     title: Text(c.name),
-                    subtitle: Text('Par ${pars.take(_holeCount).reduce((a, b) => a + b)}'),
+                    subtitle: Text(
+                      'Par ${pars.take(_holeCount).reduce((a, b) => a + b)}',
+                    ),
                     trailing: isSelected
-                        ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
+                        ? Icon(
+                            Icons.check_circle,
+                            color: theme.colorScheme.primary,
+                          )
                         : null,
                     onTap: () => setState(() => _selected = c),
                   );
@@ -432,8 +528,9 @@ class _CoursePickerSheetState extends State<_CoursePickerSheet> {
               child: FilledButton(
                 onPressed: _selected == null
                     ? null
-                    : () => Navigator.of(context)
-                        .pop((course: _selected!, holeCount: _holeCount)),
+                    : () => Navigator.of(
+                        context,
+                      ).pop((course: _selected!, holeCount: _holeCount)),
                 child: const Text('Next: Pick Team'),
               ),
             ),

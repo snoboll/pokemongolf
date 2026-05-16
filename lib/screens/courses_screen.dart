@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../app.dart';
+import '../data/first_gen_bogeybeasts.dart';
 import '../models/battle_models.dart';
 import '../models/course_leader.dart';
 import '../models/golf_course.dart';
@@ -11,9 +12,9 @@ import '../models/golfer_team.dart';
 import '../services/battle_service.dart';
 import '../services/supabase_service.dart';
 import '../state/battle_store.dart';
-import 'battle_round_screen.dart';
+import '../widgets/beast_detail_sheet.dart';
 import '../widgets/white_bg_image.dart';
-import 'battles_screen.dart';
+import 'battle_round_screen.dart';
 import 'round_screen.dart';
 import 'team_select_screen.dart';
 
@@ -74,11 +75,19 @@ class _CoursesScreenState extends State<CoursesScreen>
   void _startRound(GolfCourse course) {
     final store = BogeybeastGolfScope.of(context);
 
-    void launch(List<int> pars, {List<({double lat, double lng})?>? greenCoords}) {
-      store.startRound(pars.length, holePars: pars, courseName: course.name, greenCoords: greenCoords);
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => const RoundScreen()),
+    void launch(
+      List<int> pars, {
+      List<({double lat, double lng})?>? greenCoords,
+    }) {
+      store.startRound(
+        pars.length,
+        holePars: pars,
+        courseName: course.name,
+        greenCoords: greenCoords,
       );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const RoundScreen()));
     }
 
     if (course.hasMultipleLoops) {
@@ -90,10 +99,14 @@ class _CoursesScreenState extends State<CoursesScreen>
         ),
         builder: (_) => _LoopPickerSheet(
           course: course,
-          onStart: (List<int> pars, {List<({double lat, double lng})?>? greenCoords}) {
-            Navigator.of(context).pop();
-            launch(pars, greenCoords: greenCoords);
-          },
+          onStart:
+              (
+                List<int> pars, {
+                List<({double lat, double lng})?>? greenCoords,
+              }) {
+                Navigator.of(context).pop();
+                launch(pars, greenCoords: greenCoords);
+              },
         ),
       );
       return;
@@ -109,10 +122,14 @@ class _CoursesScreenState extends State<CoursesScreen>
         ),
         builder: (_) => _HoleCountSheet(
           course: course,
-          onStart: (List<int> selectedPars, {List<({double lat, double lng})?>? greenCoords}) {
-            Navigator.of(context).pop();
-            launch(selectedPars, greenCoords: greenCoords);
-          },
+          onStart:
+              (
+                List<int> selectedPars, {
+                List<({double lat, double lng})?>? greenCoords,
+              }) {
+                Navigator.of(context).pop();
+                launch(selectedPars, greenCoords: greenCoords);
+              },
         ),
       );
       return;
@@ -149,17 +166,17 @@ class _CoursesScreenState extends State<CoursesScreen>
     try {
       final battleStore = BattleStore(service: BattleService());
       final battle = await battleStore.createBattle(
-        courseId:       course.id,
-        courseName:     course.name,
-        holeCount:      holeCount,
-        coursePars:     selectedPars,
-        team:           team,
+        courseId: course.id,
+        courseName: course.name,
+        holeCount: holeCount,
+        coursePars: selectedPars,
+        team: team,
         challengerName: store.golferName ?? 'Golfer',
       );
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('PvP challenge created at ${course.name}!')),
+        SnackBar(content: Text('Battle created at ${course.name}!')),
       );
 
       battleStore.watchBattle(battle.id);
@@ -173,9 +190,9 @@ class _CoursesScreenState extends State<CoursesScreen>
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -186,7 +203,9 @@ class _CoursesScreenState extends State<CoursesScreen>
 
     if (store.caughtDexNumbers.length < 3) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Catch at least 3 Bogeybeast to challenge a leader')),
+        const SnackBar(
+          content: Text('Catch at least 3 Bogeybeast to challenge a leader'),
+        ),
       );
       return;
     }
@@ -209,36 +228,40 @@ class _CoursesScreenState extends State<CoursesScreen>
     try {
       final battleStore = BattleStore(service: BattleService());
       final battle = await battleStore.createLeaderChallenge(
-        courseId:       course.id,
-        courseName:     course.name,
-        holeCount:      holeCount,
-        coursePars:     selectedPars,
-        team:           team,
+        courseId: course.id,
+        courseName: course.name,
+        holeCount: holeCount,
+        coursePars: selectedPars,
+        team: team,
         challengerName: store.golferName ?? 'Golfer',
-        leaderName:     leader.leaderName,
-        leaderTeam:     leader.team,
-        leaderHcp:      leader.hcp,
-        leaderUserId:   leader.userId,
+        leaderName: leader.leaderName,
+        leaderTeam: leader.team,
+        leaderHcp: leader.hcp,
+        leaderUserId: leader.userId,
       );
       if (!mounted) return;
 
       battleStore.watchBattle(battle.id);
-      Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => BattleScope(
-          notifier: battleStore,
-          child: BattleRoundScreen(battleId: battle.id),
-        ),
-      )).then((_) {
-        battleStore.stopWatching();
-        if (mounted) {
-          BogeybeastGolfScope.of(context).refreshCourseLeaders();
-        }
-      });
+      Navigator.of(context)
+          .push(
+            MaterialPageRoute(
+              builder: (_) => BattleScope(
+                notifier: battleStore,
+                child: BattleRoundScreen(battleId: battle.id),
+              ),
+            ),
+          )
+          .then((_) {
+            battleStore.stopWatching();
+            if (mounted) {
+              BogeybeastGolfScope.of(context).refreshCourseLeaders();
+            }
+          });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -267,10 +290,8 @@ class _CoursesScreenState extends State<CoursesScreen>
     final theme = Theme.of(context);
     final store = BogeybeastGolfScope.of(context);
 
-    final allCourses = <GolfCourse>[
-      ...store.catalogCourses,
-      ..._userCourses,
-    ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final allCourses = <GolfCourse>[...store.catalogCourses, ..._userCourses]
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     final homeCourse = store.homeCourseId != null
         ? allCourses.where((c) => c.id == store.homeCourseId).firstOrNull
@@ -280,10 +301,12 @@ class _CoursesScreenState extends State<CoursesScreen>
     final filtered = q.isEmpty
         ? allCourses.where((c) => c.id != store.homeCourseId).toList()
         : allCourses
-            .where((c) =>
-                c.id != store.homeCourseId &&
-                c.name.toLowerCase().contains(q))
-            .toList();
+              .where(
+                (c) =>
+                    c.id != store.homeCourseId &&
+                    c.name.toLowerCase().contains(q),
+              )
+              .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -300,16 +323,16 @@ class _CoursesScreenState extends State<CoursesScreen>
       body: _loading && _userCourses.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : _mapMode
-              ? _CourseMap(
-                  courses: [...store.catalogCourses, ..._userCourses],
-                  onStartRound: _startRound,
-                  onStartBattle: _startBattle,
-                  onChallengeLeader: _challengeLeader,
-                  leaderForCourse: store.leaderForCourse,
-                  homeCourseId: store.homeCourseId,
-                  onSetHome: _setHomeCourse,
-                )
-              : CustomScrollView(
+          ? _CourseMap(
+              courses: [...store.catalogCourses, ..._userCourses],
+              onStartRound: _startRound,
+              onStartBattle: _startBattle,
+              onChallengeLeader: _challengeLeader,
+              leaderForCourse: store.leaderForCourse,
+              homeCourseId: store.homeCourseId,
+              onSetHome: _setHomeCourse,
+            )
+          : CustomScrollView(
               slivers: <Widget>[
                 // Home course (pinned)
                 if (homeCourse != null)
@@ -323,9 +346,11 @@ class _CoursesScreenState extends State<CoursesScreen>
                             padding: const EdgeInsets.only(left: 4, bottom: 8),
                             child: Row(
                               children: <Widget>[
-                                Icon(Icons.home_rounded,
-                                    size: 14,
-                                    color: theme.colorScheme.secondary),
+                                Icon(
+                                  Icons.home_rounded,
+                                  size: 14,
+                                  color: theme.colorScheme.secondary,
+                                ),
                                 const SizedBox(width: 6),
                                 Text(
                                   'Home Course',
@@ -367,7 +392,9 @@ class _CoursesScreenState extends State<CoursesScreen>
                               )
                             : null,
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                       ),
                     ),
                   ),
@@ -379,8 +406,9 @@ class _CoursesScreenState extends State<CoursesScreen>
                       child: Text(
                         _query.isEmpty ? 'No courses yet' : 'No results',
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          color:
-                              theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.4,
+                          ),
                         ),
                       ),
                     ),
@@ -459,7 +487,9 @@ class _CourseMapState extends State<_CourseMap> {
       }
 
       final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
       );
       if (!mounted) return;
       setState(() => _userPos = pos);
@@ -471,6 +501,7 @@ class _CourseMapState extends State<_CourseMap> {
     final isHome = course.id == widget.homeCourseId;
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -487,7 +518,7 @@ class _CourseMapState extends State<_CourseMap> {
           Navigator.of(context).pop();
           widget.onStartBattle(course);
         },
-        onGym: () {
+        onChallenge: () {
           Navigator.of(context).pop();
           widget.onChallengeLeader(course);
         },
@@ -502,8 +533,9 @@ class _CourseMapState extends State<_CourseMap> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final courses =
-        widget.courses.where((c) => c.lat != null && c.lng != null).toList();
+    final courses = widget.courses
+        .where((c) => c.lat != null && c.lng != null)
+        .toList();
 
     return Stack(
       children: [
@@ -565,27 +597,44 @@ class _CourseMapState extends State<_CourseMap> {
 
                   return Marker(
                     point: LatLng(course.lat!, course.lng!),
-                    width: showDetail ? 300 : showLabel ? 140 : 16,
-                    height: showDetail ? 200 : showLabel ? 40 : 16,
-                    alignment:
-                        showLabel ? Alignment.topCenter : Alignment.center,
+                    width: showDetail
+                        ? 300
+                        : showLabel
+                        ? 140
+                        : 16,
+                    height: showDetail
+                        ? 200
+                        : showLabel
+                        ? 40
+                        : 16,
+                    alignment: showLabel
+                        ? Alignment.topCenter
+                        : Alignment.center,
                     child: GestureDetector(
                       onTap: () => _openCourseActions(course),
-                      child: Builder(builder: (_) {
-                        final leader = widget.leaderForCourse(course.id);
-                        final dotColor = teamColor(GolferTeam.fromDb(leader.golferTeam));
-                        return showDetail
-                          ? _DetailMarker(
-                              course: course,
-                              totalPar: totalPar,
-                              holeCount: holeCount,
-                              theme: theme,
-                              leader: leader,
-                            )
-                          : showLabel
-                              ? _LabelMarker(name: course.name, theme: theme, color: dotColor)
+                      child: Builder(
+                        builder: (_) {
+                          final leader = widget.leaderForCourse(course.id);
+                          final dotColor = teamColor(
+                            GolferTeam.fromDb(leader.golferTeam),
+                          );
+                          return showDetail
+                              ? _DetailMarker(
+                                  course: course,
+                                  totalPar: totalPar,
+                                  holeCount: holeCount,
+                                  theme: theme,
+                                  leader: leader,
+                                )
+                              : showLabel
+                              ? _LabelMarker(
+                                  name: course.name,
+                                  theme: theme,
+                                  color: dotColor,
+                                )
                               : _DotMarker(color: dotColor);
-                      }),
+                        },
+                      ),
                     ),
                   );
                 }),
@@ -597,13 +646,12 @@ class _CourseMapState extends State<_CourseMap> {
             ),
           ],
         ),
-
       ],
     );
   }
 }
 
-// ── Course action sheet (Catch / PvP / Gym) ─────────────────────────────────
+// ── Course action sheet (Catch / PvP Battle / Leader Challenge) ─────────────
 
 class _CourseDetail extends StatelessWidget {
   const _CourseDetail({
@@ -612,7 +660,7 @@ class _CourseDetail extends StatelessWidget {
     required this.isHome,
     required this.onCatch,
     required this.onBattle,
-    required this.onGym,
+    required this.onChallenge,
     this.onSetHome,
     this.showHeader = true,
   });
@@ -622,14 +670,13 @@ class _CourseDetail extends StatelessWidget {
   final bool isHome;
   final VoidCallback onCatch;
   final VoidCallback onBattle;
-  final VoidCallback onGym;
+  final VoidCallback onChallenge;
   final VoidCallback? onSetHome;
   final bool showHeader;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final leaderColor = teamColor(GolferTeam.fromDb(leader.golferTeam));
     final totalPar = course.flatPars.isEmpty
         ? null
         : course.flatPars.reduce((a, b) => a + b);
@@ -642,8 +689,9 @@ class _CourseDetail extends StatelessWidget {
         if (showHeader) ...[
           Text(
             course.name,
-            style: theme.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w800),
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
           ),
           if (totalPar != null)
             Padding(
@@ -657,13 +705,17 @@ class _CourseDetail extends StatelessWidget {
             ),
           const SizedBox(height: 16),
         ],
-        _LeaderBanner(leader: leader),
+        _LeaderBanner(leader: leader, onChallenge: onChallenge),
         const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
               child: _ActionButton(
-                icon: Icons.pets,
+                icon: Icon(
+                  Icons.pets,
+                  color: theme.colorScheme.primary,
+                  size: 26,
+                ),
                 label: 'Catch',
                 color: theme.colorScheme.primary,
                 subtitle: 'Play a round',
@@ -673,21 +725,15 @@ class _CourseDetail extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: _ActionButton(
-                icon: Icons.videogame_asset_rounded,
-                label: 'PvP',
+                icon: Icon(
+                  Icons.sports_mma_rounded,
+                  color: Colors.redAccent,
+                  size: 26,
+                ),
+                label: 'PvP Battle',
                 color: Colors.redAccent,
-                subtitle: 'PvP challenge',
+                subtitle: 'Battle a golfer',
                 onTap: onBattle,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _ActionButton(
-                icon: GolferTeam.fromDb(leader.golferTeam)?.icon ?? Icons.shield,
-                label: 'Gym',
-                color: leaderColor,
-                subtitle: 'Challenge leader',
-                onTap: onGym,
               ),
             ),
           ],
@@ -700,9 +746,7 @@ class _CourseDetail extends StatelessWidget {
               onPressed: onSetHome,
               icon: const Icon(Icons.home_outlined, size: 18),
               label: const Text('Set as home'),
-              style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-              ),
+              style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
             ),
           ),
         ],
@@ -718,7 +762,7 @@ class _CourseActionSheet extends StatelessWidget {
     required this.isHome,
     required this.onCatch,
     required this.onBattle,
-    required this.onGym,
+    required this.onChallenge,
     this.onSetHome,
   });
 
@@ -727,41 +771,48 @@ class _CourseActionSheet extends StatelessWidget {
   final bool isHome;
   final VoidCallback onCatch;
   final VoidCallback onBattle;
-  final VoidCallback onGym;
+  final VoidCallback onChallenge;
   final VoidCallback? onSetHome;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-          24, 20, 24, MediaQuery.of(context).viewInsets.bottom + 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          24,
+          20,
+          24,
+          MediaQuery.of(context).viewInsets.bottom + 32,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          _CourseDetail(
-            course: course,
-            leader: leader,
-            isHome: isHome,
-            onCatch: onCatch,
-            onBattle: onBattle,
-            onGym: onGym,
-            onSetHome: onSetHome,
-          ),
-        ],
+            const SizedBox(height: 20),
+            _CourseDetail(
+              course: course,
+              leader: leader,
+              isHome: isHome,
+              onCatch: onCatch,
+              onBattle: onBattle,
+              onChallenge: onChallenge,
+              onSetHome: onSetHome,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -776,7 +827,7 @@ class _ActionButton extends StatelessWidget {
     required this.onTap,
   });
 
-  final IconData icon;
+  final Widget icon;
   final String label;
   final Color color;
   final String subtitle;
@@ -799,7 +850,7 @@ class _ActionButton extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Icon(icon, color: color, size: 26),
+              SizedBox(width: 26, height: 26, child: icon),
               const SizedBox(height: 6),
               Text(
                 label,
@@ -839,10 +890,7 @@ class _DotMarker extends StatelessWidget {
         shape: BoxShape.circle,
         color: color,
         boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.5),
-            blurRadius: 6,
-          ),
+          BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 6),
         ],
       ),
     );
@@ -850,7 +898,11 @@ class _DotMarker extends StatelessWidget {
 }
 
 class _LabelMarker extends StatelessWidget {
-  const _LabelMarker({required this.name, required this.theme, required this.color});
+  const _LabelMarker({
+    required this.name,
+    required this.theme,
+    required this.color,
+  });
   final String name;
   final ThemeData theme;
   final Color color;
@@ -865,8 +917,7 @@ class _LabelMarker extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF172417),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-                color: color.withValues(alpha: 0.6)),
+            border: Border.all(color: color.withValues(alpha: 0.6)),
           ),
           child: Text(
             name,
@@ -879,11 +930,7 @@ class _LabelMarker extends StatelessWidget {
             ),
           ),
         ),
-        Container(
-          width: 2,
-          height: 6,
-          color: color.withValues(alpha: 0.6),
-        ),
+        Container(width: 2, height: 6, color: color.withValues(alpha: 0.6)),
       ],
     );
   }
@@ -915,8 +962,7 @@ class _DetailMarker extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFF172417),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-                color: leaderColor.withValues(alpha: 0.7)),
+            border: Border.all(color: leaderColor.withValues(alpha: 0.7)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.5),
@@ -947,8 +993,9 @@ class _DetailMarker extends StatelessWidget {
                       Text(
                         '$holeCount holes · par $totalPar',
                         style: TextStyle(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.6),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.6,
+                          ),
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                         ),
@@ -1010,31 +1057,33 @@ class _CourseCardState extends State<_CourseCard> {
     final theme = Theme.of(context);
     final course = widget.course;
     final dim = theme.colorScheme.onSurface.withValues(alpha: 0.5);
-    final int totalParAll = course.flatPars.fold<int>(0, (int a, int b) => a + b);
+    final int totalParAll = course.flatPars.fold<int>(
+      0,
+      (int a, int b) => a + b,
+    );
 
-    return GestureDetector(
-      onTap: () => setState(() => _expanded = !_expanded),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: theme.cardTheme.color,
-          borderRadius: BorderRadius.circular(16),
-          border: widget.isHome
-              ? Border.all(color: theme.colorScheme.primary, width: 1.5)
-              : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(16),
+        border: widget.isHome
+            ? Border.all(color: theme.colorScheme.primary, width: 1.5)
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          GestureDetector(
+            onTap: () => setState(() => _expanded = !_expanded),
+            behavior: HitTestBehavior.opaque,
+            child: Row(
               children: <Widget>[
                 Icon(
                   Icons.golf_course,
                   size: 20,
-                  color: widget.isHome
-                      ? theme.colorScheme.primary
-                      : dim,
+                  color: widget.isHome ? theme.colorScheme.primary : dim,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -1059,7 +1108,10 @@ class _CourseCardState extends State<_CourseCard> {
                 ),
                 if (widget.isHome)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primary.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
@@ -1067,7 +1119,11 @@ class _CourseCardState extends State<_CourseCard> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
-                        Icon(Icons.home, size: 13, color: theme.colorScheme.primary),
+                        Icon(
+                          Icons.home,
+                          size: 13,
+                          color: theme.colorScheme.primary,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'Home',
@@ -1087,15 +1143,16 @@ class _CourseCardState extends State<_CourseCard> {
                 ),
               ],
             ),
-            AnimatedCrossFade(
-              firstChild: const SizedBox.shrink(),
-              secondChild: _buildExpanded(theme, course, dim),
-              crossFadeState:
-                  _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-              duration: const Duration(milliseconds: 200),
-            ),
-          ],
-        ),
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: _buildExpanded(theme, course, dim),
+            crossFadeState: _expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
+        ],
       ),
     );
   }
@@ -1109,7 +1166,7 @@ class _CourseCardState extends State<_CourseCard> {
         isHome: widget.isHome,
         onCatch: widget.onPlay,
         onBattle: widget.onBattle,
-        onGym: widget.onChallenge,
+        onChallenge: widget.onChallenge,
         onSetHome: widget.onSetHome,
         showHeader: false,
       ),
@@ -1139,7 +1196,9 @@ class _GolferAvatar extends StatelessWidget {
         shape: BoxShape.circle,
         color: (borderColor ?? const Color(0xFFFFD700)).withValues(alpha: 0.12),
         border: Border.all(
-          color: (borderColor ?? const Color(0xFFFFD700)).withValues(alpha: 0.5),
+          color: (borderColor ?? const Color(0xFFFFD700)).withValues(
+            alpha: 0.5,
+          ),
           width: 1.5,
         ),
       ),
@@ -1160,10 +1219,10 @@ class _LeaderBanner extends StatelessWidget {
   const _LeaderBanner({
     required this.leader,
     this.avatarSize = 72,
-    this.beastSize = 68,
+    this.beastSize = 66,
     this.compact = false,
     this.showLabel = true,
-    this.onTap,
+    this.onChallenge,
   });
 
   final CourseLeader leader;
@@ -1171,11 +1230,14 @@ class _LeaderBanner extends StatelessWidget {
   final double beastSize;
   final bool compact;
   final bool showLabel;
-  final VoidCallback? onTap;
+  final VoidCallback? onChallenge;
+
+  static const _caught = Color(0xFF57F287);
 
   @override
   Widget build(BuildContext context) {
     final leaderColor = teamColor(GolferTeam.fromDb(leader.golferTeam));
+    final caughtDex = BogeybeastGolfScope.of(context).caughtDexNumbers;
 
     final banner = Container(
       padding: EdgeInsets.all(compact ? 8 : 12),
@@ -1184,104 +1246,208 @@ class _LeaderBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: leaderColor.withValues(alpha: 0.30)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _GolferAvatar(
-            sprite: leader.golferSprite,
-            size: avatarSize,
-            borderColor: leaderColor,
-          ),
-          SizedBox(width: compact ? 8 : 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (showLabel) ...[
-                  Row(
-                    children: [
-                      Icon(Icons.shield_rounded, size: compact ? 10 : 11,
-                          color: leaderColor.withValues(alpha: 0.6)),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Course Leader',
-                        style: TextStyle(
-                          color: leaderColor.withValues(alpha: 0.6),
-                          fontSize: compact ? 9 : 10,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.3,
-                        ),
+          Row(
+            children: [
+              _GolferAvatar(
+                sprite: leader.golferSprite,
+                size: avatarSize,
+                borderColor: leaderColor,
+              ),
+              SizedBox(width: compact ? 8 : 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (showLabel) ...[
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.shield_rounded,
+                            size: compact ? 10 : 11,
+                            color: leaderColor.withValues(alpha: 0.6),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Course Leader',
+                            style: TextStyle(
+                              color: leaderColor.withValues(alpha: 0.6),
+                              fontSize: compact ? 9 : 10,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
                       ),
+                      SizedBox(height: compact ? 2 : 3),
+                    ],
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            leader.leaderName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: leaderColor,
+                              fontSize: compact ? 13 : 15,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: leaderColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Text(
+                            'HCP ${leader.hcp}',
+                            style: TextStyle(
+                              color: leaderColor.withValues(alpha: 0.8),
+                              fontSize: compact ? 9 : 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: compact ? 8 : 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (final b in leader.team)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              try {
+                                final species = firstGenBogeybeast.firstWhere(
+                                  (s) => s.dexNumber == b.dexNumber,
+                                );
+                                showBeastDetailSheet(context, species);
+                              } catch (_) {}
+                            },
+                            child: Builder(
+                              builder: (context) {
+                                final isCaught = caughtDex.contains(
+                                  b.dexNumber,
+                                );
+                                final ringColor = isCaught
+                                    ? _caught
+                                    : Colors.white;
+                                return Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: beastSize,
+                                      height: beastSize,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: ringColor.withValues(alpha: 0.1),
+                                        border: Border.all(
+                                          color: ringColor.withValues(
+                                            alpha: 0.55,
+                                          ),
+                                          width: 1.5,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: ringColor.withValues(
+                                              alpha: isCaught ? 0.3 : 0.15,
+                                            ),
+                                            blurRadius: isCaught ? 12 : 8,
+                                          ),
+                                        ],
+                                      ),
+                                      padding: EdgeInsets.all(beastSize * 0.08),
+                                      child: Image.asset(
+                                        b.assetPath,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (_, _, _) =>
+                                            const SizedBox.shrink(),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    SizedBox(
+                                      width: beastSize,
+                                      child: Text(
+                                        b.name,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: ringColor.withValues(
+                                            alpha: 0.8,
+                                          ),
+                                          fontSize: compact ? 8 : 9,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ),
                     ],
                   ),
-                  SizedBox(height: compact ? 2 : 3),
-                ],
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        leader.leaderName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: leaderColor,
-                          fontSize: compact ? 13 : 15,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: leaderColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      child: Text(
-                        'HCP ${leader.hcp}',
-                        style: TextStyle(
-                          color: leaderColor.withValues(alpha: 0.8),
-                          fontSize: compact ? 9 : 10,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          for (final b in leader.team)
-            Padding(
-              padding: const EdgeInsets.only(left: 6),
-              child: Container(
-                width: beastSize,
-                height: beastSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      blurRadius: 6,
-                    ),
-                  ],
+          if (onChallenge != null) ...[
+            SizedBox(height: compact ? 8 : 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onChallenge,
+                icon: Icon(
+                  GolferTeam.fromDb(leader.golferTeam)?.icon ??
+                      Icons.shield_rounded,
+                  size: compact ? 16 : 18,
                 ),
-                padding: EdgeInsets.all(beastSize * 0.08),
-                child: Image.asset(
-                  b.assetPath,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                label: const Text('Challenge'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: leaderColor,
+                  foregroundColor: Colors.black,
+                  padding: EdgeInsets.symmetric(vertical: compact ? 10 : 14),
+                  textStyle: TextStyle(
+                    fontSize: compact ? 13 : 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               ),
             ),
+          ],
         ],
       ),
     );
 
-    if (onTap != null) {
-      return GestureDetector(onTap: onTap, child: banner);
-    }
     return banner;
   }
 }
@@ -1345,7 +1511,11 @@ class _LoopPickerSheet extends StatefulWidget {
   const _LoopPickerSheet({required this.course, required this.onStart});
 
   final GolfCourse course;
-  final void Function(List<int> pars, {List<({double lat, double lng})?>? greenCoords}) onStart;
+  final void Function(
+    List<int> pars, {
+    List<({double lat, double lng})?>? greenCoords,
+  })
+  onStart;
 
   @override
   State<_LoopPickerSheet> createState() => _LoopPickerSheetState();
@@ -1382,7 +1552,10 @@ class _LoopPickerSheetState extends State<_LoopPickerSheet> {
     final picked = indices.map((i) => loops[i]).toList();
     final pars = widget.course.parsForLoops(picked);
     final greens = widget.course.greensNullableForLoops(picked);
-    widget.onStart(pars, greenCoords: greens.any((e) => e != null) ? greens : null);
+    widget.onStart(
+      pars,
+      greenCoords: greens.any((e) => e != null) ? greens : null,
+    );
   }
 
   @override
@@ -1390,19 +1563,23 @@ class _LoopPickerSheetState extends State<_LoopPickerSheet> {
     final theme = Theme.of(context);
     final loops = widget.course.loops;
 
-    String loopName(int i) => loops[i].name.isEmpty ? 'Loop ${i + 1}' : loops[i].name;
+    String loopName(int i) =>
+        loops[i].name.isEmpty ? 'Loop ${i + 1}' : loops[i].name;
     String loopSub(int i) {
       final l = loops[i];
       return '${l.holeCount} holes  ·  Par ${l.holes.fold<int>(0, (a, h) => a + h.par)}';
     }
 
     final totalHoles = loops.fold<int>(0, (s, l) => s + l.holeCount);
-    final totalPar = loops.expand((l) => l.holes).fold<int>(0, (s, h) => s + h.par);
+    final totalPar = loops
+        .expand((l) => l.holes)
+        .fold<int>(0, (s, h) => s + h.par);
 
     // Build inline pick hint label
     String pickHint() {
       if (_orderedPicks.isEmpty) return 'Tap to pick 1st loop';
-      if (_orderedPicks.length == 1) return '${loopName(_orderedPicks[0])} → tap to pick 2nd';
+      if (_orderedPicks.length == 1)
+        return '${loopName(_orderedPicks[0])} → tap to pick 2nd';
       return '${loopName(_orderedPicks[0])} → ${loopName(_orderedPicks[1])}';
     }
 
@@ -1417,7 +1594,10 @@ class _LoopPickerSheetState extends State<_LoopPickerSheet> {
             label: loopName(i),
             subtitle: loopSub(i),
             selected: _mode == i,
-            onTap: () => setState(() { _mode = i; _orderedPicks.clear(); }),
+            onTap: () => setState(() {
+              _mode = i;
+              _orderedPicks.clear();
+            }),
             theme: theme,
           ),
         ],
@@ -1428,7 +1608,10 @@ class _LoopPickerSheetState extends State<_LoopPickerSheet> {
             label: '18 holes',
             subtitle: _mode == -1 ? pickHint() : 'Pick two loops',
             selected: _mode == -1,
-            onTap: () => setState(() { _mode = -1; _orderedPicks.clear(); }),
+            onTap: () => setState(() {
+              _mode = -1;
+              _orderedPicks.clear();
+            }),
             theme: theme,
           ),
           if (_mode == -1) ...[
@@ -1446,7 +1629,8 @@ class _LoopPickerSheetState extends State<_LoopPickerSheet> {
                       orderLabel: _orderedPicks.indexOf(i) >= 0
                           ? '${_orderedPicks.indexOf(i) + 1}'
                           : null,
-                      enabled: _orderedPicks.contains(i) || _orderedPicks.length < 2,
+                      enabled:
+                          _orderedPicks.contains(i) || _orderedPicks.length < 2,
                       onTap: () => setState(() {
                         if (_orderedPicks.contains(i)) {
                           _orderedPicks.remove(i);
@@ -1469,7 +1653,10 @@ class _LoopPickerSheetState extends State<_LoopPickerSheet> {
             label: 'Full round ($totalHoles holes)',
             subtitle: 'All loops  ·  Par $totalPar',
             selected: _mode == -2,
-            onTap: () => setState(() { _mode = -2; _orderedPicks.clear(); }),
+            onTap: () => setState(() {
+              _mode = -2;
+              _orderedPicks.clear();
+            }),
             theme: theme,
           ),
         ],
@@ -1479,7 +1666,11 @@ class _LoopPickerSheetState extends State<_LoopPickerSheet> {
 }
 
 class _LoopOption {
-  const _LoopOption({required this.label, required this.subtitle, required this.loopIndices});
+  const _LoopOption({
+    required this.label,
+    required this.subtitle,
+    required this.loopIndices,
+  });
   final String label;
   final String subtitle;
   final List<int> loopIndices;
@@ -1489,7 +1680,11 @@ class _HoleCountSheet extends StatefulWidget {
   const _HoleCountSheet({required this.course, required this.onStart});
 
   final GolfCourse course;
-  final void Function(List<int> pars, {List<({double lat, double lng})?>? greenCoords}) onStart;
+  final void Function(
+    List<int> pars, {
+    List<({double lat, double lng})?>? greenCoords,
+  })
+  onStart;
 
   @override
   State<_HoleCountSheet> createState() => _HoleCountSheetState();
@@ -1515,17 +1710,38 @@ class _HoleCountSheetState extends State<_HoleCountSheet> {
       courseName: widget.course.name,
       onPlay: () {
         switch (_selected) {
-          case 0: widget.onStart(frontPars, greenCoords: frontGreens);
-          case 1: widget.onStart(backPars, greenCoords: backGreens);
-          case _: widget.onStart(allPars, greenCoords: allGreens);
+          case 0:
+            widget.onStart(frontPars, greenCoords: frontGreens);
+          case 1:
+            widget.onStart(backPars, greenCoords: backGreens);
+          case _:
+            widget.onStart(allPars, greenCoords: allGreens);
         }
       },
       children: [
-        _RadioRow(label: 'Front 9', subtitle: 'Holes 1–9  ·  Par $frontPar', selected: _selected == 0, onTap: () => setState(() => _selected = 0), theme: theme),
+        _RadioRow(
+          label: 'Front 9',
+          subtitle: 'Holes 1–9  ·  Par $frontPar',
+          selected: _selected == 0,
+          onTap: () => setState(() => _selected = 0),
+          theme: theme,
+        ),
         const SizedBox(height: 8),
-        _RadioRow(label: 'Back 9', subtitle: 'Holes 10–18  ·  Par $backPar', selected: _selected == 1, onTap: () => setState(() => _selected = 1), theme: theme),
+        _RadioRow(
+          label: 'Back 9',
+          subtitle: 'Holes 10–18  ·  Par $backPar',
+          selected: _selected == 1,
+          onTap: () => setState(() => _selected = 1),
+          theme: theme,
+        ),
         const SizedBox(height: 8),
-        _RadioRow(label: 'Full 18', subtitle: 'All holes  ·  Par $totalPar', selected: _selected == 2, onTap: () => setState(() => _selected = 2), theme: theme),
+        _RadioRow(
+          label: 'Full 18',
+          subtitle: 'All holes  ·  Par $totalPar',
+          selected: _selected == 2,
+          onTap: () => setState(() => _selected = 2),
+          theme: theme,
+        ),
       ],
     );
   }
@@ -1534,7 +1750,11 @@ class _HoleCountSheetState extends State<_HoleCountSheet> {
 // ── Shared picker widgets ─────────────────────────────────────────────────────
 
 class _RoundPickerShell extends StatelessWidget {
-  const _RoundPickerShell({required this.courseName, required this.onPlay, required this.children});
+  const _RoundPickerShell({
+    required this.courseName,
+    required this.onPlay,
+    required this.children,
+  });
 
   final String courseName;
   final VoidCallback? onPlay;
@@ -1556,7 +1776,8 @@ class _RoundPickerShell extends StatelessWidget {
             children: [
               Center(
                 child: Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: theme.colorScheme.outlineVariant,
                     borderRadius: BorderRadius.circular(2),
@@ -1564,7 +1785,12 @@ class _RoundPickerShell extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              Text(courseName, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+              Text(
+                courseName,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
               const SizedBox(height: 16),
             ],
           ),
@@ -1589,7 +1815,9 @@ class _RoundPickerShell extends StatelessWidget {
               onPressed: onPlay,
               icon: const Icon(Icons.play_arrow_rounded, size: 22),
               label: const Text('Play'),
-              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
             ),
           ),
         ),
@@ -1627,7 +1855,9 @@ class _LoopCheckRow extends StatelessWidget {
           duration: const Duration(milliseconds: 120),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: picked ? color.withValues(alpha: 0.1) : theme.colorScheme.surfaceContainerHigh,
+            color: picked
+                ? color.withValues(alpha: 0.1)
+                : theme.colorScheme.surfaceContainerHigh,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: picked ? color : Colors.transparent,
@@ -1666,8 +1896,20 @@ class _LoopCheckRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(label, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-                    Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
+                    Text(
+                      label,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1680,7 +1922,13 @@ class _LoopCheckRow extends StatelessWidget {
 }
 
 class _RadioRow extends StatelessWidget {
-  const _RadioRow({required this.label, required this.subtitle, required this.selected, required this.onTap, required this.theme});
+  const _RadioRow({
+    required this.label,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+    required this.theme,
+  });
 
   final String label;
   final String subtitle;
@@ -1696,7 +1944,9 @@ class _RadioRow extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: selected ? theme.colorScheme.primary.withValues(alpha: 0.1) : theme.colorScheme.surfaceContainerHigh,
+          color: selected
+              ? theme.colorScheme.primary.withValues(alpha: 0.1)
+              : theme.colorScheme.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected ? theme.colorScheme.primary : Colors.transparent,
@@ -1718,8 +1968,18 @@ class _RadioRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-                  Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
+                  Text(
+                    label,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1729,4 +1989,3 @@ class _RadioRow extends StatelessWidget {
     );
   }
 }
-

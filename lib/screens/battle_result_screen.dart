@@ -10,6 +10,7 @@ import '../models/golf_score.dart';
 import '../models/hole_stats.dart';
 import '../models/round_models.dart';
 import '../state/battle_store.dart';
+import '../widgets/battle_player_widgets.dart';
 import 'evolve_animation_screen.dart';
 import 'round_screen.dart';
 import 'team_select_screen.dart';
@@ -31,19 +32,39 @@ class BattleResultScreen extends StatelessWidget {
             : store.battles.where((b) => b.id == battleId).firstOrNull;
 
         if (battle == null) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         final uid = store.currentUserId!;
+        final golfStore = BogeybeastGolfScope.of(context);
         final isChallenger = battle.challengerId == uid;
-        final myName = isChallenger ? battle.challengerName : (battle.opponentName ?? 'You');
-        final theirName = isChallenger ? (battle.opponentName ?? 'Opponent') : battle.challengerName;
+        final myName = isChallenger
+            ? battle.challengerName
+            : (battle.opponentName ?? 'You');
+        final theirName = isChallenger
+            ? (battle.opponentName ?? 'Opponent')
+            : battle.challengerName;
         final won = battle.winnerId == uid;
+        final myUserId = isChallenger ? battle.challengerId : battle.opponentId;
+        final theirUserId = isChallenger
+            ? battle.opponentId
+            : battle.challengerId;
+        final theirSprite = battle.isLeaderChallenge && isChallenger
+            ? golfStore.leaderForCourse(battle.courseId).golferSprite
+            : null;
 
-        final myTeam = isChallenger ? battle.currentChallengerTeam : battle.currentOpponentTeam;
-        final theirTeam = isChallenger ? battle.currentOpponentTeam : battle.currentChallengerTeam;
+        final myTeam = isChallenger
+            ? battle.currentChallengerTeam
+            : battle.currentOpponentTeam;
+        final theirTeam = isChallenger
+            ? battle.currentOpponentTeam
+            : battle.currentChallengerTeam;
 
-        final primaryColor = won ? theme.colorScheme.primary : theme.colorScheme.error;
+        final primaryColor = won
+            ? theme.colorScheme.primary
+            : theme.colorScheme.error;
         final headline = won ? 'Victory!' : 'Defeated';
 
         return Scaffold(
@@ -62,12 +83,16 @@ class BattleResultScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: primaryColor.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Column(
                     children: [
                       Icon(
-                        won ? Icons.emoji_events_rounded : Icons.sentiment_dissatisfied_rounded,
+                        won
+                            ? Icons.emoji_events_rounded
+                            : Icons.sentiment_dissatisfied_rounded,
                         size: 56,
                         color: primaryColor,
                       ),
@@ -85,7 +110,9 @@ class BattleResultScreen extends StatelessWidget {
                             ? 'KO on hole ${battle.holeLog.length} of ${battle.holeCount} · ${battle.courseName}'
                             : '${battle.holeLog.length} holes played · ${battle.courseName}',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                       ),
                     ],
@@ -96,31 +123,37 @@ class BattleResultScreen extends StatelessWidget {
                 // ── Final team states ──────────────────────────────────────
                 _FinalTeamCard(
                   label: myName,
+                  userId: myUserId,
                   team: myTeam,
                   isMe: true,
                 ),
                 const SizedBox(height: 12),
                 _FinalTeamCard(
                   label: theirName,
+                  userId: theirUserId,
+                  avatarSprite: theirSprite,
                   team: theirTeam,
                   isMe: false,
                 ),
                 const SizedBox(height: 24),
 
                 // ── Hole log ───────────────────────────────────────────────
-                Text('Hole Summary',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  'Hole Summary',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 _SummaryTable(
-                  holeLog:      battle.holeLog,
+                  holeLog: battle.holeLog,
                   isChallenger: isChallenger,
-                  myName:       myName,
-                  theirName:    theirName,
+                  myName: myName,
+                  theirName: theirName,
                 ),
                 const SizedBox(height: 32),
 
-                // ── Evolve reward for PvP wins ─────────────────────────────
+                // ── Evolve reward for battle wins ──────────────────────────
                 if (won && !battle.isLeaderChallenge)
                   _EvolveRewardSection(battle: battle),
 
@@ -129,72 +162,84 @@ class BattleResultScreen extends StatelessWidget {
                   _ClaimLeadershipSection(battle: battle),
 
                 // ── Continue to catch mode if holes remain ─────────────────
-                Builder(builder: (context) {
-                  final remainingHoles = battle.holeCount - battle.holeLog.length;
-                  final remainingPars = battle.coursePars.length >= battle.holeCount
-                      ? battle.coursePars.sublist(battle.holeLog.length)
-                      : <int>[];
+                Builder(
+                  builder: (context) {
+                    final remainingHoles =
+                        battle.holeCount - battle.holeLog.length;
+                    final remainingPars =
+                        battle.coursePars.length >= battle.holeCount
+                        ? battle.coursePars.sublist(battle.holeLog.length)
+                        : <int>[];
 
-                  if (remainingHoles > 0 && remainingPars.isNotEmpty) {
-                    final startHole = battle.holeLog.length + 1;
-                    // Pre-build HoleResult objects for the battle holes so they
-                    // land in the same scorecard as the catch holes.
-                    final battleHoles = battle.holeLog.map((event) {
-                      final strokes = isChallenger
-                          ? event.challengerStrokes
-                          : event.opponentStrokes;
-                      final par = battle.parForHole(event.hole);
-                      return HoleResult(
-                        holeNumber:  event.hole,
-                        par:         par,
-                        strokes:     strokes,
-                        bogeybeast:     battleSentinelBogeybeast,
-                        score:       scoreFromStrokes(par, strokes),
-                        catchChance: 0,
-                        caught:      false,
-                        stats:       const HoleStats(),
+                    if (remainingHoles > 0 && remainingPars.isNotEmpty) {
+                      final startHole = battle.holeLog.length + 1;
+                      // Pre-build HoleResult objects for the battle holes so they
+                      // land in the same scorecard as the catch holes.
+                      final battleHoles = battle.holeLog.map((event) {
+                        final strokes = isChallenger
+                            ? event.challengerStrokes
+                            : event.opponentStrokes;
+                        final par = battle.parForHole(event.hole);
+                        return HoleResult(
+                          holeNumber: event.hole,
+                          par: par,
+                          strokes: strokes,
+                          bogeybeast: battleSentinelBogeybeast,
+                          score: scoreFromStrokes(par, strokes),
+                          catchChance: 0,
+                          caught: false,
+                          stats: const HoleStats(),
+                        );
+                      }).toList();
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          FilledButton.icon(
+                            onPressed: () {
+                              final bogeybeastStore = BogeybeastGolfScope.of(
+                                context,
+                              );
+                              bogeybeastStore.startRound(
+                                battle.holeCount,
+                                holePars: battle.coursePars,
+                                courseName: battle.courseName,
+                                startingHoleNumber: startHole,
+                                prefilledHoles: battleHoles,
+                              );
+                              Navigator.of(
+                                context,
+                              ).popUntil((route) => route.isFirst);
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const RoundScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.pets),
+                            label: Text(
+                              'Catch Mode — $remainingHoles holes left',
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton(
+                            onPressed: () => Navigator.of(
+                              context,
+                            ).popUntil((route) => route.isFirst),
+                            child: const Text('Back to Clubhouse'),
+                          ),
+                        ],
                       );
-                    }).toList();
+                    }
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        FilledButton.icon(
-                          onPressed: () {
-                            final bogeybeastStore = BogeybeastGolfScope.of(context);
-                            bogeybeastStore.startRound(
-                              battle.holeCount,
-                              holePars:          battle.coursePars,
-                              courseName:        battle.courseName,
-                              startingHoleNumber: startHole,
-                              prefilledHoles:    battleHoles,
-                            );
-                            Navigator.of(context)
-                                .popUntil((route) => route.isFirst);
-                            Navigator.of(context).push(MaterialPageRoute<void>(
-                              builder: (_) => const RoundScreen(),
-                            ));
-                          },
-                          icon: const Icon(Icons.pets),
-                          label: Text(
-                              'Catch Mode — $remainingHoles holes left'),
-                        ),
-                        const SizedBox(height: 12),
-                        OutlinedButton(
-                          onPressed: () => Navigator.of(context)
-                              .popUntil((route) => route.isFirst),
-                          child: const Text('Back to Clubhouse'),
-                        ),
-                      ],
+                    return FilledButton(
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).popUntil((route) => route.isFirst),
+                      child: const Text('Back to Clubhouse'),
                     );
-                  }
-
-                  return FilledButton(
-                    onPressed: () => Navigator.of(context)
-                        .popUntil((route) => route.isFirst),
-                    child: const Text('Back to Clubhouse'),
-                  );
-                }),
+                  },
+                ),
               ],
             ),
           ),
@@ -209,11 +254,15 @@ class BattleResultScreen extends StatelessWidget {
 class _FinalTeamCard extends StatelessWidget {
   const _FinalTeamCard({
     required this.label,
+    this.userId,
+    this.avatarSprite,
     required this.team,
     required this.isMe,
   });
 
   final String label;
+  final String? userId;
+  final String? avatarSprite;
   final List<BattleBogeybeast> team;
   final bool isMe;
 
@@ -225,20 +274,35 @@ class _FinalTeamCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.35,
+        ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Text(label,
-                  style: theme.textTheme.labelLarge
-                      ?.copyWith(fontWeight: FontWeight.w700)),
-              const Spacer(),
+              BattlePlayerAvatar(
+                name: label,
+                userId: userId,
+                sprite: avatarSprite,
+                size: 44,
+                isMe: isMe,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
               Text(
                 '$alive/${team.length} standing',
                 style: theme.textTheme.labelSmall?.copyWith(
@@ -253,7 +317,9 @@ class _FinalTeamCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: team.map((p) => _BogeybeastResultPip(bogeybeast: p)).toList(),
+            children: team
+                .map((p) => _BogeybeastResultPip(bogeybeast: p))
+                .toList(),
           ),
         ],
       ),
@@ -271,10 +337,10 @@ class _BogeybeastResultPip extends StatelessWidget {
     final frac = bogeybeast.hpPercent.clamp(0.0, 1.0);
     final barColor = bogeybeast.isAlive
         ? (frac > 0.5
-            ? theme.colorScheme.primary
-            : frac > 0.25
-                ? const Color(0xFFFFD700)
-                : theme.colorScheme.error)
+              ? theme.colorScheme.primary
+              : frac > 0.25
+              ? const Color(0xFFFFD700)
+              : theme.colorScheme.error)
         : theme.colorScheme.onSurface.withValues(alpha: 0.2);
 
     return Opacity(
@@ -307,15 +373,14 @@ class _BogeybeastResultPip extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: frac,
                 minHeight: 5,
-                backgroundColor:
-                    theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                backgroundColor: theme.colorScheme.outlineVariant.withValues(
+                  alpha: 0.3,
+                ),
                 valueColor: AlwaysStoppedAnimation<Color>(barColor),
               ),
             ),
             Text(
-              bogeybeast.isAlive
-                  ? '${bogeybeast.hpCurrent}hp'
-                  : 'KO',
+              bogeybeast.isAlive ? '${bogeybeast.hpCurrent}hp' : 'KO',
               style: theme.textTheme.labelSmall?.copyWith(
                 fontSize: 9,
                 color: bogeybeast.isAlive
@@ -355,7 +420,8 @@ class _SummaryTable extends StatelessWidget {
     for (final e in holeLog) {
       if (e.result == BattleHoleResult.tie) {
         ties++;
-      } else if ((isChallenger && e.result == BattleHoleResult.challengerWins) ||
+      } else if ((isChallenger &&
+              e.result == BattleHoleResult.challengerWins) ||
           (!isChallenger && e.result == BattleHoleResult.opponentWins)) {
         myWins++;
       } else {
@@ -369,33 +435,47 @@ class _SummaryTable extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            color: theme.colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.3,
+            ),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _TallyItem(label: myName, value: myWins, color: theme.colorScheme.primary),
-              _TallyItem(label: 'Tied', value: ties,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4)),
-              _TallyItem(label: theirName, value: theirWins, color: theme.colorScheme.error),
+              _TallyItem(
+                label: myName,
+                value: myWins,
+                color: theme.colorScheme.primary,
+              ),
+              _TallyItem(
+                label: 'Tied',
+                value: ties,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+              ),
+              _TallyItem(
+                label: theirName,
+                value: theirWins,
+                color: theme.colorScheme.error,
+              ),
             ],
           ),
         ),
         const SizedBox(height: 10),
         // Per-hole rows
         for (final event in holeLog)
-          _HoleSummaryRow(
-            event:        event,
-            isChallenger: isChallenger,
-          ),
+          _HoleSummaryRow(event: event, isChallenger: isChallenger),
       ],
     );
   }
 }
 
 class _TallyItem extends StatelessWidget {
-  const _TallyItem({required this.label, required this.value, required this.color});
+  const _TallyItem({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
   final String label;
   final int value;
   final Color color;
@@ -407,12 +487,17 @@ class _TallyItem extends StatelessWidget {
       children: [
         Text(
           '$value',
-          style: theme.textTheme.headlineSmall
-              ?.copyWith(fontWeight: FontWeight.w800, color: color),
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: color,
+          ),
         ),
-        Text(label,
-            style: theme.textTheme.labelSmall
-                ?.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
+        ),
       ],
     );
   }
@@ -427,16 +512,21 @@ class _HoleSummaryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isTie = event.result == BattleHoleResult.tie;
-    final iWon = (isChallenger && event.result == BattleHoleResult.challengerWins) ||
+    final iWon =
+        (isChallenger && event.result == BattleHoleResult.challengerWins) ||
         (!isChallenger && event.result == BattleHoleResult.opponentWins);
     final color = isTie
         ? theme.colorScheme.onSurface.withValues(alpha: 0.4)
         : iWon
-            ? theme.colorScheme.primary
-            : theme.colorScheme.error;
+        ? theme.colorScheme.primary
+        : theme.colorScheme.error;
 
-    final myStrokes = isChallenger ? event.challengerStrokes : event.opponentStrokes;
-    final theirStrokes = isChallenger ? event.opponentStrokes : event.challengerStrokes;
+    final myStrokes = isChallenger
+        ? event.challengerStrokes
+        : event.opponentStrokes;
+    final theirStrokes = isChallenger
+        ? event.opponentStrokes
+        : event.challengerStrokes;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -444,17 +534,20 @@ class _HoleSummaryRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 40,
-            child: Text('H${event.hole}',
-                style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
+            child: Text(
+              'H${event.hole}',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
           ),
           Container(
-            width: 8, height: 8,
+            width: 8,
+            height: 8,
             decoration: BoxDecoration(shape: BoxShape.circle, color: color),
           ),
           const SizedBox(width: 10),
-          Text('$myStrokes vs $theirStrokes',
-              style: theme.textTheme.bodySmall),
+          Text('$myStrokes vs $theirStrokes', style: theme.textTheme.bodySmall),
           const SizedBox(width: 8),
           if (!isTie)
             Expanded(
@@ -462,15 +555,19 @@ class _HoleSummaryRow extends StatelessWidget {
                 '${event.attackerBogeybeastName} → ${event.defenderBogeybeastName} '
                 '(${event.damage} dmg, ${event.typeMult.toStringAsFixed(1)}×)',
                 style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55)),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             )
           else
             Expanded(
-              child: Text('Tie',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.4))),
+              child: Text(
+                'Tie',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+              ),
             ),
         ],
       ),
@@ -509,18 +606,26 @@ class _EvolveRewardSectionState extends State<_EvolveRewardSection> {
         child: Row(
           children: [
             SizedBox(
-              width: 40, height: 40,
-              child: Image.asset(_evolved!.assetPath, fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.pets)),
+              width: 40,
+              height: 40,
+              child: Image.asset(
+                _evolved!.assetPath,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Icon(Icons.pets),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
               child: Icon(Icons.arrow_forward_rounded, color: color, size: 20),
             ),
             SizedBox(
-              width: 40, height: 40,
-              child: Image.asset(_intoSpecies!.assetPath, fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.pets)),
+              width: 40,
+              height: 40,
+              child: Image.asset(
+                _intoSpecies!.assetPath,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Icon(Icons.pets),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -598,7 +703,9 @@ class _EvolveRewardSectionState extends State<_EvolveRewardSection> {
       final targets = nextEvolutionTargets(dex);
       if (targets != null) {
         try {
-          final species = firstGenBogeybeast.firstWhere((s) => s.dexNumber == dex);
+          final species = firstGenBogeybeast.firstWhere(
+            (s) => s.dexNumber == dex,
+          );
           evolvable.add((species, targets));
         } catch (_) {}
       }
@@ -607,7 +714,9 @@ class _EvolveRewardSectionState extends State<_EvolveRewardSection> {
     if (evolvable.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('None of your Bogeybeasts can evolve yet.')),
+          const SnackBar(
+            content: Text('None of your Bogeybeasts can evolve yet.'),
+          ),
         );
       }
       return;
@@ -615,14 +724,15 @@ class _EvolveRewardSectionState extends State<_EvolveRewardSection> {
 
     // Show picker sheet
     if (!mounted) return;
-    final result = await showModalBottomSheet<(BogeybeastSpecies, BogeybeastSpecies)>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => _EvolvePickerSheet(evolvable: evolvable),
-    );
+    final result =
+        await showModalBottomSheet<(BogeybeastSpecies, BogeybeastSpecies)>(
+          context: context,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (_) => _EvolvePickerSheet(evolvable: evolvable),
+        );
 
     if (result == null || !mounted) return;
 
@@ -637,7 +747,10 @@ class _EvolveRewardSectionState extends State<_EvolveRewardSection> {
           from: from,
           into: into,
           onEvolve: () async {
-            await bogeybeastStore.evolveBogeybeast(from.dexNumber, into.dexNumber);
+            await bogeybeastStore.evolveBogeybeast(
+              from.dexNumber,
+              into.dexNumber,
+            );
             await battleStore.claimEvolutionReward(widget.battle.id);
           },
         ),
@@ -673,20 +786,27 @@ class _EvolvePickerSheet extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: theme.colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(height: 14),
-            Text('Choose a Bogeybeast to evolve',
-                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+            Text(
+              'Choose a Bogeybeast to evolve',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text('This uses your victory reward — choose wisely.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                )),
+            Text(
+              'This uses your victory reward — choose wisely.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
             const SizedBox(height: 12),
             Expanded(
               child: ListView.builder(
@@ -694,20 +814,27 @@ class _EvolvePickerSheet extends StatelessWidget {
                 itemCount: evolvable.length,
                 itemBuilder: (_, i) {
                   final (species, targets) = evolvable[i];
-                  final targetSpecies = targets.map((dex) {
-                    try {
-                      return firstGenBogeybeast.firstWhere((s) => s.dexNumber == dex);
-                    } catch (_) {
-                      return null;
-                    }
-                  }).whereType<BogeybeastSpecies>().toList();
+                  final targetSpecies = targets
+                      .map((dex) {
+                        try {
+                          return firstGenBogeybeast.firstWhere(
+                            (s) => s.dexNumber == dex,
+                          );
+                        } catch (_) {
+                          return null;
+                        }
+                      })
+                      .whereType<BogeybeastSpecies>()
+                      .toList();
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
                       onTap: targetSpecies.length == 1
-                          ? () => Navigator.of(context).pop((species, targetSpecies.first))
+                          ? () => Navigator.of(
+                              context,
+                            ).pop((species, targetSpecies.first))
                           : null,
                       child: Padding(
                         padding: const EdgeInsets.all(12),
@@ -717,51 +844,90 @@ class _EvolvePickerSheet extends StatelessWidget {
                             Row(
                               children: [
                                 SizedBox(
-                                  width: 44, height: 44,
-                                  child: Image.asset(species.assetPath, fit: BoxFit.contain,
-                                      errorBuilder: (_, __, ___) => const Icon(Icons.pets)),
+                                  width: 44,
+                                  height: 44,
+                                  child: Image.asset(
+                                    species.assetPath,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, __, ___) =>
+                                        const Icon(Icons.pets),
+                                  ),
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Text(species.name,
-                                          style: theme.textTheme.titleSmall
-                                              ?.copyWith(fontWeight: FontWeight.w700)),
-                                      Text('#${species.paddedDexNumber}',
-                                          style: theme.textTheme.labelSmall?.copyWith(
-                                            color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                                          )),
+                                      Text(
+                                        species.name,
+                                        style: theme.textTheme.titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                      Text(
+                                        '#${species.paddedDexNumber}',
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color: theme.colorScheme.onSurface
+                                                  .withValues(alpha: 0.4),
+                                            ),
+                                      ),
                                     ],
                                   ),
                                 ),
-                                Icon(Icons.arrow_forward_rounded, size: 16,
-                                    color: color.withValues(alpha: 0.6)),
+                                Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 16,
+                                  color: color.withValues(alpha: 0.6),
+                                ),
                                 const SizedBox(width: 6),
                                 // Evolution target(s)
                                 Row(
-                                  children: targetSpecies.map((t) => GestureDetector(
-                                    onTap: () => Navigator.of(context).pop((species, t)),
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(left: 6),
-                                      child: Column(
-                                        children: [
-                                          SizedBox(
-                                            width: 44, height: 44,
-                                            child: Image.asset(t.assetPath, fit: BoxFit.contain,
-                                                errorBuilder: (_, __, ___) => const Icon(Icons.pets)),
+                                  children: targetSpecies
+                                      .map(
+                                        (t) => GestureDetector(
+                                          onTap: () => Navigator.of(
+                                            context,
+                                          ).pop((species, t)),
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(
+                                              left: 6,
+                                            ),
+                                            child: Column(
+                                              children: [
+                                                SizedBox(
+                                                  width: 44,
+                                                  height: 44,
+                                                  child: Image.asset(
+                                                    t.assetPath,
+                                                    fit: BoxFit.contain,
+                                                    errorBuilder:
+                                                        (_, __, ___) =>
+                                                            const Icon(
+                                                              Icons.pets,
+                                                            ),
+                                                  ),
+                                                ),
+                                                Text(
+                                                  t.name,
+                                                  style: theme
+                                                      .textTheme
+                                                      .labelSmall
+                                                      ?.copyWith(
+                                                        fontSize: 9,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: color,
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                          Text(t.name,
-                                              style: theme.textTheme.labelSmall?.copyWith(
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.w600,
-                                                color: color,
-                                              )),
-                                        ],
-                                      ),
-                                    ),
-                                  )).toList(),
+                                        ),
+                                      )
+                                      .toList(),
                                 ),
                               ],
                             ),
@@ -787,7 +953,8 @@ class _ClaimLeadershipSection extends StatefulWidget {
   final Battle battle;
 
   @override
-  State<_ClaimLeadershipSection> createState() => _ClaimLeadershipSectionState();
+  State<_ClaimLeadershipSection> createState() =>
+      _ClaimLeadershipSectionState();
 }
 
 class _ClaimLeadershipSectionState extends State<_ClaimLeadershipSection> {
@@ -863,8 +1030,14 @@ class _ClaimLeadershipSectionState extends State<_ClaimLeadershipSection> {
           FilledButton.icon(
             onPressed: _claiming ? null : _startClaim,
             icon: _claiming
-                ? const SizedBox(width: 18, height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                 : const Text('⚔️', style: TextStyle(fontSize: 14)),
             label: Text(_claiming ? 'Claiming...' : 'Assign Defenders'),
             style: FilledButton.styleFrom(
@@ -894,20 +1067,22 @@ class _ClaimLeadershipSectionState extends State<_ClaimLeadershipSection> {
     setState(() => _claiming = true);
     try {
       await battleStore.claimCourseLeadership(
-        courseId:     widget.battle.courseId,
-        battleId:     widget.battle.id,
+        courseId: widget.battle.courseId,
+        battleId: widget.battle.id,
         defenderTeam: team,
       );
 
       if (mounted) {
-        bogeybeastStore.updateCourseLeader(CourseLeader(
-          courseId: widget.battle.courseId,
-          userId: battleStore.currentUserId,
-          leaderName: bogeybeastStore.golferName ?? 'Golfer',
-          hcp: bogeybeastStore.playerHcp.round(),
-          team: team,
-          isNpc: false,
-        ));
+        bogeybeastStore.updateCourseLeader(
+          CourseLeader(
+            courseId: widget.battle.courseId,
+            userId: battleStore.currentUserId,
+            leaderName: bogeybeastStore.golferName ?? 'Golfer',
+            hcp: bogeybeastStore.playerHcp.round(),
+            team: team,
+            isNpc: false,
+          ),
+        );
         setState(() {
           _claimed = true;
           _claiming = false;
@@ -916,9 +1091,9 @@ class _ClaimLeadershipSectionState extends State<_ClaimLeadershipSection> {
     } catch (e) {
       if (mounted) {
         setState(() => _claiming = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to claim: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to claim: $e')));
       }
     }
   }

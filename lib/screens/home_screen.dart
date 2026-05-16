@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import '../widgets/beast_icon.dart';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -7,11 +8,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../app.dart';
 import '../data/first_gen_bogeybeasts.dart';
+import 'onboarding_screen.dart';
 import '../models/course_leader.dart';
 import '../models/golf_course.dart';
 import '../models/golfer_team.dart';
-import '../state/bogeybeasts_golf_store.dart';
 import '../widgets/white_bg_image.dart';
+
+const _hickoryGuideAsset = 'assets/golfers/starter_hickory.png';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -19,13 +22,13 @@ class HomeScreen extends StatefulWidget {
     required this.onPlay,
     required this.onResumeRound,
     required this.onBattleMode,
-    required this.onGymChallenge,
+    required this.onLeaderChallenge,
   });
 
   final VoidCallback onPlay;
   final VoidCallback onResumeRound;
   final VoidCallback onBattleMode;
-  final void Function(GolfCourse course) onGymChallenge;
+  final void Function(GolfCourse course) onLeaderChallenge;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -44,10 +47,10 @@ class _HomeScreenState extends State<HomeScreen> {
     PackageInfo.fromPlatform().then((info) {
       if (mounted) setState(() => _version = info.version);
     });
-    _findNearestGym();
+    _findNearestChallengeCourse();
   }
 
-  Future<void> _findNearestGym() async {
+  Future<void> _findNearestChallengeCourse() async {
     try {
       LocationPermission perm = await Geolocator.checkPermission();
       if (perm == LocationPermission.denied) {
@@ -60,7 +63,9 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
       );
       if (!mounted) return;
 
@@ -88,11 +93,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  static double _haversineKm(double lat1, double lng1, double lat2, double lng2) {
+  static double _haversineKm(
+    double lat1,
+    double lng1,
+    double lat2,
+    double lng2,
+  ) {
     const r = 6371.0;
     final dLat = _deg2rad(lat2 - lat1);
     final dLng = _deg2rad(lng2 - lng1);
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
         math.cos(_deg2rad(lat1)) *
             math.cos(_deg2rad(lat2)) *
             math.sin(dLng / 2) *
@@ -119,11 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
-                      Icon(
-                        Icons.pets,
-                        size: 72,
-                        color: theme.colorScheme.primary,
-                      ),
+                      BeastIcon(size: 72),
                       const SizedBox(height: 16),
                       Text(
                         'Bogeybeasts',
@@ -142,36 +149,44 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         if (store.homeCourseId != null)
-                          Builder(builder: (context) {
-                            final name =
-                                store.courseNameForId(store.homeCourseId);
-                            if (name == null) return const SizedBox.shrink();
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
-                                  Icon(Icons.home, size: 14,
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.5)),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    name,
-                                    style: theme.textTheme.bodySmall?.copyWith(
+                          Builder(
+                            builder: (context) {
+                              final name = store.courseNameForId(
+                                store.homeCourseId,
+                              );
+                              if (name == null) return const SizedBox.shrink();
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    Icon(
+                                      Icons.home,
+                                      size: 14,
                                       color: theme.colorScheme.onSurface
                                           .withValues(alpha: 0.5),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      name,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: theme.colorScheme.onSurface
+                                                .withValues(alpha: 0.5),
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                       ] else
                         Text(
                           'Catch them on the course',
                           style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withValues(alpha: 0.6),
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.6,
+                            ),
                           ),
                         ),
                       const SizedBox(height: 48),
@@ -180,7 +195,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: double.infinity,
                           child: OutlinedButton.icon(
                             onPressed: widget.onResumeRound,
-                            icon: const Icon(Icons.play_circle_outline_rounded, size: 22),
+                            icon: const Icon(
+                              Icons.play_circle_outline_rounded,
+                              size: 22,
+                            ),
                             label: Text(
                               'Resume Hole ${store.activeRound!.currentHoleNumber}',
                             ),
@@ -191,15 +209,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       // ── Catch (primary) ──────────────────────────────
                       _CatchCard(onTap: widget.onPlay),
                       const SizedBox(height: 10),
-                      // ── PvP + Gym (secondary row) ─────────────────────
+                      // ── PvP Battle + Leader Challenge (secondary row) ──
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: _ActionCard(
-                              icon: Icons.videogame_asset_rounded,
-                              label: 'PvP',
-                              subtitle: 'PvP challenge',
+                              icon: Icons.sports_mma_rounded,
+                              label: 'PvP Battle',
+                              subtitle: 'Battle a golfer',
                               color: const Color(0xFFEF1010),
                               onTap: store.caughtDexNumbers.length >= 3
                                   ? widget.onBattleMode
@@ -211,18 +229,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(width: 10),
                           Expanded(
-                            child: _GymCard(
+                            child: _ChallengeCard(
                               nearestCourse: _nearestCourse,
                               locationDone: _locationDone,
                               leader: _nearestCourse != null
                                   ? store.leaderForCourse(_nearestCourse!.id)
                                   : null,
-                              canChallenge: store.caughtDexNumbers.length >= 3,
                               lockHint: store.caughtDexNumbers.length < 3
                                   ? 'Catch ${3 - store.caughtDexNumbers.length} more'
                                   : null,
-                              onTap: store.caughtDexNumbers.length >= 3 && _nearestCourse != null
-                                  ? () => widget.onGymChallenge(_nearestCourse!)
+                              onTap:
+                                  store.caughtDexNumbers.length >= 3 &&
+                                      _nearestCourse != null
+                                  ? () => widget.onLeaderChallenge(
+                                      _nearestCourse!,
+                                    )
                                   : null,
                             ),
                           ),
@@ -231,14 +252,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 48),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 28, vertical: 16),
+                          horizontal: 28,
+                          vertical: 16,
+                        ),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.surfaceContainerHighest
                               .withValues(alpha: 0.45),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: theme.colorScheme.outlineVariant
-                                .withValues(alpha: 0.6),
+                            color: theme.colorScheme.outlineVariant.withValues(
+                              alpha: 0.6,
+                            ),
                             width: 1,
                           ),
                         ),
@@ -246,20 +270,29 @@ class _HomeScreenState extends State<HomeScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
                             _QuickStat(
-                              icon: Icons.pets,
+                              icon: Icon(
+                                Icons.pets,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                               value: '${store.caughtDexNumbers.length}',
                               label: '/ ${firstGenBogeybeast.length}',
                             ),
                             Container(
                               width: 1,
                               height: 32,
-                              margin:
-                                  const EdgeInsets.symmetric(horizontal: 24),
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                              ),
                               color: theme.colorScheme.outlineVariant
                                   .withValues(alpha: 0.6),
                             ),
                             _QuickStat(
-                              icon: Icons.sports_golf,
+                              icon: Icon(
+                                Icons.sports_golf,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                               value: '${store.completedRounds.length}',
                               label: 'rounds',
                             ),
@@ -270,7 +303,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         _version.isEmpty ? '' : 'v$_version',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.25),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.25,
+                          ),
                         ),
                       ),
                     ],
@@ -286,13 +321,20 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(Icons.settings, size: 22),
               tooltip: 'Settings',
               onSelected: (value) {
-                if (value == 'reset') {
+                if (value == 'tutorial') {
+                  _showTutorial(context);
+                } else if (value == 'reset') {
                   _confirmResetProgress(context);
                 } else if (value == 'signout') {
                   _confirmSignOut(context);
                 }
               },
               itemBuilder: (_) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'tutorial',
+                  child: Text('Replay tutorial'),
+                ),
+                const PopupMenuDivider(),
                 const PopupMenuItem<String>(
                   value: 'reset',
                   child: Text('Reset all progress'),
@@ -314,6 +356,18 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showTutorial(BuildContext context) {
+    final store = BogeybeastGolfScope.of(context);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => OnboardingScreen(
+          store: store,
+          onComplete: () => Navigator.of(context).pop(),
+        ),
       ),
     );
   }
@@ -342,7 +396,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 await store.resetProgress();
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('All progress has been reset')),
+                    const SnackBar(
+                      content: Text('All progress has been reset'),
+                    ),
                   );
                 }
               } catch (_) {
@@ -424,53 +480,125 @@ class _InfoSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          Text('How It Works',
-              style: theme.textTheme.headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.w800)),
-          const SizedBox(height: 20),
-          _section(theme, 'Catch Rates'),
-          const SizedBox(height: 8),
-          _rateTable(theme),
-          const SizedBox(height: 20),
-          _section(theme, 'Encounter Rates'),
-          const SizedBox(height: 8),
-          Text('Base encounter chance per rarity:', style: TextStyle(color: dim)),
-          const SizedBox(height: 6),
-          _encounterRow(theme, 'Common', '35%', const Color(0xFF4CAF50)),
-          _encounterRow(theme, 'Uncommon', '25%', const Color(0xFF26A69A)),
-          _encounterRow(theme, 'Rare', '20%', const Color(0xFF1E88E5)),
-          _encounterRow(theme, 'Epic', '14%', const Color(0xFF8E24AA)),
-          _encounterRow(theme, 'Legendary', '6%', const Color(0xFFFFB300)),
-          const SizedBox(height: 20),
-          _section(theme, 'Terrain Bonuses'),
-          const SizedBox(height: 8),
-          Text(
-            'Toggle terrain on a hole to boost the chance of encountering matching Bogeybeast types on the next hole.',
-            style: TextStyle(color: dim),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: <Widget>[
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'How It Works',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Starter Hickory explains the strange little things living between the fairway and the flag.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: dim,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Image.asset(
+                _hickoryGuideAsset,
+                height: 110,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Icon(
+                  Icons.sports_golf_rounded,
+                  size: 48,
+                  color: theme.colorScheme.primary.withValues(alpha: 0.45),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          _terrainRow(theme, 'Bunker', 'Ground · Rock · Fire',
-              const Color(0xFFFFB74D)),
-          _terrainRow(theme, 'Water', 'Water · Ice',
-              const Color(0xFF42A5F5)),
-          _terrainRow(theme, 'Rough', 'Grass · Poison · Bug',
-              const Color(0xFF66BB6A)),
-          _terrainRow(theme, '1-Putt', 'Psychic · Ghost · Electric',
-              const Color(0xFF7E57C2)),
-          const SizedBox(height: 20),
-          _section(theme, 'Legendary Streak'),
-          const SizedBox(height: 8),
-          Text(
-            'Making par or better on consecutive holes builds a streak. '
-            'At 2+ holes in a row, each hole in the streak adds +3% legendary encounter rate.',
-            style: TextStyle(color: dim),
+          const SizedBox(height: 16),
+          _hickoryNote(theme),
+          const SizedBox(height: 14),
+          _infoCard(
+            theme,
+            title: '1. Play Better, Catch Easier',
+            body:
+                'Your score on a hole is the biggest thing Hickory looks at. Eagles, birdies, and pars give you the best catch chances. Bogeys still work, but the tougher beasts get slippery fast.',
+            child: _rateTable(theme),
           ),
-          const SizedBox(height: 6),
-          Text(
-            'Example: 4 pars in a row = +12% legendary chance on the next hole.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: dim,
-              fontStyle: FontStyle.italic,
+          const SizedBox(height: 12),
+          _infoCard(
+            theme,
+            title: '2. Every Hole Can Stir Up Trouble',
+            body:
+                'Before each hole, the game rolls for the rarity of the Bogeybeast you might meet.',
+            child: Column(
+              children: <Widget>[
+                _encounterRow(theme, 'Common', '35%', const Color(0xFF4CAF50)),
+                _encounterRow(
+                  theme,
+                  'Uncommon',
+                  '25%',
+                  const Color(0xFF26A69A),
+                ),
+                _encounterRow(theme, 'Rare', '20%', const Color(0xFF1E88E5)),
+                _encounterRow(theme, 'Epic', '14%', const Color(0xFF8E24AA)),
+                _encounterRow(
+                  theme,
+                  'Legendary',
+                  '6%',
+                  const Color(0xFFFFB300),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          _infoCard(
+            theme,
+            title: '3. Terrain Leaves a Trail',
+            body:
+                'Mark what happened on a hole and the next hole leans toward matching Bogeybeast types.',
+            child: Column(
+              children: <Widget>[
+                _terrainRow(
+                  theme,
+                  'Bunker',
+                  'Ground · Rock · Fire',
+                  const Color(0xFFFFB74D),
+                ),
+                _terrainRow(
+                  theme,
+                  'Water',
+                  'Water · Ice',
+                  const Color(0xFF42A5F5),
+                ),
+                _terrainRow(
+                  theme,
+                  'Rough',
+                  'Grass · Poison · Bug',
+                  const Color(0xFF66BB6A),
+                ),
+                _terrainRow(
+                  theme,
+                  '1-Putt',
+                  'Psychic · Ghost · Electric',
+                  const Color(0xFF7E57C2),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          _infoCard(
+            theme,
+            title: '4. Streaks Wake the Legends',
+            body:
+                'Make par or better on consecutive holes to build a legendary streak. From 2 holes onward, each hole in the streak adds +3% legendary encounter rate.',
+            child: Text(
+              'Example: 4 pars in a row = +12% legendary chance on the next hole.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: dim,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ),
         ],
@@ -478,14 +606,90 @@ class _InfoSheet extends StatelessWidget {
     );
   }
 
-  Widget _section(ThemeData theme, String title) {
-    return Text(title,
-        style: theme.textTheme.titleMedium
-            ?.copyWith(fontWeight: FontWeight.w700));
+  Widget _hickoryNote(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.24),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(
+            Icons.format_quote_rounded,
+            color: theme.colorScheme.primary,
+            size: 22,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "Play tidy golf, mind the terrain, and keep your nerve. That's when the rare ones show themselves.",
+              style: theme.textTheme.bodyMedium?.copyWith(
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoCard(
+    ThemeData theme, {
+    required String title,
+    required String body,
+    required Widget child,
+  }) {
+    final dim = theme.colorScheme.onSurface.withValues(alpha: 0.58);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.42,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            body,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: dim,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
   }
 
   Widget _rateTable(ThemeData theme) {
-    const List<String> headers = ['', 'Eagle', 'Birdie', 'Par', 'Bogey', 'Dbl', 'Trpl+'];
+    const List<String> headers = [
+      '',
+      'Eagle',
+      'Birdie',
+      'Par',
+      'Bogey',
+      'Dbl',
+      'Trpl+',
+    ];
     const List<List<String>> rows = [
       ['Common', '100', '100', '100', '65', '20', '5'],
       ['Uncomn', '100', '100', '95', '50', '12', '3'],
@@ -502,10 +706,13 @@ class _InfoSheet extends StatelessWidget {
     ];
 
     final dim = theme.colorScheme.onSurface.withValues(alpha: 0.4);
-    final headerStyle = theme.textTheme.labelSmall!
-        .copyWith(fontWeight: FontWeight.w700, color: dim);
-    final cellStyle = theme.textTheme.bodySmall!
-        .copyWith(fontWeight: FontWeight.w600);
+    final headerStyle = theme.textTheme.labelSmall!.copyWith(
+      fontWeight: FontWeight.w700,
+      color: dim,
+    );
+    final cellStyle = theme.textTheme.bodySmall!.copyWith(
+      fontWeight: FontWeight.w600,
+    );
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -513,9 +720,16 @@ class _InfoSheet extends StatelessWidget {
         children: <Widget>[
           Row(
             children: headers
-                .map((h) => SizedBox(
+                .map(
+                  (h) => SizedBox(
                     width: h.isEmpty ? 60 : 46,
-                    child: Text(h, style: headerStyle, textAlign: TextAlign.center)))
+                    child: Text(
+                      h,
+                      style: headerStyle,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                )
                 .toList(),
           ),
           const SizedBox(height: 4),
@@ -526,14 +740,19 @@ class _InfoSheet extends StatelessWidget {
                 children: <Widget>[
                   SizedBox(
                     width: 60,
-                    child: Text(rows[i][0],
-                        style: cellStyle.copyWith(color: rowColors[i])),
+                    child: Text(
+                      rows[i][0],
+                      style: cellStyle.copyWith(color: rowColors[i]),
+                    ),
                   ),
                   for (int j = 1; j < rows[i].length; j++)
                     SizedBox(
                       width: 46,
-                      child: Text('${rows[i][j]}%',
-                          style: cellStyle, textAlign: TextAlign.center),
+                      child: Text(
+                        '${rows[i][j]}%',
+                        style: cellStyle,
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                 ],
               ),
@@ -543,8 +762,7 @@ class _InfoSheet extends StatelessWidget {
     );
   }
 
-  Widget _encounterRow(
-      ThemeData theme, String label, String pct, Color color) {
+  Widget _encounterRow(ThemeData theme, String label, String pct, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
@@ -555,17 +773,27 @@ class _InfoSheet extends StatelessWidget {
             decoration: BoxDecoration(shape: BoxShape.circle, color: color),
           ),
           const SizedBox(width: 10),
-          SizedBox(width: 80, child: Text(label, style: theme.textTheme.bodyMedium)),
-          Text(pct,
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w700)),
+          SizedBox(
+            width: 80,
+            child: Text(label, style: theme.textTheme.bodyMedium),
+          ),
+          Text(
+            pct,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _terrainRow(
-      ThemeData theme, String terrain, String types, Color color) {
+    ThemeData theme,
+    String terrain,
+    String types,
+    Color color,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -575,29 +803,32 @@ class _InfoSheet extends StatelessWidget {
             width: 10,
             height: 10,
             margin: const EdgeInsets.only(top: 5),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color,
-            ),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
           ),
           const SizedBox(width: 10),
           SizedBox(
             width: 64,
-            child: Text(terrain,
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            child: Text(
+              terrain,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           Expanded(
-            child: Text(types,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                )),
+            child: Text(
+              types,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 }
+
 // Full-width primary Catch card.
 class _CatchCard extends StatelessWidget {
   const _CatchCard({required this.onTap});
@@ -608,7 +839,10 @@ class _CatchCard extends StatelessWidget {
     final theme = Theme.of(context);
     const color = Color(0xFF2E7D32);
     const fgColor = Color(0xFF4EE566); // vivid neon green matching the logo
-    final cardBg = Color.alphaBlend(color.withValues(alpha: 0.22), theme.colorScheme.surface);
+    final cardBg = Color.alphaBlend(
+      color.withValues(alpha: 0.22),
+      theme.colorScheme.surface,
+    );
     return Material(
       color: cardBg,
       borderRadius: BorderRadius.circular(14),
@@ -620,7 +854,10 @@ class _CatchCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 20),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: fgColor.withValues(alpha: 0.55), width: 1.5),
+            border: Border.all(
+              color: fgColor.withValues(alpha: 0.55),
+              width: 1.5,
+            ),
           ),
           child: Column(
             children: [
@@ -649,7 +886,7 @@ class _CatchCard extends StatelessWidget {
   }
 }
 
-// Compact secondary card (PvP).
+// Compact secondary card (Battle).
 class _ActionCard extends StatelessWidget {
   const _ActionCard({
     required this.icon,
@@ -712,7 +949,9 @@ class _ActionCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 10,
-                  color: theme.colorScheme.onSurface.withValues(alpha: enabled ? 0.4 : 0.2),
+                  color: theme.colorScheme.onSurface.withValues(
+                    alpha: enabled ? 0.4 : 0.2,
+                  ),
                 ),
               ),
             ],
@@ -723,13 +962,12 @@ class _ActionCard extends StatelessWidget {
   }
 }
 
-// Gym card: compact secondary card with embedded leader preview.
-class _GymCard extends StatelessWidget {
-  const _GymCard({
+// Challenge card: compact secondary card with embedded leader preview.
+class _ChallengeCard extends StatelessWidget {
+  const _ChallengeCard({
     required this.nearestCourse,
     required this.locationDone,
     required this.leader,
-    required this.canChallenge,
     required this.onTap,
     this.lockHint,
   });
@@ -737,22 +975,24 @@ class _GymCard extends StatelessWidget {
   final GolfCourse? nearestCourse;
   final bool locationDone;
   final CourseLeader? leader;
-  final bool canChallenge;
   final VoidCallback? onTap;
   final String? lockHint;
 
   @override
   Widget build(BuildContext context) {
-    const gymColor = Color(0xFFF9A825);
+    const challengeColor = Color(0xFFF9A825);
     final leaderColor = leader != null
         ? teamColor(GolferTeam.fromDb(leader!.golferTeam))
-        : gymColor;
+        : challengeColor;
     final enabled = onTap != null;
-    final gymFg = Color.lerp(gymColor, Colors.white, 0.45)!;
+    final challengeFg = Color.lerp(challengeColor, Colors.white, 0.45)!;
 
-    // Loading / no gym nearby — simple compact state
+    // Loading / no nearby leader challenge — simple compact state
     if (nearestCourse == null || leader == null) {
-      final dimBg = Color.alphaBlend(gymColor.withValues(alpha: 0.10), Theme.of(context).colorScheme.surface);
+      final dimBg = Color.alphaBlend(
+        challengeColor.withValues(alpha: 0.10),
+        Theme.of(context).colorScheme.surface,
+      );
       return Material(
         color: dimBg,
         borderRadius: BorderRadius.circular(14),
@@ -760,27 +1000,34 @@ class _GymCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: gymFg.withValues(alpha: 0.25), width: 1.5),
+            border: Border.all(
+              color: challengeFg.withValues(alpha: 0.25),
+              width: 1.5,
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.shield_rounded, color: gymFg.withValues(alpha: 0.35), size: 26),
+              Icon(
+                Icons.shield_rounded,
+                color: challengeFg.withValues(alpha: 0.35),
+                size: 26,
+              ),
               const SizedBox(height: 6),
               Text(
-                'Gym',
+                'Challenge',
                 style: TextStyle(
-                  color: gymFg.withValues(alpha: 0.35),
+                  color: challengeFg.withValues(alpha: 0.35),
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
-                !locationDone ? 'Finding gym…' : 'No gym nearby',
+                !locationDone ? 'Finding leader…' : 'No leader nearby',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: gymFg.withValues(alpha: 0.3),
+                  color: challengeFg.withValues(alpha: 0.3),
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
                 ),
@@ -795,9 +1042,11 @@ class _GymCard extends StatelessWidget {
         ? Color.lerp(leaderColor, Colors.white, 0.45)!
         : Color.lerp(leaderColor, Colors.white, 0.45)!.withValues(alpha: 0.35);
 
-    // Gym found — show leader info inside the card
+    // Leader found — show challenge info inside the card
     final cardBg = Color.alphaBlend(
-      (enabled ? leaderColor : leaderColor.withValues(alpha: 0.35)).withValues(alpha: enabled ? 0.22 : 0.10),
+      (enabled ? leaderColor : leaderColor.withValues(alpha: 0.35)).withValues(
+        alpha: enabled ? 0.22 : 0.10,
+      ),
       Theme.of(context).colorScheme.surface,
     );
     return Material(
@@ -824,7 +1073,7 @@ class _GymCard extends StatelessWidget {
                   Icon(Icons.shield_rounded, color: fgColor, size: 14),
                   const SizedBox(width: 4),
                   Text(
-                    'Gym',
+                    'Challenge',
                     style: TextStyle(
                       color: fgColor,
                       fontSize: 13,
@@ -884,7 +1133,8 @@ class _GymCard extends StatelessWidget {
                           child: Image.asset(
                             p.assetPath,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                            errorBuilder: (_, __, ___) =>
+                                const SizedBox.shrink(),
                           ),
                         ),
                       ),
@@ -956,7 +1206,7 @@ class _QuickStat extends StatelessWidget {
     required this.label,
   });
 
-  final IconData icon;
+  final Widget icon;
   final String value;
   final String label;
 
@@ -967,7 +1217,7 @@ class _QuickStat extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Icon(icon, size: 18, color: theme.colorScheme.primary),
+        SizedBox(width: 18, height: 18, child: icon),
         const SizedBox(width: 8),
         Text(
           value,

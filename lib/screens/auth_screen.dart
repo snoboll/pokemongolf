@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/beast_icon.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -119,30 +120,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   // Logo with glow
-                  Container(
-                    width: 88,
-                    height: 88,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: colorScheme.primary.withValues(alpha: 0.12),
-                      border: Border.all(
-                        color: colorScheme.primary.withValues(alpha: 0.4),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.primary.withValues(alpha: 0.22),
-                          blurRadius: 32,
-                          spreadRadius: 4,
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.pets,
-                      size: 44,
-                      color: colorScheme.primary,
-                    ),
-                  ),
+                  BeastIcon(size: 200),
                   const SizedBox(height: 20),
                   Text(
                     'Bogeybeasts',

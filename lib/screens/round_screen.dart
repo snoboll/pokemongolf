@@ -16,13 +16,16 @@ import '../widgets/score_picker.dart';
 import 'scorecard_detail_screen.dart';
 
 class RoundScreen extends StatefulWidget {
-  const RoundScreen({super.key});
+  const RoundScreen({super.key, this.skipEncounterIntro = false});
+
+  final bool skipEncounterIntro;
 
   @override
   State<RoundScreen> createState() => _RoundScreenState();
 }
 
-class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin {
+class _RoundScreenState extends State<RoundScreen>
+    with TickerProviderStateMixin {
   int _par = 4;
   GolfScore _selectedScore = GolfScore.par;
   int? _customStrokes; // set when user enters a stroke count manually
@@ -93,7 +96,8 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
       builder: (ctx) => AlertDialog(
         title: const Text('Save & exit?'),
         content: const Text(
-            'Your completed holes will be saved as a scorecard.'),
+          'Your completed holes will be saved as a scorecard.',
+        ),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -106,10 +110,9 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
         ],
       ),
     ).then((confirmed) {
-      if (confirmed == true && mounted) {
-        store.endRoundEarly();
-        Navigator.of(context).pop();
-      }
+      if (confirmed != true || !context.mounted) return;
+      store.endRoundEarly();
+      Navigator.of(context).pop();
     });
   }
 
@@ -118,8 +121,7 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Discard round?'),
-        content: const Text(
-            'All progress for this round will be lost.'),
+        content: const Text('All progress for this round will be lost.'),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -135,10 +137,9 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
         ],
       ),
     ).then((confirmed) {
-      if (confirmed == true && mounted) {
-        store.discardRound();
-        Navigator.of(context).pop();
-      }
+      if (confirmed != true || !context.mounted) return;
+      store.discardRound();
+      Navigator.of(context).pop();
     });
   }
 
@@ -164,15 +165,18 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
     );
 
     // Double flash: 0–800ms (0.00–0.20)
-    _flashOpacity = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 1),
-    ]).animate(CurvedAnimation(
-      parent: _encounterController,
-      curve: const Interval(0.00, 0.20),
-    ));
+    _flashOpacity =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 1),
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 1),
+          TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 1),
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 1),
+        ]).animate(
+          CurvedAnimation(
+            parent: _encounterController,
+            curve: const Interval(0.00, 0.20),
+          ),
+        );
 
     // Stripes cover screen: 800–1800ms (0.20–0.45)
     _stripesIn = CurvedAnimation(
@@ -189,13 +193,13 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
     );
 
     // Bogeybeast slides in slowly from right: 2400–3700ms (0.60–0.925)
-    _bogeybeastSlide = Tween<Offset>(
-      begin: const Offset(1.5, 0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _encounterController,
-      curve: const Interval(0.60, 0.925, curve: Curves.easeOutCubic),
-    ));
+    _bogeybeastSlide =
+        Tween<Offset>(begin: const Offset(1.5, 0), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _encounterController,
+            curve: const Interval(0.60, 0.925, curve: Curves.easeOutCubic),
+          ),
+        );
 
     // Grayscale fades to color: 3500–4000ms (0.875–1.00)
     _grayscaleAmount = Tween<double>(begin: 1.0, end: 0.0).animate(
@@ -205,9 +209,13 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
       ),
     );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _encounterController.forward();
-    });
+    if (widget.skipEncounterIntro) {
+      _encounterController.value = 1.0;
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _encounterController.forward();
+      });
+    }
   }
 
   @override
@@ -258,8 +266,10 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
             children: <Widget>[
               const Icon(Icons.golf_course_outlined, size: 56),
               const SizedBox(height: 16),
-              Text('No active round',
-                  style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                'No active round',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(),
@@ -278,7 +288,8 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
     return Scaffold(
       appBar: AppBar(
         title: Text(
-            'Hole ${activeRound.currentHoleNumber} / ${activeRound.holeCount}'),
+          'Hole ${activeRound.currentHoleNumber} / ${activeRound.holeCount}',
+        ),
         actions: <Widget>[
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -333,244 +344,277 @@ class _RoundScreenState extends State<RoundScreen> with TickerProviderStateMixin
                 minHeight: 3,
                 backgroundColor: theme.colorScheme.surfaceContainerHigh,
               ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-              child: AnimatedBuilder(
-                animation: _encounterController,
-                builder: (context, child) {
-                  final double v = _encounterController.value;
-                  // Hide content during flash+stripe-in phase; reveal once black
-                  final bool hidden = v > 0 && v < 0.45;
-                  return Opacity(opacity: hidden ? 0.0 : 1.0, child: child);
-                },
-                child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  if (activeRound.currentGreenCoord != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: DistanceToGreen(target: activeRound.currentGreenCoord!),
-                    ),
-                  SizedBox(
-                    height: 180,
-                    child: Stack(
-                      clipBehavior: Clip.none,
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                  child: AnimatedBuilder(
+                    animation: _encounterController,
+                    builder: (context, child) {
+                      final double v = _encounterController.value;
+                      // Hide content during flash+stripe-in phase; reveal once black
+                      final bool hidden = v > 0 && v < 0.45;
+                      return Opacity(opacity: hidden ? 0.0 : 1.0, child: child);
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: <Widget>[
-                        AnimatedBuilder(
-                          animation: _encounterController,
-                          builder: (context, child) {
-                            return SlideTransition(
-                              position: _bogeybeastSlide,
-                              child: ColorFiltered(
-                                colorFilter: _encounterGrayscaleFilter(
-                                    _grayscaleAmount.value),
-                                child: child,
-                              ),
-                            );
-                          },
-                          child: BogeybeastArt(
-                            assetPath: activeRound.currentEncounter.assetPath,
-                            height: 180,
-                          ),
-                        ),
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: BogeycubeCaughtBadge(
-                            caught: store.hasCaught(
-                                activeRound.currentEncounter),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    activeRound.currentEncounter.name,
-                    style: theme.textTheme.headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Text(
-                        '#${activeRound.currentEncounter.paddedDexNumber}',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface
-                              .withValues(alpha: 0.4),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: activeRound.currentEncounter.rarity.color
-                              .withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          activeRound.currentEncounter.rarity.label,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color:
-                                activeRound.currentEncounter.rarity.color,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (activeRound.streakBonus >= 1) ...<Widget>[
-                    const SizedBox(height: 10),
-                    _StreakBadge(
-                      streakBonus: activeRound.streakBonus,
-                      streakCount: activeRound.streakCount,
-                    ),
-                  ],
-                  const SizedBox(height: 28),
-                  if (activeRound.currentHolePar != null) ...<Widget>[
-                    Row(
-                      children: <Widget>[
-                        Text('Par ${activeRound.currentHolePar}',
-                            style: theme.textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w700)),
-                        if (activeRound.courseName != null) ...<Widget>[
-                          const SizedBox(width: 8),
-                          Text(
-                            activeRound.courseName!,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        if (activeRound.currentGreenCoord != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: DistanceToGreen(
+                              target: activeRound.currentGreenCoord!,
                             ),
+                          ),
+                        SizedBox(
+                          height: 180,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: <Widget>[
+                              AnimatedBuilder(
+                                animation: _encounterController,
+                                builder: (context, child) {
+                                  return SlideTransition(
+                                    position: _bogeybeastSlide,
+                                    child: ColorFiltered(
+                                      colorFilter: _encounterGrayscaleFilter(
+                                        _grayscaleAmount.value,
+                                      ),
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: BogeybeastArt(
+                                  assetPath:
+                                      activeRound.currentEncounter.assetPath,
+                                  height: 180,
+                                ),
+                              ),
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: BogeycubeCaughtBadge(
+                                  caught: store.hasCaught(
+                                    activeRound.currentEncounter,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          activeRound.currentEncounter.name,
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Text(
+                              '#${activeRound.currentEncounter.paddedDexNumber}',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.4,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: activeRound.currentEncounter.rarity.color
+                                    .withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                activeRound.currentEncounter.rarity.label,
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color:
+                                      activeRound.currentEncounter.rarity.color,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (activeRound.streakBonus >= 1) ...<Widget>[
+                          const SizedBox(height: 10),
+                          _StreakBadge(
+                            streakBonus: activeRound.streakBonus,
+                            streakCount: activeRound.streakCount,
                           ),
                         ],
-                      ],
-                    ),
-                  ] else ...<Widget>[
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text('Hole par',
-                          style: theme.textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700)),
-                    ),
-                    const SizedBox(height: 10),
-                    _ParSelector(
-                      selected: _par,
-                      onChanged: (v) => setState(() => _par = v),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Text('Your score',
-                          style: theme.textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700)),
-                      const Spacer(),
-                      if (_customStrokes != null)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 4),
+                        const SizedBox(height: 28),
+                        if (activeRound.currentHolePar != null) ...<Widget>[
+                          Row(
+                            children: <Widget>[
+                              Text(
+                                'Par ${activeRound.currentHolePar}',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              if (activeRound.courseName != null) ...<Widget>[
+                                const SizedBox(width: 8),
+                                Text(
+                                  activeRound.courseName!,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.5),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ] else ...<Widget>[
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Hole par',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _ParSelector(
+                            selected: _par,
+                            onChanged: (v) => setState(() => _par = v),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Text(
+                              'Your score',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (_customStrokes != null)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 4),
+                                child: Text(
+                                  '$_customStrokes strokes',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined, size: 18),
+                              tooltip: 'Enter exact strokes',
+                              visualDensity: VisualDensity.compact,
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.4,
+                              ),
+                              onPressed: _showCustomStrokeDialog,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        ScorePicker(
+                          par: _par,
+                          selected: _selectedScore,
+                          onChanged: (GolfScore score) {
+                            setState(() {
+                              _selectedScore = score;
+                              _customStrokes =
+                                  null; // clear custom when chip tapped
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        Align(
+                          alignment: Alignment.centerLeft,
                           child: Text(
-                            '$_customStrokes strokes',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.w600,
+                            'Hole stats',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined, size: 18),
-                        tooltip: 'Enter exact strokes',
-                        visualDensity: VisualDensity.compact,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                        onPressed: _showCustomStrokeDialog,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  ScorePicker(
-                    par: _par,
-                    selected: _selectedScore,
-                    onChanged: (GolfScore score) {
-                      setState(() {
-                        _selectedScore = score;
-                        _customStrokes = null; // clear custom when chip tapped
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('Hole stats',
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700)),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: <Widget>[
-                      _StatToggle(
-                        label: '1-Putt',
-                        icon: Icons.sports_golf,
-                        active: _holeStats.onePutt,
-                        activeColor: const Color(0xFF7E57C2),
-                        onToggle: () => setState(() =>
-                            _holeStats =
-                                _holeStats.copyWith(onePutt: !_holeStats.onePutt)),
-                      ),
-                      const SizedBox(width: 8),
-                      _StatToggle(
-                        label: 'Bunker',
-                        icon: Icons.landscape,
-                        active: _holeStats.bunker,
-                        activeColor: const Color(0xFFFFB74D),
-                        onToggle: () => setState(() =>
-                            _holeStats = _holeStats.copyWith(
-                                bunker: !_holeStats.bunker)),
-                      ),
-                      const SizedBox(width: 8),
-                      _StatToggle(
-                        label: 'Water',
-                        icon: Icons.water_drop,
-                        active: _holeStats.water,
-                        activeColor: const Color(0xFF42A5F5),
-                        onToggle: () => setState(() =>
-                            _holeStats = _holeStats.copyWith(
-                                water: !_holeStats.water)),
-                      ),
-                      const SizedBox(width: 8),
-                      _StatToggle(
-                        label: 'Rough',
-                        icon: Icons.grass,
-                        active: _holeStats.rough,
-                        activeColor: const Color(0xFF66BB6A),
-                        onToggle: () => setState(() =>
-                            _holeStats = _holeStats.copyWith(
-                                rough: !_holeStats.rough)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 28),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _resolution = store.playCurrentHole(
-                            par: _par,
-                            strokes: _strokes,
-                            stats: _holeStats,
-                          );
-                        });
-                      },
-                      icon: const Icon(Icons.pets),
-                      label: const Text('Shoot Bogeycube'),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: <Widget>[
+                            _StatToggle(
+                              label: '1-Putt',
+                              icon: Icons.sports_golf,
+                              active: _holeStats.onePutt,
+                              activeColor: const Color(0xFF7E57C2),
+                              onToggle: () => setState(
+                                () => _holeStats = _holeStats.copyWith(
+                                  onePutt: !_holeStats.onePutt,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _StatToggle(
+                              label: 'Bunker',
+                              icon: Icons.landscape,
+                              active: _holeStats.bunker,
+                              activeColor: const Color(0xFFFFB74D),
+                              onToggle: () => setState(
+                                () => _holeStats = _holeStats.copyWith(
+                                  bunker: !_holeStats.bunker,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _StatToggle(
+                              label: 'Water',
+                              icon: Icons.water_drop,
+                              active: _holeStats.water,
+                              activeColor: const Color(0xFF42A5F5),
+                              onToggle: () => setState(
+                                () => _holeStats = _holeStats.copyWith(
+                                  water: !_holeStats.water,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _StatToggle(
+                              label: 'Rough',
+                              icon: Icons.grass,
+                              active: _holeStats.rough,
+                              activeColor: const Color(0xFF66BB6A),
+                              onToggle: () => setState(
+                                () => _holeStats = _holeStats.copyWith(
+                                  rough: !_holeStats.rough,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 28),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _resolution = store.playCurrentHole(
+                                  par: _par,
+                                  strokes: _strokes,
+                                  stats: _holeStats,
+                                );
+                              });
+                            },
+                            icon: const Icon(Icons.pets),
+                            label: const Text('Shoot Bogeycube'),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-        ),
             ],
           ),
           // Encounter animation overlay (flash + stripes)
@@ -636,10 +680,7 @@ class _ScoreChip extends StatelessWidget {
 }
 
 class _ParSelector extends StatelessWidget {
-  const _ParSelector({
-    required this.selected,
-    required this.onChanged,
-  });
+  const _ParSelector({required this.selected, required this.onChanged});
 
   final int selected;
   final ValueChanged<int> onChanged;
@@ -649,47 +690,49 @@ class _ParSelector extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Row(
-      children: <int>[3, 4, 5].map((par) {
-        final bool isSelected = selected == par;
-        final Color color = isSelected
-            ? theme.colorScheme.primary
-            : theme.colorScheme.onSurface.withValues(alpha: 0.4);
+      children: <int>[3, 4, 5]
+          .map((par) {
+            final bool isSelected = selected == par;
+            final Color color = isSelected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurface.withValues(alpha: 0.4);
 
-        return Expanded(
-          child: GestureDetector(
-            onTap: () => onChanged(par),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? color.withValues(alpha: 0.12)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isSelected
-                      ? color.withValues(alpha: 0.4)
-                      : theme.colorScheme.outlineVariant,
-                  width: 1.5,
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Text(
-                    '$par',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: color,
+            return Expanded(
+              child: GestureDetector(
+                onTap: () => onChanged(par),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? color.withValues(alpha: 0.12)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected
+                          ? color.withValues(alpha: 0.4)
+                          : theme.colorScheme.outlineVariant,
+                      width: 1.5,
                     ),
                   ),
-                ],
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        '$par',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
-        );
-      }).toList(growable: false),
+            );
+          })
+          .toList(growable: false),
     );
   }
 }
@@ -793,13 +836,10 @@ class _HoleResolutionViewState extends State<_HoleResolutionView>
       duration: const Duration(milliseconds: 600),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(1.5, 0),
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeInBack,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: Offset.zero, end: const Offset(1.5, 0)).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeInBack),
+        );
 
     _confettiController = AnimationController(
       vsync: this,
@@ -863,15 +903,15 @@ class _HoleResolutionViewState extends State<_HoleResolutionView>
               const SizedBox(height: 12),
               Text(
                 result.caught ? 'Caught!' : 'It broke free...',
-                style: theme.textTheme.headlineMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 '${result.bogeybeast.name}  ·  ${result.score.label}',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color:
-                      theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
               const SizedBox(height: 24),
@@ -885,8 +925,7 @@ class _HoleResolutionViewState extends State<_HoleResolutionView>
               const SizedBox(height: 24),
               if (widget.resolution.roundCompleted &&
                   widget.resolution.roundSummary != null)
-                _RoundCompleteCard(
-                    summary: widget.resolution.roundSummary!),
+                _RoundCompleteCard(summary: widget.resolution.roundSummary!),
               if (!widget.resolution.roundCompleted) ...<Widget>[
                 const SizedBox(height: 16),
                 _NextEncounterBoostsCard(
@@ -970,7 +1009,11 @@ class _ConfettiPainter extends CustomPainter {
 
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset(x, y), width: p.size, height: p.size * 1.4),
+          Rect.fromCenter(
+            center: Offset(x, y),
+            width: p.size,
+            height: p.size * 1.4,
+          ),
           Radius.circular(p.size * 0.3),
         ),
         paint,
@@ -1005,21 +1048,25 @@ class _RoundCompleteCard extends StatelessWidget {
       ),
       child: Column(
         children: <Widget>[
-          Text('Round Complete',
-              style: theme.textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w800)),
+          Text(
+            'Round Complete',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
               _SummaryValue(
-                  label: 'Score',
-                  value: formatScoreToPar(summary.scoreToPar)),
+                label: 'Score',
+                value: formatScoreToPar(summary.scoreToPar),
+              ),
+              _SummaryValue(label: 'Strokes', value: '${summary.totalStrokes}'),
               _SummaryValue(
-                  label: 'Strokes', value: '${summary.totalStrokes}'),
-              _SummaryValue(
-                  label: 'Caught',
-                  value: '${summary.caughtCount}/${summary.holes.length}'),
+                label: 'Caught',
+                value: '${summary.caughtCount}/${summary.holes.length}',
+              ),
             ],
           ),
           if (summary.caughtBogeybeast.isNotEmpty) ...<Widget>[
@@ -1096,14 +1143,19 @@ class _SummaryValue extends StatelessWidget {
 
     return Column(
       children: <Widget>[
-        Text(value,
-            style: theme.textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.w800)),
+        Text(
+          value,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
         const SizedBox(height: 2),
-        Text(label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-            )),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
+        ),
       ],
     );
   }
@@ -1138,11 +1190,15 @@ class _NextEncounterBoostsCard extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final int legendaryPct =
-        ((5 + streakBonus) / (100 + streakBonus) * 100).round();
+    final int legendaryPct = ((5 + streakBonus) / (100 + streakBonus) * 100)
+        .round();
 
     Widget terrainRow(
-        IconData icon, Color color, String label, Set<BogeybeastType> types) {
+      IconData icon,
+      Color color,
+      String label,
+      Set<BogeybeastType> types,
+    ) {
       return Padding(
         padding: const EdgeInsets.only(top: 7),
         child: Row(
@@ -1189,17 +1245,33 @@ class _NextEncounterBoostsCard extends StatelessWidget {
             ),
           ),
           if (hasOnePutt)
-            terrainRow(Icons.sports_golf, const Color(0xFF7E57C2), '1-Putt',
-                onePuttTypes),
+            terrainRow(
+              Icons.sports_golf,
+              const Color(0xFF7E57C2),
+              '1-Putt',
+              onePuttTypes,
+            ),
           if (hasBunker)
-            terrainRow(Icons.landscape, const Color(0xFFFFB74D), 'Bunker',
-                bunkerTypes),
+            terrainRow(
+              Icons.landscape,
+              const Color(0xFFFFB74D),
+              'Bunker',
+              bunkerTypes,
+            ),
           if (hasWater)
             terrainRow(
-                Icons.water_drop, const Color(0xFF42A5F5), 'Water', waterTypes),
+              Icons.water_drop,
+              const Color(0xFF42A5F5),
+              'Water',
+              waterTypes,
+            ),
           if (hasRough)
             terrainRow(
-                Icons.grass, const Color(0xFF66BB6A), 'Rough', roughTypes),
+              Icons.grass,
+              const Color(0xFF66BB6A),
+              'Rough',
+              roughTypes,
+            ),
           if (hasStreak)
             Padding(
               padding: const EdgeInsets.only(top: 7),
@@ -1218,7 +1290,9 @@ class _NextEncounterBoostsCard extends StatelessWidget {
                   Text(
                     '$legendaryPct% legendary',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.65,
+                      ),
                     ),
                   ),
                 ],
@@ -1243,7 +1317,8 @@ class _EncounterStripePainter extends CustomPainter {
 
   final double flashOpacity;
   final double stripesIn;
-  final double overlayAlpha; // 1 = fully opaque, 0 = transparent (fades out after hold)
+  final double
+  overlayAlpha; // 1 = fully opaque, 0 = transparent (fades out after hold)
 
   static const int _stripeCount = 20;
 
@@ -1272,7 +1347,8 @@ class _EncounterStripePainter extends CustomPainter {
 
     if (stripesIn <= 0) return;
 
-    final Paint paint = Paint()..color = Colors.black.withValues(alpha: overlayAlpha);
+    final Paint paint = Paint()
+      ..color = Colors.black.withValues(alpha: overlayAlpha);
     final double stripeH = size.height / _stripeCount;
 
     for (int i = 0; i < _stripeCount; i++) {
@@ -1286,10 +1362,7 @@ class _EncounterStripePainter extends CustomPainter {
         x = size.width * (1.0 - stripesIn); // slides in from right
       }
 
-      canvas.drawRect(
-        Rect.fromLTWH(x, y, size.width, stripeH),
-        paint,
-      );
+      canvas.drawRect(Rect.fromLTWH(x, y, size.width, stripeH), paint);
     }
   }
 
