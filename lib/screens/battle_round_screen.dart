@@ -540,7 +540,7 @@ class _BogeybeastHpBar extends StatelessWidget {
               bogeybeast.assetPath,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.view_in_ar_rounded, size: 24),
+                  const Icon(Icons.pets, size: 24),
             ),
           ),
           const SizedBox(width: 10),

@@ -922,7 +922,7 @@ class _HoleResolutionViewState extends State<_HoleResolutionView>
           child: Column(
             children: <Widget>[
               Icon(
-                result.caught ? Icons.view_in_ar_rounded : Icons.close,
+                result.caught ? Icons.pets : Icons.close,
                 size: 56,
                 color: result.caught
                     ? theme.colorScheme.primary

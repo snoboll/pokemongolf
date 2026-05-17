@@ -1,6 +1,6 @@
 -- Player inventory. One row per (player, item type) holding a quantity.
 -- First item type is 'evo_hotdog', awarded on PvP wins and consumed to evolve.
-create table items (
+create table if not exists items (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) default auth.uid() not null,
   item_type text not null,
@@ -11,6 +11,7 @@ create table items (
 
 alter table items enable row level security;
 
+drop policy if exists "Users can manage their own items" on items;
 create policy "Users can manage their own items"
   on items for all
   using (auth.uid() = user_id)

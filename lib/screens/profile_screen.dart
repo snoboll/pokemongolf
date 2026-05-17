@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../app.dart';
-import '../data/golfer_tags.dart';
 import '../models/golfer_team.dart';
 import '../state/bogeybeasts_golf_store.dart';
 import '../widgets/white_bg_image.dart';
@@ -80,7 +79,6 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final store = BogeybeastGolfScope.of(context);
     final theme = Theme.of(context);
-    final String? tag = golferTagForCaughtDex(store.caughtDexNumbers);
     final GolferTeam? currentTeam = GolferTeam.fromDb(store.golferTeam);
     final Color accentColor = teamColor(currentTeam);
 
@@ -169,28 +167,6 @@ class ProfileScreen extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    if (tag != null) ...<Widget>[
-                      const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.secondary.withValues(
-                            alpha: 0.15,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          tag,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.secondary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),

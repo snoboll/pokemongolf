@@ -336,7 +336,7 @@ class _EvolvePickerSheet extends StatelessWidget {
                                 species.assetPath,
                                 fit: BoxFit.contain,
                                 errorBuilder: (_, _, _) =>
-                                    const Icon(Icons.view_in_ar_rounded),
+                                    const Icon(Icons.pets),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -384,7 +384,7 @@ class _EvolvePickerSheet extends StatelessWidget {
                                                 t.assetPath,
                                                 fit: BoxFit.contain,
                                                 errorBuilder: (_, _, _) =>
-                                                    const Icon(Icons.view_in_ar_rounded),
+                                                    const Icon(Icons.pets),
                                               ),
                                             ),
                                             Text(

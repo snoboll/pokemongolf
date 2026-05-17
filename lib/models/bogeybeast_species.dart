@@ -15,12 +15,14 @@ class BogeybeastSpecies {
     required this.name,
     required this.rarity,
     required this.types,
+    this.flavorText,
   });
 
   final int dexNumber;
   final String name;
   final BogeybeastRarity rarity;
   final List<BogeybeastType> types;
+  final String? flavorText;
 
   String get paddedDexNumber => dexNumber.toString().padLeft(3, '0');
 

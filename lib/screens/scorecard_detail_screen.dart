@@ -382,7 +382,7 @@ class _BogeybeastCell extends StatelessWidget {
               result.bogeybeast.assetPath,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stack) => Icon(
-                Icons.view_in_ar_rounded,
+                Icons.pets,
                 size: 18,
                 color: result.bogeybeast.rarity.color,
               ),

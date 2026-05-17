@@ -18,6 +18,7 @@ class GolferProfile {
     this.homeCourseId,
     this.golferTeam,
     this.golferSprite,
+    this.hcp,
   });
 
   final String userId;
@@ -26,6 +27,7 @@ class GolferProfile {
   final String? homeCourseId;
   final String? golferTeam;
   final String? golferSprite;
+  final int? hcp;
 }
 
 class SupabaseService {
@@ -170,7 +172,7 @@ class SupabaseService {
     final List<Map<String, dynamic>> profiles = await _client
         .from('profiles')
         .select(
-          'user_id, golfer_name, home_course_id, golfer_team, golfer_sprite',
+          'user_id, golfer_name, home_course_id, golfer_team, golfer_sprite, hcp',
         )
         .order('created_at');
 
@@ -194,6 +196,7 @@ class SupabaseService {
         homeCourseId: p['home_course_id'] as String?,
         golferTeam: p['golfer_team'] as String?,
         golferSprite: _sanitizeSprite(p['golfer_sprite'] as String?),
+        hcp: (p['hcp'] as num?)?.toInt(),
       );
     }).toList()..sort((a, b) => b.caughtCount.compareTo(a.caughtCount)));
   }
@@ -348,6 +351,26 @@ class SupabaseService {
     final List<Map<String, dynamic>> rows = await _client
         .from('clubs')
         .select()
+        .eq('user_id', currentUserId!)
+        .order('sort_order');
+
+    return rows
+        .map(
+          (Map<String, dynamic> r) => Club(
+            id: r['id'] as String,
+            name: r['name'] as String,
+            carryDistance: r['carry_distance'] as int?,
+            totalDistance: r['total_distance'] as int?,
+          ),
+        )
+        .toList();
+  }
+
+  Future<List<Club>> fetchClubsForUser(String userId) async {
+    final List<Map<String, dynamic>> rows = await _client
+        .from('clubs')
+        .select()
+        .eq('user_id', userId)
         .order('sort_order');
 
     return rows
@@ -539,6 +562,15 @@ class SupabaseService {
       }
     }
     return map;
+  }
+
+  Future<List<CourseLeader>> fetchCourseLeadersForUser(String userId) async {
+    final List<Map<String, dynamic>> rows = await _client
+        .from('course_leaders')
+        .select()
+        .eq('user_id', userId);
+
+    return rows.map((r) => CourseLeader.fromJson(r)).toList();
   }
 
   Future<Map<String, int>> fetchCourseLeadershipCounts() async {

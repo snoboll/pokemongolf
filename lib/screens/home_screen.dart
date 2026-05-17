@@ -263,7 +263,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: <Widget>[
                             _QuickStat(
                               icon: Icon(
-                                Icons.view_in_ar_rounded,
+                                Icons.pets,
                                 size: 18,
                                 color: Theme.of(context).colorScheme.primary,
                               ),
@@ -525,7 +525,7 @@ class _InfoSheetState extends State<_InfoSheet> {
             padding: const EdgeInsets.all(4),
             child: Row(
               children: <Widget>[
-                _tabBtn(theme, 0, 'Catch', Icons.view_in_ar_rounded),
+                _tabBtn(theme, 0, 'Catch', Icons.pets),
                 _tabBtn(theme, 1, 'PvP', Icons.sports_mma_rounded),
                 _tabBtn(theme, 2, 'Challenge', Icons.emoji_events_rounded),
               ],
@@ -897,7 +897,7 @@ class _CatchCard extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Icon(Icons.view_in_ar_rounded, color: fgColor, size: 30),
+              Icon(Icons.pets, color: fgColor, size: 30),
               const SizedBox(height: 6),
               Text(
                 'Catch',
@@ -1018,7 +1018,7 @@ class _ChallengeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     const challengeColor = Color(0xFFF9A825);
     final leaderColor = leader != null
-        ? teamColor(GolferTeam.fromDb(leader!.golferTeam), beasts: leader!.team)
+        ? teamColor(GolferTeam.fromDb(leader!.golferTeam))
         : challengeColor;
     final enabled = onTap != null;
     final challengeFg = Color.lerp(challengeColor, Colors.white, 0.45)!;

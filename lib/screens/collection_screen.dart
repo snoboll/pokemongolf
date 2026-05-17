@@ -284,7 +284,7 @@ class _BogeydexTile extends StatelessWidget {
                           )
                         : Center(
                             child: Icon(
-                              Icons.view_in_ar_rounded,
+                              Icons.pets,
                               size: 48,
                               color: theme.colorScheme.outlineVariant
                                   .withValues(alpha: 0.3),

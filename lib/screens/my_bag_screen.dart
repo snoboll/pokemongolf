@@ -30,7 +30,7 @@ class MyBagScreen extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(height: 8),
         itemBuilder: (BuildContext context, int index) {
           if (index == clubs.length) {
-            return const _PutterTile();
+            return const PutterTile();
           }
           final Club club = clubs[index];
           return Dismissible(
@@ -79,7 +79,7 @@ class MyBagScreen extends StatelessWidget {
             ),
             child: GestureDetector(
               onTap: () => _showClubEditor(context, club: club),
-              child: _ClubTile(club: club),
+              child: ClubTile(club: club),
             ),
           );
         },
@@ -107,8 +107,8 @@ class MyBagScreen extends StatelessWidget {
   }
 }
 
-class _PutterTile extends StatelessWidget {
-  const _PutterTile();
+class PutterTile extends StatelessWidget {
+  const PutterTile({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -134,10 +134,11 @@ class _PutterTile extends StatelessWidget {
   }
 }
 
-class _ClubTile extends StatelessWidget {
-  const _ClubTile({required this.club});
+class ClubTile extends StatelessWidget {
+  const ClubTile({super.key, required this.club, this.showEditAffordance = true});
 
   final Club club;
+  final bool showEditAffordance;
 
   @override
   Widget build(BuildContext context) {
@@ -155,38 +156,29 @@ class _ClubTile extends StatelessWidget {
       child: Row(
         children: <Widget>[
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  club.name,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (hasDistances) ...<Widget>[
-                  const SizedBox(height: 6),
-                  Row(
-                    children: <Widget>[
-                      if (club.carryDistance != null) ...<Widget>[
-                        _DistanceLabel(
-                            label: 'Carry', value: '${club.carryDistance}m'),
-                        const SizedBox(width: 12),
-                      ],
-                      if (club.totalDistance != null)
-                        _DistanceLabel(
-                            label: 'Total', value: '${club.totalDistance}m'),
-                    ],
-                  ),
-                ],
-              ],
+            child: Text(
+              club.name,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
-          Icon(
-            Icons.edit_outlined,
-            size: 18,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
-          ),
+          if (hasDistances) ...<Widget>[
+            if (club.carryDistance != null) ...<Widget>[
+              _DistanceLabel(label: 'Carry', value: '${club.carryDistance}m'),
+              const SizedBox(width: 12),
+            ],
+            if (club.totalDistance != null)
+              _DistanceLabel(label: 'Total', value: '${club.totalDistance}m'),
+          ],
+          if (showEditAffordance) ...<Widget>[
+            const SizedBox(width: 12),
+            Icon(
+              Icons.edit_outlined,
+              size: 18,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+            ),
+          ],
         ],
       ),
     );

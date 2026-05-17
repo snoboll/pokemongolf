@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../app.dart';
 import '../data/first_gen_bogeybeasts.dart';
-import '../data/golfer_tags.dart';
 import '../models/bogeybeast_rarity.dart';
 import '../models/bogeybeast_species.dart';
+import '../models/club.dart';
+import '../models/course_leader.dart';
 import '../models/golfer_team.dart';
 import '../services/supabase_service.dart';
 import '../state/bogeybeasts_golf_store.dart';
+import 'my_bag_screen.dart';
 import '../widgets/white_bg_image.dart';
 import '../widgets/bogeybeast_art.dart';
 
@@ -20,7 +22,6 @@ class GolfersScreen extends StatefulWidget {
 
 class _GolfersScreenState extends State<GolfersScreen> {
   List<GolferProfile>? _golfers;
-  Map<String, String> _golferTags = <String, String>{};
   Map<String, int> _leadershipCounts = <String, int>{};
   bool _loading = true;
   String? _error;
@@ -76,31 +77,18 @@ class _GolfersScreenState extends State<GolfersScreen> {
       final service = SupabaseService();
       final List<Object> results = await Future.wait(<Future<Object>>[
         service.fetchAllGolfers(),
-        service.fetchAllCaughtDexNumbers(),
         service.fetchCourseLeadershipCounts(),
       ]);
       if (!mounted || generation != _fetchGeneration) {
         return;
       }
       final List<GolferProfile> golfers = results[0] as List<GolferProfile>;
-      final Map<String, Set<int>> allCaught =
-          results[1] as Map<String, Set<int>>;
-      final Map<String, int> leadershipCounts = results[2] as Map<String, int>;
-
-      final Map<String, String> tags = <String, String>{};
-      for (final GolferProfile golfer in golfers) {
-        final Set<int>? caught = allCaught[golfer.userId];
-        if (caught != null) {
-          final String? tag = golferTagForCaughtDex(caught);
-          if (tag != null) tags[golfer.userId] = tag;
-        }
-      }
+      final Map<String, int> leadershipCounts = results[1] as Map<String, int>;
 
       golfers.removeWhere((t) => t.golferName == 'Test');
 
       setState(() {
         _golfers = golfers;
-        _golferTags = tags;
         _leadershipCounts = leadershipCounts;
         _loading = false;
       });
@@ -177,7 +165,6 @@ class _GolfersScreenState extends State<GolfersScreen> {
                     homeCourseName: BogeybeastGolfScope.of(
                       context,
                     ).courseNameForId(golfer.homeCourseId),
-                    tag: _golferTags[golfer.userId],
                     leadershipCount: _leadershipCounts[golfer.userId] ?? 0,
                   );
                 },
@@ -195,7 +182,6 @@ class _GolferCard extends StatelessWidget {
     required this.progress,
     required this.leadershipCount,
     this.homeCourseName,
-    this.tag,
   });
 
   final int rank;
@@ -204,7 +190,6 @@ class _GolferCard extends StatelessWidget {
   final double progress;
   final int leadershipCount;
   final String? homeCourseName;
-  final String? tag;
 
   @override
   Widget build(BuildContext context) {
@@ -220,7 +205,7 @@ class _GolferCard extends StatelessWidget {
       child: InkWell(
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => GolferBogeydexScreen(golfer: golfer),
+            builder: (_) => GolferProfileScreen(golfer: golfer),
           ),
         ),
         child: Padding(
@@ -282,11 +267,14 @@ class _GolferCard extends StatelessWidget {
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (homeCourseName != null)
+                    if (homeCourseName != null || golfer.hcp != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
-                          homeCourseName!,
+                          [
+                            ?homeCourseName,
+                            if (golfer.hcp != null) 'HCP ${golfer.hcp}',
+                          ].nonNulls.join(' · '),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.4,
@@ -294,7 +282,7 @@ class _GolferCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                    if (tTeam != null || tag != null || leadershipCount > 0)
+                    if (tTeam != null || leadershipCount > 0)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Wrap(
@@ -353,27 +341,6 @@ class _GolferCard extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                            if (tag != null)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.secondary.withValues(
-                                    alpha: 0.15,
-                                  ),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  tag!,
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: theme.colorScheme.secondary,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 9,
-                                  ),
-                                ),
-                              ),
                           ],
                         ),
                       ),
@@ -428,114 +395,300 @@ class _GolferCard extends StatelessWidget {
   }
 }
 
-class GolferBogeydexScreen extends StatefulWidget {
-  const GolferBogeydexScreen({super.key, required this.golfer});
+class GolferProfileScreen extends StatefulWidget {
+  const GolferProfileScreen({super.key, required this.golfer});
 
   final GolferProfile golfer;
 
   @override
-  State<GolferBogeydexScreen> createState() => _GolferBogeydexScreenState();
+  State<GolferProfileScreen> createState() => _GolferProfileScreenState();
 }
 
-class _GolferBogeydexScreenState extends State<GolferBogeydexScreen> {
+class _GolferProfileScreenState extends State<GolferProfileScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
   Set<int>? _caughtDexNumbers;
-  String? _tag;
+  List<CourseLeader>? _ledCourses;
+  List<Club>? _clubs;
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    SupabaseService()
-        .fetchGolferCaughtDexNumbers(widget.golfer.userId)
-        .then((numbers) {
-          if (mounted) {
-            setState(() {
-              _caughtDexNumbers = numbers;
-              _tag = golferTagForCaughtDex(numbers);
-              _loading = false;
-            });
-          }
-        })
-        .catchError((_) {
-          if (mounted)
-            setState(() {
-              _caughtDexNumbers = {};
-              _loading = false;
-            });
-        });
+    _tabController = TabController(length: 3, vsync: this);
+    _loadData();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadData() async {
+    final service = SupabaseService();
+    final results = await Future.wait([
+      service.fetchGolferCaughtDexNumbers(widget.golfer.userId),
+      service.fetchCourseLeadersForUser(widget.golfer.userId),
+      service.fetchClubsForUser(widget.golfer.userId),
+    ]);
+    if (mounted) {
+      setState(() {
+        _caughtDexNumbers = results[0] as Set<int>;
+        _ledCourses = results[1] as List<CourseLeader>;
+        _clubs = results[2] as List<Club>;
+        _loading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final total = firstGenBogeybeast.length;
+    final golfer = widget.golfer;
+    final GolferTeam? tTeam = GolferTeam.fromDb(golfer.golferTeam);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.golfer.golferName}\'s Bogeydex'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(24),
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  '${widget.golfer.caughtCount} / $total caught',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(golfer.golferName),
+            Text(
+              [
+                '${golfer.caughtCount}/${firstGenBogeybeast.length} caught',
+                if (golfer.hcp != null) 'HCP ${golfer.hcp}',
+                if (tTeam != null) tTeam.label,
+              ].join(' · '),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+          ],
+        ),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.pets, size: 18), text: 'Bogeydex'),
+            Tab(icon: Icon(Icons.shield_rounded, size: 18), text: 'Courses'),
+            Tab(icon: Icon(Icons.golf_course_rounded, size: 18), text: 'Bag'),
+          ],
+        ),
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _BogeydexTab(caughtDexNumbers: _caughtDexNumbers!),
+                _CoursesTab(
+                  courses: _ledCourses!,
+                  courseNameForId: BogeybeastGolfScope.of(context).courseNameForId,
                 ),
-                if (_tag != null) ...<Widget>[
-                  const SizedBox(width: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.secondary.withValues(
-                        alpha: 0.15,
+                _BagTab(clubs: _clubs!),
+              ],
+            ),
+    );
+  }
+}
+
+class _BogeydexTab extends StatelessWidget {
+  const _BogeydexTab({required this.caughtDexNumbers});
+  final Set<int> caughtDexNumbers;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: firstGenBogeybeast.length,
+      itemBuilder: (context, index) {
+        final bogeybeast = firstGenBogeybeast[index];
+        final caught = caughtDexNumbers.contains(bogeybeast.dexNumber);
+        return _GolferBogeydexTile(bogeybeast: bogeybeast, caught: caught);
+      },
+    );
+  }
+}
+
+class _BagTab extends StatelessWidget {
+  const _BagTab({required this.clubs});
+  final List<Club> clubs;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (clubs.isEmpty) {
+      return Center(
+        child: Text(
+          'No clubs in bag',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
+        ),
+      );
+    }
+
+    int distanceOf(Club c) => c.totalDistance ?? c.carryDistance ?? 0;
+    final sorted = List<Club>.from(clubs)
+      ..sort((a, b) => distanceOf(b).compareTo(distanceOf(a)));
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: sorted.length + 1, // +1 for putter
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        if (index == sorted.length) {
+          return const PutterTile();
+        }
+        return ClubTile(club: sorted[index], showEditAffordance: false);
+      },
+    );
+  }
+}
+
+class _CoursesTab extends StatelessWidget {
+  const _CoursesTab({required this.courses, required this.courseNameForId});
+  final List<CourseLeader> courses;
+  final String? Function(String?) courseNameForId;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (courses.isEmpty) {
+      return Center(
+        child: Text(
+          'No courses led yet',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: courses.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final leader = courses[index];
+        final color = teamColor(GolferTeam.fromDb(leader.golferTeam));
+        final courseName = courseNameForId(leader.courseId) ?? leader.courseId;
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.golf_course, size: 20, color: color),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            courseName,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            'HCP ${leader.hcp}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.4),
+                            ),
+                          ),
+                        ],
                       ),
-                      borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text(
-                      _tag!,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.secondary,
-                        fontWeight: FontWeight.w700,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.shield, size: 12, color: color),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Leader',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: color,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  ],
+                ),
+                if (leader.team.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'Guarding beasts',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: leader.team
+                        .take(3)
+                        .map((b) => Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      color: theme.cardTheme.color,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: theme.colorScheme.outlineVariant,
+                                      ),
+                                    ),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: BogeybeastArt(
+                                      assetPath: b.assetPath,
+                                      height: 44,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    b.name,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ))
+                        .toList(),
                   ),
                 ],
               ],
             ),
           ),
-        ),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                childAspectRatio: 0.8,
-              ),
-              itemCount: firstGenBogeybeast.length,
-              itemBuilder: (context, index) {
-                final BogeybeastSpecies bogeybeast = firstGenBogeybeast[index];
-                final bool caught = _caughtDexNumbers!.contains(
-                  bogeybeast.dexNumber,
-                );
-                return _GolferBogeydexTile(
-                  bogeybeast: bogeybeast,
-                  caught: caught,
-                );
-              },
-            ),
+        );
+      },
     );
   }
 }
@@ -601,7 +754,7 @@ class _GolferBogeydexTile extends StatelessWidget {
                         )
                       : Center(
                           child: Icon(
-                            Icons.view_in_ar_rounded,
+                            Icons.pets,
                             size: 48,
                             color: theme.colorScheme.outlineVariant.withValues(
                               alpha: 0.3,

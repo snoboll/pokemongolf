@@ -128,7 +128,7 @@ class BattleTeamPreview extends StatelessWidget {
                         bogeybeast.assetPath,
                         fit: BoxFit.contain,
                         errorBuilder: (_, _, _) =>
-                            const Icon(Icons.view_in_ar_rounded, size: 18),
+                            const Icon(Icons.pets, size: 18),
                       ),
                     ),
                     if (showHp) ...[

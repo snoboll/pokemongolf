@@ -186,7 +186,7 @@ class _VsLeaderBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = teamColor(GolferTeam.fromDb(leader.golferTeam), beasts: leader.team);
+    final color = teamColor(GolferTeam.fromDb(leader.golferTeam));
 
     return Container(
       width: double.infinity,
@@ -224,7 +224,7 @@ class _VsLeaderBanner extends StatelessWidget {
                               b.assetPath,
                               fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) => Icon(
-                                Icons.view_in_ar_rounded,
+                                Icons.pets,
                                 size: 20,
                                 color: color.withValues(alpha: 0.4),
                               ),
@@ -327,7 +327,7 @@ class _BogeybeastSelectTile extends StatelessWidget {
                   species.assetPath,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.view_in_ar_rounded, size: 32),
+                      const Icon(Icons.pets, size: 32),
                 ),
               ),
               const SizedBox(width: 12),
@@ -793,7 +793,7 @@ class _MiniBogeybeastChip extends StatelessWidget {
             species.assetPath,
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) =>
-                const Icon(Icons.view_in_ar_rounded, size: 20),
+                const Icon(Icons.pets, size: 20),
           ),
         ),
       ),

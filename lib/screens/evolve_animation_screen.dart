@@ -149,7 +149,7 @@ class _EvolveAnimationScreenState extends State<EvolveAnimationScreen>
                               species.assetPath,
                               fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) =>
-                                  Icon(Icons.view_in_ar_rounded, size: 80, color: _purple),
+                                  Icon(Icons.pets, size: 80, color: _purple),
                             ),
                             // White whiten overlay on sprite before flash
                             if (!pastFlash && _whiten.value > 0)

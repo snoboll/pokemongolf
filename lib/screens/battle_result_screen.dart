@@ -214,7 +214,7 @@ class BattleResultScreen extends StatelessWidget {
                                 ),
                               );
                             },
-                            icon: const Icon(Icons.view_in_ar_rounded),
+                            icon: const Icon(Icons.pets),
                             label: Text(
                               'Catch Mode — $remainingHoles holes left',
                             ),
@@ -354,7 +354,7 @@ class _BogeybeastResultPip extends StatelessWidget {
                 bogeybeast.assetPath,
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) =>
-                    const Icon(Icons.view_in_ar_rounded, size: 36),
+                    const Icon(Icons.pets, size: 36),
               ),
             ),
             const SizedBox(height: 4),

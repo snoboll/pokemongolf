@@ -115,15 +115,15 @@ const Map<int, ({int offense, int defense, int hp})> bogeybeastBattleStats = {
   69:  (offense: 4,  defense: 3,  hp: 2),
   70:  (offense: 6,  defense: 5,  hp: 4),
   // Dumduff → Deevot (Ground)
-  71:  (offense: 3,  defense: 4,  hp: 3),
-  72:  (offense: 2,  defense: 3,  hp: 2),
+  71:  (offense: 2,  defense: 3,  hp: 2),
+  72:  (offense: 4,  defense: 6,  hp: 3),
   // OBwan → Proveewan → Holinwangenobi (Psychic → Psychic/Dragon)
   73:  (offense: 5,  defense: 3,  hp: 3),
   74:  (offense: 7,  defense: 5,  hp: 5),
   75:  (offense: 9,  defense: 7,  hp: 6),
-  // Peboll → Profsoorfisk (Water/Normal → Water/Flying)
-  76:  (offense: 3,  defense: 4,  hp: 3),
-  77:  (offense: 2,  defense: 3,  hp: 2),
+  // Peboll → Profesorfisk (Water → Water/Flying)
+  76:  (offense: 2,  defense: 3,  hp: 2),
+  77:  (offense: 5,  defense: 4,  hp: 4),
   // Lawnshangle → Spinrayt → Smashfakdurr (Grass/Fighting)
   78:  (offense: 4,  defense: 3,  hp: 2),
   79:  (offense: 7,  defense: 5,  hp: 5),
@@ -135,13 +135,13 @@ const Map<int, ({int offense, int defense, int hp})> bogeybeastBattleStats = {
   83:  (offense: 7,  defense: 5,  hp: 5),
   84:  (offense: 9,  defense: 6,  hp: 6),
   // Rangewhelp → Yardrake → Carryhazard (Dragon)
-  85:  (offense: 5,  defense: 4,  hp: 5),
-  86:  (offense: 4,  defense: 5,  hp: 4),
+  85:  (offense: 4,  defense: 3,  hp: 3),
+  86:  (offense: 7,  defense: 5,  hp: 5),
   87:  (offense: 9,  defense: 7,  hp: 6),
   // Ofdedeck → Pangdrayv → Drayvagreen (Grass/Ground → Ground/Dragon)
   88:  (offense: 2,  defense: 3,  hp: 2),
-  89:  (offense: 4,  defense: 5,  hp: 4),
-  90:  (offense: 5,  defense: 5,  hp: 4),
+  89:  (offense: 5,  defense: 5,  hp: 4),
+  90:  (offense: 8,  defense: 7,  hp: 5),
   // Teetaim → Penaltee → Teeboxer (Bug/Fighting)
   91:  (offense: 3,  defense: 2,  hp: 2),
   92:  (offense: 5,  defense: 4,  hp: 3),
@@ -162,7 +162,7 @@ const Map<int, ({int offense, int defense, int hp})> bogeybeastBattleStats = {
   // Jossi → Suooja (Psychic → Psychic/Flying)
   102: (offense: 4,  defense: 3,  hp: 3),
   103: (offense: 6,  defense: 5,  hp: 4),
-  // Gubbchip → Bumpandran → Upandawn (Ghost → Ghost/Dark)
+  // Chipamboo → Bumpandarun → Upandawn (Ghost → Ghost/Dark)
   104: (offense: 3,  defense: 2,  hp: 2),
   105: (offense: 5,  defense: 4,  hp: 4),
   106: (offense: 8,  defense: 7,  hp: 6),
@@ -174,15 +174,15 @@ const Map<int, ({int offense, int defense, int hp})> bogeybeastBattleStats = {
   // Strekstrek → Bogibardi (Flying)
   110: (offense: 3,  defense: 2,  hp: 2),
   111: (offense: 5,  defense: 4,  hp: 4),
-  // Ritebreak (Ghost/Fighting, standalone common)
-  112: (offense: 4,  defense: 3,  hp: 2),
+  // Ritebreak (Ghost/Fighting, standalone rare)
+  112: (offense: 6,  defense: 5,  hp: 4),
   // Linkskors (Ground, standalone uncommon)
   113: (offense: 4,  defense: 6,  hp: 4),
   // Thindit → Fuooor (Rock)
   114: (offense: 2,  defense: 3,  hp: 2),
   115: (offense: 4,  defense: 6,  hp: 4),
-  // Lagpoot → Indaahowl (Fire/Psychic)
-  116: (offense: 6,  defense: 5,  hp: 5),
+  // Fringeputt → Indahowl (Fire/Psychic)
+  116: (offense: 3,  defense: 3,  hp: 2),
   117: (offense: 7,  defense: 6,  hp: 5),
   // Plugfuk (Bug/Ground, standalone uncommon)
   118: (offense: 5,  defense: 4,  hp: 3),
@@ -193,62 +193,62 @@ const Map<int, ({int offense, int defense, int hp})> bogeybeastBattleStats = {
   121: (offense: 7,  defense: 5,  hp: 5),
   // Fairwhayle (Water, standalone rare)
   122: (offense: 5,  defense: 6,  hp: 7),
-  // Foreplayer (Normal, standalone uncommon)
+  // Schneschlug (Poison, standalone uncommon)
   123: (offense: 5,  defense: 4,  hp: 4),
-  // Punnchad (Fighting, standalone uncommon)
+  // Eelonmask (Electric/Poison, standalone rare)
   124: (offense: 6,  defense: 4,  hp: 3),
-  // Flatpitch → Pyrepitch / Tidepitch / Elepitch (Normal → branching)
+  // Flatpitch → Pyrepitch / Tidepitch / Elepitch / Grovepitch (Normal → branching)
   125: (offense: 4,  defense: 4,  hp: 4),
   126: (offense: 7,  defense: 5,  hp: 5),
   127: (offense: 5,  defense: 7,  hp: 5),
   128: (offense: 6,  defense: 6,  hp: 5),
-  // Flayerlie (Flying, standalone common)
-  129: (offense: 3,  defense: 2,  hp: 2),
-  // Wintergreenor (Ice/Grass, standalone common)
-  130: (offense: 3,  defense: 3,  hp: 2),
+  // Grovepitch (Grass, epic)
+  129: (offense: 7,  defense: 5,  hp: 5),
+  // Wintergreenor (Ice/Grass, standalone rare)
+  130: (offense: 6,  defense: 5,  hp: 4),
   // Waggler → Proofswing (Ghost → Ghost/Fighting)
   131: (offense: 4,  defense: 4,  hp: 4),
   132: (offense: 7,  defense: 6,  hp: 5),
   // Sandstroke (Ground, standalone rare)
   133: (offense: 6,  defense: 7,  hp: 5),
-  // Fittnylle → Yewlachit (Electric/Water → Electric/Poison)
+  // Fahndoh → Yewlachit (Electric)
   134: (offense: 6,  defense: 5,  hp: 5),
   135: (offense: 7,  defense: 6,  hp: 5),
   // Owberg (Psychic/Ice, epic)
   136: (offense: 8,  defense: 7,  hp: 6),
-  // Roary (Dragon/Rock, standalone uncommon)
-  137: (offense: 5,  defense: 6,  hp: 4),
-  // Shefflor (Psychic/Water, standalone uncommon)
-  138: (offense: 5,  defense: 5,  hp: 4),
+  // Roary (Dragon/Rock, epic)
+  137: (offense: 8,  defense: 7,  hp: 6),
+  // Shefflor (Water/Psychic, epic)
+  138: (offense: 7,  defense: 7,  hp: 5),
   // Braizon (Fire/Dark, standalone rare)
   139: (offense: 8,  defense: 5,  hp: 5),
   // Hee-Oh (Fire/Bug, epic)
   140: (offense: 8,  defense: 6,  hp: 7),
-  // Shee-Oh (Water/Bug, epic)
+  // Shee-Oh (Electric/Bug, epic)
   141: (offense: 6,  defense: 8,  hp: 7),
   // Bogeyman (Ghost, standalone rare)
   142: (offense: 7,  defense: 5,  hp: 6),
-  // Saintandroos (Grass/Flying, standalone common)
-  143: (offense: 3,  defense: 3,  hp: 3),
-  // Frontanine (Fire, epic)
+  // Saintandrose (Grass/Flying, epic)
+  143: (offense: 7,  defense: 6,  hp: 5),
+  // Frontanine (Dark, rare)
   144: (offense: 9,  defense: 6,  hp: 6),
   // Bakanine (Dark, epic)
   145: (offense: 8,  defense: 7,  hp: 6),
 
   // ── Common filler ─────────────────────────────────────────────────────
-  // Touritslag (Normal, standalone common)
-  146: (offense: 3,  defense: 2,  hp: 3),
+  // Touritslag (Normal, standalone rare)
+  146: (offense: 5,  defense: 4,  hp: 4),
 
   // ── Legendaries ───────────────────────────────────────────────────────
-  // Yuessowpen (Fire/Flying)
+  // Yuessowpen (Dragon/Flying)
   147: (offense: 9,  defense: 7,  hp: 7),
-  // Deeowpen (Ice/Flying)
+  // Deeowpen (Dark/Flying)
   148: (offense: 8,  defense: 8,  hp: 7),
-  // Pegeaychamp (Dragon/Fighting)
+  // Pegeaychamp (Dragon/Dark)
   149: (offense: 10, defense: 8,  hp: 7),
-  // Agustamastr (Dark)
+  // Agustamastr (Dragon/Electric)
   150: (offense: 10, defense: 7,  hp: 8),
-  // Kuondor (Flying/Dragon)
+  // Kuondor (Flying)
   151: (offense: 9,  defense: 9,  hp: 7),
 };
 

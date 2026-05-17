@@ -78,6 +78,17 @@ class BeastDetailSheet extends StatelessWidget {
               child: BeastTypeChip(type: t),
             )).toList(),
           ),
+          if (bogeybeast.flavorText != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              bogeybeast.flavorText!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontStyle: FontStyle.italic,
+                height: 1.4,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+              ),
+            ),
+          ],
           if (chain != null) ...[
             const SizedBox(height: 12),
             BeastEvolutionChain(
@@ -471,7 +482,7 @@ class BeastEvoNode extends StatelessWidget {
       sprite = SizedBox(
         width: 44, height: 44,
         child: Image.asset(assetPath, fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => Icon(Icons.view_in_ar_rounded, size: 28, color: color)),
+            errorBuilder: (_, __, ___) => Icon(Icons.pets, size: 28, color: color)),
       );
     } else if (isSeen) {
       sprite = SizedBox(
@@ -484,7 +495,7 @@ class BeastEvoNode extends StatelessWidget {
             0,      0,      0,      1, 0,
           ]),
           child: Image.asset(assetPath, fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => Icon(Icons.view_in_ar_rounded, size: 28, color: seenColor)),
+              errorBuilder: (_, __, ___) => Icon(Icons.pets, size: 28, color: seenColor)),
         ),
       );
     } else {

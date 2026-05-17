@@ -312,6 +312,462 @@ const List<String> _bogeybeastNames = <String>[
   'Kuondor',        // 151
 ];
 
+const Map<int, String> _flavorText = <int, String>{
+  1: 'Puttling is a sprout-tailed cub that toddles across the practice green, '
+      'patting stray balls toward the hole with its tiny paws. Where it naps, '
+      'the grass always grows a little greener.',
+  2: 'Fairwyn keeps the fairway immaculate, brushing dew from the turf with '
+      'its leafy tail. Golfers who treat it kindly often find their lie has '
+      'improved while they weren\'t looking.',
+  3: 'Teelord reigns over the first tee like ancient woodland royalty. The '
+      'blossoms wreathing its branches release a faint pollen that steadies '
+      'the nerves of any golfer brave enough to bow before it.',
+  4: 'Bogferno smolders with the frustration of a thousand missed putts. Its '
+      'rocky hide cracks with inner fire, and the rough wilts to ash wherever '
+      'this little furnace stamps its feet.',
+  5: 'Parablaze burns hottest when a round goes wrong. It hurls cinders down '
+      'the fairway in looping arcs, and the scorch marks it leaves are said '
+      'to trace the perfect line to the pin.',
+  6: 'Emberdie spreads vast wings of living flame and circles doomed shots '
+      'from above. When it folds those wings and dives, a double bogey is '
+      'all but written on the card.',
+  7: 'Droptooth is a pond-dwelling hatchling that chomps happily at golf '
+      'balls mistaken for eggs. It splashes through every water hazard, '
+      'utterly delighted by the trouble it causes.',
+  8: 'Bladogator sharpens the fin on its tail against tee markers until it '
+      'gleams like a wedge. It guards the water hazards and dares golfers to '
+      'come fish out their ball.',
+  9: 'Hookodile is an armored terror of the deep hazard, plated like a knight '
+      'and twice as patient. It drags slicing shots beneath the surface and '
+      'is rumored never to surrender a ball it has claimed.',
+  10: 'Roughrat thrives in the tall grass where balls go to vanish. It '
+      'hoards them in leafy burrows, and a chewed, grass-stained ball is the '
+      'unmistakable mark of its mischief.',
+  11: 'Growdent gnaws through saplings to shape the rough exactly as it likes '
+      'it — thick, tangled, and merciless. Course keepers and golfers alike '
+      'consider it a worthy adversary.',
+  12: 'Crisprdi is a fledgling of frost and feather, fluttering low over '
+      'frozen ponds. Its cheerful chirp carries a chill that stiffens the '
+      'fingers of anyone lining up a putt nearby.',
+  13: 'Chilleagle soars on wings of pure frost, every feather rimed with ice. '
+      'It circles high above the fairway and reads the wind better than any '
+      'caddie, screeching once when a shot is destined to find the green.',
+  15: 'Babydraw never goes anywhere without its crayons. The little cub '
+      'scribbles loops and swirls on every scorecard it finds, and golfers '
+      'swear a putt traced by Babydraw curves gently into the cup.',
+  14: 'Albafrosst is a phoenix reborn not in fire but in ice, its wings '
+      'trailing glittering snow. When it crosses the sky, the whole course '
+      'falls silent and the greens turn glass-slick with frost.',
+  16: 'Snaphook is a salt-crusted bear inked head to paw with anchors and old '
+      'sailor tattoos. It drags its tangle of ropes through the rough, and '
+      'any ball it snags is yanked hard and low toward the trees.',
+  17: 'Tinyfade is a sparky little critter whose tail flicks balls into a '
+      'soft, dependable fade. Beginners cherish it, since its gentle curve '
+      'rarely strays far from the short grass.',
+  18: 'Bautaslice is what Tinyfade becomes when patience runs out. Its fan '
+      'of bladed tails carves the air with a vicious curve, sending shots '
+      'screaming far right of where anyone aimed.',
+  19: 'Tappin is a tidy little fox that nudges balls the last few inches '
+      'into the cup. It refuses to let a putt linger on the lip and will '
+      'pat it home whether you asked for help or not.',
+  20: 'Stimpee measures the speed of every green by rolling across it on '
+      'its striped tail. The bandana it wears is a badge of office — no '
+      'putt is official until Stimpee has had its say.',
+  21: 'Missuno is a plump grub that inches along the fairway, chewing tee '
+      'pegs and dreaming of wings. It is the first stage of a proud line '
+      'of course-keeping insects.',
+  22: 'Adidos has shed its grubby youth for a sleek, winged warrior\'s form. '
+      'It patrols the bug-line\'s territory at speed, striped and armored, '
+      'darting between hazards faster than the eye can follow.',
+  23: 'Titliestres is the apex of the Missuno line — a venom-tailed elite '
+      'clad in royal armor. Golfers who disturb its nest learn that the '
+      'rough has defenders far fiercer than tall grass.',
+  24: 'Owtofbouns flutters just past the white stakes, a winged imp of pure '
+      'mischief. Any ball that drifts into its territory is whisked away '
+      'with a giggle, never to be played again.',
+  25: 'Strekathol is the grim elder of the out-of-bounds line, an owl that '
+      'tallies stroke and distance with cold precision. Where it roosts, '
+      'penalties are counted twice and forgiven never.',
+  26: 'Tristlie is a stout, plated digger that loves loose dirt. It tumbles '
+      'through the fairway carving little craters, blissfully unaware that '
+      'golfers call its handiwork a divot.',
+  27: 'Horchunk is Tristlie grown huge and powerful, hurling clods of turf '
+      'with every stride. A single charge can leave a fairway pocked like '
+      'a battlefield — and the groundskeeper despairing.',
+  28: 'Stenfan is a bull of solid stone that stands immovable in the sand. '
+      'Golfers who find their ball beside it know the bunker has chosen a '
+      'champion to guard the escape.',
+  29: 'Sabakloba is Stenfan hardened by countless buried lies, its cracked '
+      'hide glowing with the heat of a thousand failed escapes. It rules '
+      'the deepest bunkers as their unyielding lord.',
+  30: 'Bongker is a craggy golem that makes its home in the bunkers, packed '
+      'from sun-baked sand and stubbornness. It cheerfully buries any ball '
+      'that drops in, certain it has done the golfer a favor.',
+  31: 'Naynayron is the lightest of the iron line, a nimble stone figure '
+      'built for high, soft approaches. It is the first forged of three '
+      'and the easiest to swing into action.',
+  32: 'Sevenayron is the dependable middle of the iron line, broader and '
+      'more armored than Naynayron. Golfers reach for it when the shot '
+      'demands both distance and control.',
+  33: 'Fayvayron is the heaviest forged of the iron line, a towering slab '
+      'of layered stone. It launches shots low and far, and only the '
+      'strongest swings can rouse it from its stance.',
+  34: 'Splish is a playful droplet of a creature that dances on the surface '
+      'of every water hazard. It hops after errant balls, delighted by the '
+      'splash each one makes as it lands.',
+  35: 'Plooms is Splish swollen into a cresting wave, half ice and half '
+      'spray. It surges over the bank to reclaim any ball that dares the '
+      'water, dragging it down with a frosty roar.',
+  36: 'Pinnhai is a shark of waterlogged driftwood and creeping reeds, '
+      'cruising the lake margins. It surfaces only to judge a shot, and a '
+      'ball it deems pin-high is spared the depths.',
+  37: 'Komindo is a sleek, finned lizard that basks at the edge of the '
+      'water hazard. Harmless and curious, it trails golfers along the '
+      'bank, waiting to grow into something far less friendly.',
+  38: 'Denharvi is Komindo charged with the storms that gather over open '
+      'water. Its crest crackles with current, and it guards the hazard '
+      'with a jolt for anyone who wades in after a ball.',
+  39: 'Laypup is a bright-burning pup that bounds along the fairway leaving '
+      'tiny scorch marks. It loves to fetch, though the balls it returns '
+      'are always a little warm and a little singed.',
+  40: 'Stingler is a small blue scorpion that hides in the reeds of the '
+      'water hazard. Its glowing tail-bead drips a mild venom, more a '
+      'nuisance to golfers than a true danger.',
+  41: 'Stungyard is Stingler grown into a winged terror of the wetland '
+      'holes. The venom in its raised tail can swell a hand stiff, ending '
+      'many a promising round at the water\'s edge.',
+  42: 'Bugbag is a hollow golf bag given buzzing life, clubs rattling like '
+      'a chitinous shell. It scuttles after groups on insect legs, eager '
+      'to carry — and quietly pilfer — their gear.',
+  43: 'Acicart is Bugbag fused with an abandoned golf cart, a venomous '
+      'half-machine that rolls the cart paths uninvited. Its toxic exhaust '
+      'wilts the rough it trundles through.',
+  44: 'Toxicaddie is the dreaded final form of the Bugbag line — a bristling '
+      'mech of clubs, blades, and dripping venom. It offers its services '
+      'as a caddie, and no golfer has ever dared decline.',
+  45: 'Bogistragl is a cub of clear blue ice that pads across frozen greens '
+      'on soft, frosty paws. It hugs any ball it finds, leaving it pleasantly '
+      'chilled and slightly slippery.',
+  46: 'Bawrapawr is Bogistragl grown into a towering bear of jagged ice. '
+      'Its roar frosts the pin solid, and the greens around its den stay '
+      'glassy and treacherous all season.',
+  47: 'Lipowlt is a fluffy owl wreathed in gentle flame, hooting softly as '
+      'it watches twilight rounds. The little fire on its tail never quite '
+      'goes out, even in the rain.',
+  48: 'Lagphoot is Lipowlt risen into a blazing phoenix of the night sky. '
+      'It soars on burning wings above the back nine, and golfers say its '
+      'cry means a long, scorching round still lies ahead.',
+  49: 'Rongclub is a stubborn koala that lugs a bone-shaped cudgel '
+      'everywhere it goes. It hands golfers whichever club it pleases — '
+      'almost always the wrong one for the shot.',
+  50: 'Hotstreek burns with restless energy, flame and spark chasing each '
+      'other across its body. It runs the fairway in a blur, igniting a '
+      'birdie streak in any golfer bold enough to follow.',
+  51: 'Holeoblaze is Hotstreek erupted into a living inferno of fire and '
+      'lightning. When it strides onto a hole, the flag itself seems to '
+      'catch alight — a sign the pin is there for the taking.',
+  52: 'Zapwedge is a cheery, lightning-marked sprite shaped like a lofted '
+      'wedge. It zaps balls high into the air with a crackle, dropping them '
+      'soft and spinning onto the green.',
+  53: 'Greeninreg is Zapwedge grown sharp and proud, planting its little '
+      'flag wherever a shot finds the putting surface. Its electric-green '
+      'glow is a golfer\'s badge for a green hit in regulation.',
+  54: 'Skaiad is a downy yellow chick crackling with static, forever staring '
+      'up at the open sky. It flutters after high shots, cheering each one '
+      'that climbs toward the clouds.',
+  55: 'Skaimarx is Skaiad grown into a stern, storm-feathered eagle, forever '
+      'lecturing the flock on the proper redistribution of fairway. It '
+      'rules the high air and judges every lofted shot from above.',
+  56: 'Secondcat prowls the second cut of rough, a lean green stalker that '
+      'blends into the longer grass. It bats stray balls deeper into cover, '
+      'purring at the trouble it makes.',
+  57: 'Frincheetah is Secondcat at full sprint, a leaf-dappled blur tearing '
+      'along the fringe. Nothing crosses its stretch of rough faster, and '
+      'few balls escape its swift, leafy paws.',
+  58: 'Tigerwudz is the apex of its line — a legendary green tiger that '
+      'stalks the deepest woods off the fairway. Golfers speak its name in '
+      'hushed awe, for it has mastered every shot the trees can offer.',
+  59: 'Spinbite is a shadow-furred predator that pounces on shots cursed '
+      'with wild sidespin. It drags slices and hooks alike into the dark, '
+      'feeding on every golfer\'s worst tendencies.',
+  60: 'Kortosne is a stubby green dragon with stubby little wings, content '
+      'to keep its flights short and safe. It hoards balls hit just past '
+      'the ladies\' tees and guards them jealously.',
+  61: 'Longorak is Kortosne stretched long and powerful, its great wings '
+      'built for distance. When it takes to the air, the carry seems to go '
+      'on forever — and so does the search for the ball.',
+  62: 'Seet is a small frost-dragon that sheds glittering sleet wherever it '
+      'pads. The greens it crosses turn slick and slow, much to the dismay '
+      'of every putter that follows.',
+  63: 'Menstanado is Seet whipped into a whirling storm-dragon of ice and '
+      'wind. It spins down the fairway as a living squall, hurling shots '
+      'off line with every freezing gust.',
+  64: 'Elektrindor is a boxy little automaton humming with raw current, a '
+      'spark-plug heart in a metal shell. It zaps golf carts back to life '
+      'and waits patiently to be upgraded.',
+  65: 'Voltrakman is Elektrindor rebuilt into a thundering battle-mech. Its '
+      'piston fists strike with the force of a long drive, and lightning '
+      'arcs from every joint as it stomps the cart paths.',
+  66: 'Undulathon is a rainbow-winged phoenix that rides the updrafts in '
+      'long, rolling waves. Golfers who glimpse its undulating flight take '
+      'it as a sign of fast, flowing greens ahead.',
+  67: 'Zepestance is a sun-baked lizard that plants its feet in the dirt '
+      'and refuses to budge. It teaches young Bogeybeasts that a solid '
+      'stance comes before any good swing.',
+  68: 'Zepestance becomes Rovtchip once roots and turf take hold across its '
+      'back. Grown and grounded, it chips loose clods toward the green, '
+      'every shot springing from that same rooted stance.',
+  69: 'Shankey is a jittery ice-fighter that throws punches off the heel of '
+      'its fist. Its blows fly sharply sideways, and golfers near it feel '
+      'an unwelcome chill creep into their swing.',
+  70: 'Socketfeil is Shankey hardened into a towering brawler of frost. The '
+      'shank it once feared it now wields as a weapon, sending everything '
+      'careening off the hosel with icy force.',
+  71: 'Dumduff is a shaggy brown ape that thumps the turf instead of the '
+      'ball, scattering grass with every clumsy swing. It means well, but '
+      'it has never made clean contact in its life.',
+  72: 'Deevot is Dumduff grown huge and even heavier-handed. Each mighty '
+      'blow tears a fresh divot the size of a doormat, leaving fairways '
+      'pocked wherever this giant has practiced.',
+  73: 'OBwan is a young fox-mage learning to sense balls lost beyond the '
+      'white stakes. It bows humbly before each shot, murmuring that the '
+      'penalty is strong with this one.',
+  74: 'Proveewan is OBwan come into its powers, a robed sage who reads the '
+      'provisional ball before it is even struck. Few escape its quiet '
+      'judgement on what lies out of bounds.',
+  75: 'Holinwangenobi is the grand master of the out-of-bounds line, a '
+      'dragon-sage wreathed in psychic light. It alone can guide a ball '
+      'home from the farthest reaches of the lost.',
+  76: 'Peboll is a round, beaming little fish that bobs in every pond on '
+      'the course. Smooth and pale as a polished stone, it loves nothing '
+      'more than being skipped across the water.',
+  77: 'Profesorfisk is Peboll grown wise and bespectacled, forever poring '
+      'over its waterlogged rulebook. It will happily explain the local '
+      'rules to any golfer fishing in its pond.',
+  78: 'Lawnshangle is a scrappy grass-sprite with fists of woven turf. It '
+      'wrestles overgrown patches of fairway into shape, training hard to '
+      'become a true course-keeping champion.',
+  79: 'Spinrayt is Lawnshangle grown bark-skinned and broad, putting a '
+      'fierce rightward spin on everything it strikes. Its punches curve '
+      'just as a sliced shot does.',
+  80: 'Smashfakdurr is the towering final form of the Lawnshangle line, '
+      'all timber muscle and crushing fists. Every blow it lands is pure '
+      'smash factor — maximum power transferred in a single strike.',
+  81: 'Jinx is an impish psychic cat that toys with a golfer\'s focus. A '
+      'flick of its starry paw is enough to send a sure putt sliding wide '
+      'at the very last roll.',
+  82: 'Skobra is a wispy ghost-serpent that haunts the scorecard. It coils '
+      'around bad numbers and whispers them back, making sure no golfer '
+      'forgets a single dropped shot.',
+  83: 'Skrixon is Skobra grown venomous and skull-crowned, its hood marked '
+      'with grim warnings. It strikes at fragile rounds, and the scores it '
+      'poisons rarely recover.',
+  84: 'Skullaway is the dread final form of the Skobra line, a spectral '
+      'cobra crowned with a glowing skull. When it rears up, an entire '
+      'round can be wiped away in a single haunted stroke.',
+  85: 'Rangewhelp is a tiny dragon hatched on the driving range, gleefully '
+      'pouncing on bucket after bucket of practice balls. It dreams of one '
+      'day carrying a shot the full length of the field.',
+  86: 'Yardrake is Rangewhelp fledged into a winged drake that measures '
+      'every hole in precise yardage. It glides the fairway like a living '
+      'rangefinder, calling distances no caddie could match.',
+  87: 'Carryhazard is the mighty final form of the Rangewhelp line, an '
+      'armored dragon built to fly shots clear over any trouble. With it '
+      'aloft, no water or bunker is too far to carry.',
+  88: 'Ofdedeck is a humble lizard that strikes every shot cleanly off the '
+      'bare ground, no tee required. It takes quiet pride in playing the '
+      'ball exactly as it lies.',
+  89: 'Pangdrayv is Ofdedeck grown sleek and powerful, vine-muscled and '
+      'pinned low for a piercing drive. It launches balls on a flat, '
+      'searing trajectory straight down the deck.',
+  90: 'Drayvagreen is the golden final form of the Ofdedeck line, a radiant '
+      'dragon that aims for the green from the tee. Golfers who befriend it '
+      'dream only of driving the par fours.',
+  91: 'Teetaim is an eager grub that laces on tiny boxing gloves at the '
+      'first tee. It bounces and shadow-boxes the morning away, impatient '
+      'for its round to begin.',
+  92: 'Penaltee is Teetaim grown into a sharp-jabbing insect brawler. It '
+      'punishes every rules slip in the tee box, throwing a flurry of '
+      'blows for each stroke a golfer tries to skip.',
+  93: 'Teeboxer is the final form of the Teetaim line — a striped referee '
+      'of the tee box who enforces order with iron gloves. No golfer tees '
+      'up out of turn while Teeboxer is watching.',
+  94: 'Chipin is a soft-gliding squirrel that drops out of the trees and '
+      'lands without a sound. It loves to nudge greenside shots straight '
+      'into the cup for a tidy little hole-out.',
+  95: 'Flopshot is Chipin grown bold, a stone-winged glider that flings '
+      'itself sky-high before floating gently down. It teaches golfers the '
+      'art of the towering shot that lands soft and still.',
+  96: 'Clarva is a crystal-shelled cub glittering with psychic light. It '
+      'rolls slowly across the green, and putts that pass it seem to bend '
+      'gently toward the hole.',
+  97: 'Clarva sheds its small shell to become Denneclar, a sleek crystal '
+      'beast bristling with mind-reading spires. It senses the break of '
+      'every green long before a golfer can.',
+  98: 'Gripslip is a frost-slicked lizard that can never quite hold on. '
+      'Its icy claws lose their grip mid-swing, and the wild shots that '
+      'follow are entirely its doing.',
+  99: 'Skrambell is a clanging bell-creature of fire and water, ringing out '
+      'to rally a team. Where it chimes, golfers pick up one another\'s '
+      'best shots and scramble toward a shared score.',
+  100: 'Alsquare is a calm, eye-marked cube that keeps every match in '
+      'perfect balance. While it floats nearby, no player leads and none '
+      'trails — the contest stays dead even.',
+  101: 'Doormee is Alsquare opened into a glowing psychic gateway. It marks '
+      'the moment a match cannot be lost, only won or halved, and golfers '
+      'feel its quiet pressure on every closing hole.',
+  102: 'Jossi is a serene little mystic that hums softly over the greens, '
+      'trailing stars. Its gentle blessing settles a golfer\'s nerves just '
+      'before a knee-knocking putt.',
+  103: 'Suooja is Jossi grown strong and radiant, a winged guardian of the '
+      'putting surface. It shields golfers from doubt, and putts struck in '
+      'its presence roll with unshakable confidence.',
+  104: 'Chipamboo is a wispy panda cub of bamboo and mist. It bumbles '
+      'around the greenside, gently rolling chips along the turf rather '
+      'than lofting them into the air.',
+  105: 'Bumpandarun is Chipamboo grown surer of paw, a ghostly panda that '
+      'plays every greenside shot low and running. It bumps the ball into '
+      'the slope and lets it scurry toward the pin.',
+  106: 'Upandawn is the masterful final form of the Chipamboo line, a '
+      'shadow-armored panda warrior of the short game. Whatever trouble it '
+      'finds near the green, it always gets up and down.',
+  107: 'Grinfee is a sly green goblin that lurks by the clubhouse gate, '
+      'cackling as it counts coins. No Bogeybeast steps onto its course '
+      'until the green fee has been paid in full.',
+  108: 'Bladagast is a young leaf-mage that toddles the fairway with a twig '
+      'for a staff. It practices small green-reading spells, dreaming of '
+      'the great course-wizard it will one day become.',
+  109: 'Mulligandalf is the grand old wizard of the Bladagast line, white-'
+      'bearded and endlessly forgiving. With a tap of its staff it grants '
+      'a single shot again — you shall not count that stroke.',
+  110: 'Strekstrek is a russet bird that flies the course in long, even '
+      'stretches. It marks the steady pace of a round, gliding from tee '
+      'to green without ever rushing.',
+  111: 'Bogibardi is Strekstrek risen into a proud phoenix of the back nine. '
+      'It soars in sweeping arcs above the closing holes, and golfers take '
+      'its cry as a call to finish strong.',
+  112: 'Ritebreak is a fierce spirit-warrior that haunts the trickiest '
+      'greens. It shoves a putt the exact wrong way, turning a read that '
+      'looked right into a heartbreaking lip-out.',
+  113: 'Linkskors is a golden idol awakened from an ancient seaside course. '
+      'Its glowing core keeps the score of every links round ever played, '
+      'and it blesses those who respect the old ways.',
+  114: 'Thindit is a stone scorpion that skitters across hard, dry ground. '
+      'It scratches only the thinnest of marks in the turf, proud that it '
+      'never digs a proper divot.',
+  115: 'Fuooor is Thindit grown into a molten, armored centipede that '
+      'erupts from the rough. Golfers shout a warning the instant it '
+      'surfaces — its blazing charge spares nothing in its path.',
+  116: 'Fringeputt is a small fire-fox that pads the fringe of every green. '
+      'It noses balls off the collar and onto the smooth surface, purring '
+      'as it tidies up the short grass.',
+  117: 'Indahowl is Fringeputt grown into a blazing wolf that howls when a '
+      'putt drops. Its cry echoes across the course, announcing to all '
+      'that another ball has found the hole.',
+  118: 'Plugfuk is a burrowing beetle that buries balls deep in soft turf '
+      'and bunker faces. The dreaded plugged lie is its handiwork, and it '
+      'delights in every golfer\'s muffled groan.',
+  119: 'Legdog is a shaggy green brawler that bounds along the fairway on '
+      'powerful legs. It hounds a wayward shot relentlessly, fists raised, '
+      'until the ball is wrestled back into play.',
+  120: 'Trigglett is a twitchy shadow-cat with a hair-trigger temper. The '
+      'smallest bad bounce sets it hissing, and its dark mood spreads '
+      'quickly to any golfer nearby.',
+  121: 'Gigatilt is Trigglett consumed by rage, a steaming beast of pure '
+      'frustration. When it appears, a golfer\'s round spirals out of '
+      'control — one bad hole tilting into many.',
+  122: 'Fairwhayle is a vast, gentle whale that glides through the largest '
+      'water hazards. It surfaces to spare balls struck boldly down the '
+      'middle, ushering them safely back to the fairway.',
+  123: 'Schneschlug is a sluggish purple creature that oozes across the '
+      'green at a maddening crawl. Groups stuck behind it learn the true '
+      'meaning of slow play.',
+  124: 'Eelonmask is a crackling electric eel obsessed with launching '
+      'things ever farther. It charges balls with a jolt and rockets them '
+      'skyward, promising distance no club could ever match.',
+  125: 'Flatpitch is a friendly brown pup that scampers across level '
+      'ground. Calm and adaptable, it can grow toward fire, water, or '
+      'lightning depending on the course it calls home.',
+  126: 'Pyrepitch is the fire-born form of Flatpitch, a blazing ram raised '
+      'on sun-scorched links. It stamps cinders into the turf, and the '
+      'fairways it roams stay parched and fast.',
+  127: 'Tidepitch is the water-born form of Flatpitch, a flowing ram of '
+      'mist and spray raised beside the hazards. It keeps the greens soft '
+      'and the lakes brimming wherever it grazes.',
+  128: 'Elepitch is the storm-born form of Flatpitch, a crackling ram '
+      'raised under open skies. Lightning dances along its horns, and the '
+      'air hums whenever it gallops the fairway.',
+  129: 'Grovepitch is the leaf-born form of Flatpitch, a verdant ram raised '
+      'in the wooded holes. Flowers and vines trail from its horns, and '
+      'the rough thrives lush and green in its wake.',
+  130: 'Wintergreenor is a frost-antlered stag that wanders the course '
+      'between seasons. Where it treads, the greens stay tinted with '
+      'evergreen even as the first snow settles in.',
+  131: 'Waggler is a wobbly ghost that drifts above the ball, swaying back '
+      'and forth without ever committing. It is all nervous waggle and no '
+      'swing, forever rehearsing the shot it dares not take.',
+  132: 'Proofswing is Waggler grown decisive, a spirit-fighter that has '
+      'finally pulled the trigger. Its motion is pure and repeatable — the '
+      'flawless swing every golfer chases.',
+  133: 'Sandstroke is a swirling spirit of bunker sand that rises whenever '
+      'a ball plugs in the trap. It counts each splashing escape attempt, '
+      'one grim stroke at a time.',
+  134: 'Fahndoh is a sparky little critter that yelps a shrill warning '
+      'whenever a shot flies off line. Golfers have learned that when '
+      'Fahndoh cries out, it is wise to duck.',
+  135: 'Yewlachit is Fahndoh grown into a storm-maned beast that crackles '
+      'with warning. Its thunderous bark carries across three fairways, '
+      'scattering anyone in a wayward shot\'s path.',
+  136: 'Owberg is a drifting crag of psychic ice, most of its bulk hidden '
+      'beneath the frost. Golfers who misjudge its size find far more '
+      'trouble below the surface than above.',
+  137: 'Roary is a stone-maned dragon-lion that lets loose a quaking roar '
+      'from the highest tee. Its cry rolls across the course like thunder, '
+      'and bold golfers roar right back.',
+  138: 'Shefflor is an armored guardian of the water holes, plated and '
+      'crowned with psychic sigils. Calm and unshakable, it shepherds '
+      'steady shots across the hazard to safety.',
+  139: 'Braizon is a brazen panther wreathed in dark fire, prowling the '
+      'course after dusk. It blazes a fearless line at every flag, scorning '
+      'the safe and sensible play.',
+  140: 'Hee-Oh is a moth of living flame that drifts above the sunbaked '
+      'holes. Golfers whisper that catching sight of its embered wings '
+      'brings a streak of good fortune.',
+  141: 'Shee-Oh is Hee-Oh\'s storm-born twin, a shimmering insect crackling '
+      'with electric light. Where one brings warm luck, the other brings a '
+      'sudden, charged turn of fate.',
+  142: 'Bogeyman is the shadow that stalks every scorecard, a creeping '
+      'dread that feeds on dropped shots. No golfer is ever truly free of '
+      'it — one over par, and it is already at their heels.',
+  143: 'Saintandrose is a serene, rose-staffed monarch of the old seaside '
+      'links. It blesses those who honour the ancient home of the game, '
+      'guiding their shots along time-worn fairways.',
+  144: 'Frontanine is a swift dark beast that owns the opening holes. It '
+      'sets the tone of a round early, and golfers it favours come off '
+      'the turn already in the lead.',
+  145: 'Bakanine is Frontanine\'s shadowy counterpart, ruler of the closing '
+      'holes. It tests the nerve of every golfer down the stretch, deciding '
+      'rounds on the long way home.',
+  146: 'Touritslag is a golden lion-warrior built like a seasoned tour pro. '
+      'It plays with unhurried, professional patience, never letting a '
+      'slow group or a bad break rush its game.',
+  147: 'Yuessowpen is a legendary dragon of the great national championship, '
+      'its wings barred in bold red and blue. It haunts the most punishing '
+      'courses, where only the truly tested may stand before it.',
+  148: 'Deeowpen is the legendary storm-phoenix of the oldest championship '
+      'of all. It rides the coastal gales above the links, and only golfers '
+      'who can tame the wind ever earn its respect.',
+  149: 'Pegeaychamp is a legendary dragon forged for the fiercest of the '
+      'professional majors. Armored and relentless, it yields only to the '
+      'golfer who can match its iron will down every hole.',
+  150: 'Agustamastr is the legendary green-and-gold dragon of the most '
+      'hallowed course of spring. It guards the blossoming fairways, and '
+      'its blessing is the most coveted prize in all the game.',
+  151: 'Kuondor is the rarest legend of the skies — a radiant phoenix named '
+      'for the four-under miracle almost no golfer will ever record. To '
+      'simply glimpse it is the achievement of a lifetime.',
+};
+
 const Set<int> _legendaryDexNumbers = <int>{147, 148, 149, 150, 151};
 
 const Set<int> _epicDexNumbers = <int>{
@@ -342,6 +798,7 @@ final List<BogeybeastSpecies> firstGenBogeybeast = List<BogeybeastSpecies>.unmod
         name: _bogeybeastNames[index],
         rarity: _rarityForDexNumber(dexNumber),
         types: _types[index],
+        flavorText: _flavorText[dexNumber],
       );
     },
   ),
