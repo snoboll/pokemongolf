@@ -6,39 +6,72 @@ import '../models/golfer_team.dart';
 import '../state/bogeybeasts_golf_store.dart';
 import '../widgets/white_bg_image.dart';
 import 'history_screen.dart';
+import 'items_screen.dart';
 import 'my_bag_screen.dart';
 
 const List<({String asset, String label})> _availableSprites = [
-  (asset: 'assets/golfers/male/transparent_bg/ace.png',          label: 'Ace ♂'),
-  (asset: 'assets/golfers/female/transparent_bg/ace.png',        label: 'Ace ♀'),
-  (asset: 'assets/golfers/male/transparent_bg/chipper.png',      label: 'Chipper ♂'),
-  (asset: 'assets/golfers/female/transparent_bg/chipper.png',    label: 'Chipper ♀'),
-  (asset: 'assets/golfers/male/transparent_bg/drawer.png',       label: 'Drawer ♂'),
-  (asset: 'assets/golfers/female/transparent_bg/drawer.png',     label: 'Drawer ♀'),
-  (asset: 'assets/golfers/male/transparent_bg/slicer.png',       label: 'Slicer ♂'),
-  (asset: 'assets/golfers/female/transparent_bg/slicer.png',     label: 'Slicer ♀'),
-  (asset: 'assets/golfers/male/transparent_bg/hooker.png',       label: 'Hooker ♂'),
-  (asset: 'assets/golfers/female/transparent_bg/hooker.png',     label: 'Hooker ♀'),
-  (asset: 'assets/golfers/male/transparent_bg/flyer.png',        label: 'Flyer ♂'),
-  (asset: 'assets/golfers/female/transparent_bg/flyer.png',      label: 'Flyer ♀'),
-  (asset: 'assets/golfers/male/transparent_bg/fisher.png',       label: 'Fisher ♂'),
-  (asset: 'assets/golfers/female/transparent_bg/fisher.png',     label: 'Fisher ♀'),
-  (asset: 'assets/golfers/male/transparent_bg/longdriver.png',   label: 'Longdriver ♂'),
-  (asset: 'assets/golfers/female/transparent_bg/longdriver.png', label: 'Longdriver ♀'),
-  (asset: 'assets/golfers/male/transparent_bg/hotshot.png',      label: 'Hotshot ♂'),
-  (asset: 'assets/golfers/female/transparent_bg/hotshot.png',    label: 'Hotshot ♀'),
-  (asset: 'assets/golfers/male/transparent_bg/roughrunner.png',  label: 'Roughrunner ♂'),
-  (asset: 'assets/golfers/female/transparent_bg/roughrunner.png',label: 'Roughrunner ♀'),
-  (asset: 'assets/golfers/male/transparent_bg/bunkerdigger.png', label: 'Bunkerboy ♂'),
-  (asset: 'assets/golfers/female/transparent_bg/bunkerdigger.png',label: 'Bunkerboy ♀'),
-  (asset: 'assets/golfers/male/transparent_bg/greenkeeper.png',  label: 'Greenkeeper ♂'),
-  (asset: 'assets/golfers/female/transparent_bg/greenkeeper.png',label: 'Greenkeeper ♀'),
-  (asset: 'assets/golfers/male/transparent_bg/psycher.png',      label: 'Psych ♂'),
-  (asset: 'assets/golfers/female/transparent_bg/psycher.png',    label: 'Psych ♀'),
-  (asset: 'assets/golfers/male/transparent_bg/manager.png',      label: 'Manager ♂'),
-  (asset: 'assets/golfers/female/transparent_bg/manager.png',    label: 'Manager ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/ace.png', label: 'Ace ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/ace.png', label: 'Ace ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/chipper.png', label: 'Chipper ♂'),
+  (
+    asset: 'assets/golfers/female/transparent_bg/chipper.png',
+    label: 'Chipper ♀',
+  ),
+  (asset: 'assets/golfers/male/transparent_bg/drawer.png', label: 'Drawer ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/drawer.png', label: 'Drawer ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/slicer.png', label: 'Slicer ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/slicer.png', label: 'Slicer ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/hooker.png', label: 'Hooker ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/hooker.png', label: 'Hooker ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/flyer.png', label: 'Flyer ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/flyer.png', label: 'Flyer ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/fisher.png', label: 'Fisher ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/fisher.png', label: 'Fisher ♀'),
+  (
+    asset: 'assets/golfers/male/transparent_bg/longdriver.png',
+    label: 'Longdriver ♂',
+  ),
+  (
+    asset: 'assets/golfers/female/transparent_bg/longdriver.png',
+    label: 'Longdriver ♀',
+  ),
+  (asset: 'assets/golfers/male/transparent_bg/hotshot.png', label: 'Hotshot ♂'),
+  (
+    asset: 'assets/golfers/female/transparent_bg/hotshot.png',
+    label: 'Hotshot ♀',
+  ),
+  (
+    asset: 'assets/golfers/male/transparent_bg/roughrunner.png',
+    label: 'Roughrunner ♂',
+  ),
+  (
+    asset: 'assets/golfers/female/transparent_bg/roughrunner.png',
+    label: 'Roughrunner ♀',
+  ),
+  (
+    asset: 'assets/golfers/male/transparent_bg/bunkerdigger.png',
+    label: 'Bunkerboy ♂',
+  ),
+  (
+    asset: 'assets/golfers/female/transparent_bg/bunkerdigger.png',
+    label: 'Bunkerboy ♀',
+  ),
+  (
+    asset: 'assets/golfers/male/transparent_bg/greenkeeper.png',
+    label: 'Greenkeeper ♂',
+  ),
+  (
+    asset: 'assets/golfers/female/transparent_bg/greenkeeper.png',
+    label: 'Greenkeeper ♀',
+  ),
+  (asset: 'assets/golfers/male/transparent_bg/psycher.png', label: 'Psych ♂'),
+  (asset: 'assets/golfers/female/transparent_bg/psycher.png', label: 'Psych ♀'),
+  (asset: 'assets/golfers/male/transparent_bg/manager.png', label: 'Manager ♂'),
+  (
+    asset: 'assets/golfers/female/transparent_bg/manager.png',
+    label: 'Manager ♀',
+  ),
 ];
-
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -58,12 +91,7 @@ class ProfileScreen extends StatelessWidget {
           children: <Widget>[
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-              child: Text(
-                'Profile',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+              child: const ScreenTitle('Profile'),
             ),
             const SizedBox(height: 20),
             Center(
@@ -104,13 +132,22 @@ class ProfileScreen extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.edit, size: 13,
-                            color: theme.colorScheme.primary.withValues(alpha: 0.6)),
+                        Icon(
+                          Icons.edit,
+                          size: 13,
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.6,
+                          ),
+                        ),
                         const SizedBox(width: 4),
                         Text(
-                          store.golferSprite != null ? 'Change avatar' : 'Choose avatar',
+                          store.golferSprite != null
+                              ? 'Change avatar'
+                              : 'Choose avatar',
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.primary.withValues(alpha: 0.6),
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.6,
+                            ),
                           ),
                         ),
                       ],
@@ -136,10 +173,13 @@ class ProfileScreen extends StatelessWidget {
                       const SizedBox(width: 10),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 3),
+                          horizontal: 10,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.secondary
-                              .withValues(alpha: 0.15),
+                          color: theme.colorScheme.secondary.withValues(
+                            alpha: 0.15,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -164,7 +204,9 @@ class ProfileScreen extends StatelessWidget {
                     Text(
                       'HCP ${store.playerHcpDisplay}',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.5,
+                        ),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -218,6 +260,21 @@ class ProfileScreen extends StatelessWidget {
                       );
                     },
                   ),
+                  const SizedBox(height: 12),
+                  _ProfileMenuCard(
+                    icon: Icons.inventory_2,
+                    title: 'Items',
+                    subtitle: store.totalItemCount == 1
+                        ? '1 item'
+                        : '${store.totalItemCount} items',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ItemsScreen(),
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -229,7 +286,10 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Future<void> _confirmTeamChange(
-      BuildContext context, BogeybeastGolfStore store, GolferTeam? team) async {
+    BuildContext context,
+    BogeybeastGolfStore store,
+    GolferTeam? team,
+  ) async {
     if (team == null) {
       // Leaving a team — still confirm
       final confirmed = await showDialog<bool>(
@@ -237,14 +297,17 @@ class ProfileScreen extends StatelessWidget {
         builder: (ctx) => AlertDialog(
           title: const Text('Leave team?'),
           content: const Text(
-              'You won\'t be able to join another team for 30 days.'),
+            'You won\'t be able to join another team for 30 days.',
+          ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Cancel')),
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
             FilledButton(
-                onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text('Leave')),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Leave'),
+            ),
           ],
         ),
       );
@@ -284,12 +347,14 @@ class ProfileScreen extends StatelessWidget {
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Cancel')),
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
             FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: team.color),
-                onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text('Join')),
+              style: FilledButton.styleFrom(backgroundColor: team.color),
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Join'),
+            ),
           ],
         );
       },
@@ -300,9 +365,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   void _showHcpEditor(BuildContext context, BogeybeastGolfStore store) {
-    final controller = TextEditingController(
-      text: store.playerHcpDisplay,
-    );
+    final controller = TextEditingController(text: store.playerHcpDisplay);
     final isOverride = store.hcpOverride != null;
 
     showDialog<void>(
@@ -316,7 +379,9 @@ class ProfileScreen extends StatelessWidget {
             children: [
               TextField(
                 controller: controller,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 autofocus: true,
                 decoration: InputDecoration(
                   labelText: 'HCP (0.0–54.0)',
@@ -352,7 +417,9 @@ class ProfileScreen extends StatelessWidget {
             ),
             FilledButton(
               onPressed: () {
-                final val = double.tryParse(controller.text.replaceAll(',', '.'));
+                final val = double.tryParse(
+                  controller.text.replaceAll(',', '.'),
+                );
                 if (val != null && val >= 0 && val <= 54) {
                   store.setHcpOverride((val * 10).round() / 10.0);
                 }
@@ -407,9 +474,12 @@ class _SpritePicker extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text('Choose Avatar',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700)),
+            child: Text(
+              'Choose Avatar',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
           Expanded(
             child: GridView.builder(
@@ -435,7 +505,9 @@ class _SpritePicker extends StatelessWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: isSelected
-                              ? theme.colorScheme.primary.withValues(alpha: 0.12)
+                              ? theme.colorScheme.primary.withValues(
+                                  alpha: 0.12,
+                                )
                               : theme.colorScheme.surfaceContainerHighest,
                           border: Border.all(
                             color: isSelected
@@ -459,7 +531,9 @@ class _SpritePicker extends StatelessWidget {
                           fontWeight: isSelected ? FontWeight.w700 : null,
                           color: isSelected
                               ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                              : theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -508,8 +582,11 @@ class _TeamSelector extends StatelessWidget {
               ),
               if (locked) ...<Widget>[
                 const SizedBox(width: 8),
-                Icon(Icons.lock_outline, size: 14,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.35)),
+                Icon(
+                  Icons.lock_outline,
+                  size: 14,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '$daysLeft days left',
@@ -530,7 +607,9 @@ class _TeamSelector extends StatelessWidget {
                   right: team != GolferTeam.values.last ? 8 : 0,
                 ),
                 child: GestureDetector(
-                  onTap: locked && !selected ? null : () => onChanged(selected ? null : team),
+                  onTap: locked && !selected
+                      ? null
+                      : () => onChanged(selected ? null : team),
                   child: Opacity(
                     opacity: locked && !selected ? 0.35 : 1.0,
                     child: AnimatedContainer(
@@ -554,7 +633,9 @@ class _TeamSelector extends StatelessWidget {
                             width: 44,
                             height: 44,
                             decoration: BoxDecoration(
-                              color: team.color.withValues(alpha: selected ? 0.3 : 0.15),
+                              color: team.color.withValues(
+                                alpha: selected ? 0.3 : 0.15,
+                              ),
                               shape: BoxShape.circle,
                             ),
                             child: Center(
@@ -568,17 +649,25 @@ class _TeamSelector extends StatelessWidget {
                                         height: 1,
                                       ),
                                     )
-                                  : Icon(team.icon, size: 24, color: team.color),
+                                  : Icon(
+                                      team.icon,
+                                      size: 24,
+                                      color: team.color,
+                                    ),
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             team.label,
                             style: theme.textTheme.labelMedium?.copyWith(
-                              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                              fontWeight: selected
+                                  ? FontWeight.w800
+                                  : FontWeight.w600,
                               color: selected
                                   ? team.color
-                                  : theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                  : theme.colorScheme.onSurface.withValues(
+                                      alpha: 0.6,
+                                    ),
                             ),
                           ),
                         ],
@@ -630,11 +719,7 @@ class _ProfileMenuCard extends StatelessWidget {
                 color: theme.colorScheme.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                color: theme.colorScheme.primary,
-                size: 24,
-              ),
+              child: Icon(icon, color: theme.colorScheme.primary, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(

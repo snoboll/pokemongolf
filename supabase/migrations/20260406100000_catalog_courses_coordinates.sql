@@ -36,7 +36,7 @@ update public.catalog_courses set lat = 56.2990978,  lng = 12.4686759 where id =
 update public.catalog_courses set lat = 55.6944941,  lng = 13.0652436 where id = 'orestad';
 update public.catalog_courses set lat = 55.5663781,  lng = 13.1836053 where id = 'pga-national-lakes';
 update public.catalog_courses set lat = 55.5663781,  lng = 13.1836053 where id = 'pga-national-links';
-update public.catalog_courses set lat = 55.5948961,  lng = 13.5202412 where id = 'romelajsen';
+update public.catalog_courses set lat = 55.5948961,  lng = 13.5202412 where id = 'romeleasen';
 update public.catalog_courses set lat = 55.9759626,  lng = 12.7567058 where id = 'rya';
 update public.catalog_courses set lat = 55.6455770,  lng = 13.6500410 where id = 'sjobo';
 update public.catalog_courses set lat = 56.0491110,  lng = 12.9533010 where id = 'soderasen';

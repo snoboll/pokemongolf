@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../widgets/beast_icon.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+const String _bbTextLogoAsset = 'assets/icons/bb_textlogo.png';
+
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
@@ -62,7 +64,9 @@ class _AuthScreenState extends State<AuthScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Account created! Check your email to confirm, then sign in.'),
+                content: Text(
+                  'Account created! Check your email to confirm, then sign in.',
+                ),
               ),
             );
             setState(() => _isSignUp = false);
@@ -71,10 +75,9 @@ class _AuthScreenState extends State<AuthScreen> {
         }
 
         if (response.session != null) {
-          await supabase.from('profiles').upsert(
-            {'golfer_name': golferName},
-            onConflict: 'user_id',
-          );
+          await supabase.from('profiles').upsert({
+            'golfer_name': golferName,
+          }, onConflict: 'user_id');
         }
       } else {
         await supabase.auth.signInWithPassword(
@@ -122,12 +125,12 @@ class _AuthScreenState extends State<AuthScreen> {
                   // Logo with glow
                   BeastIcon(size: 200),
                   const SizedBox(height: 20),
-                  Text(
-                    'Bogeybeasts',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: colorScheme.onSurface,
-                      letterSpacing: -0.5,
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 320),
+                    child: Image.asset(
+                      _bbTextLogoAsset,
+                      fit: BoxFit.contain,
+                      semanticLabel: 'Bogeybeasts',
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -145,7 +148,9 @@ class _AuthScreenState extends State<AuthScreen> {
                       color: colorScheme.surface.withValues(alpha: 0.55),
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: colorScheme.outlineVariant.withValues(alpha: 0.7),
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.7,
+                        ),
                         width: 1,
                       ),
                     ),
@@ -189,7 +194,8 @@ class _AuthScreenState extends State<AuthScreen> {
                                 size: 20,
                               ),
                               onPressed: () => setState(
-                                  () => _obscurePassword = !_obscurePassword),
+                                () => _obscurePassword = !_obscurePassword,
+                              ),
                             ),
                           ),
                         ),
@@ -198,19 +204,25 @@ class _AuthScreenState extends State<AuthScreen> {
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 10),
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
                             decoration: BoxDecoration(
                               color: colorScheme.error.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: colorScheme.error.withValues(alpha: 0.35),
+                                color: colorScheme.error.withValues(
+                                  alpha: 0.35,
+                                ),
                                 width: 1,
                               ),
                             ),
                             child: Text(
                               _error!,
                               style: TextStyle(
-                                  color: colorScheme.error, fontSize: 13),
+                                color: colorScheme.error,
+                                fontSize: 13,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -227,8 +239,9 @@ class _AuthScreenState extends State<AuthScreen> {
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2.5),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                              ),
                             )
                           : Text(_isSignUp ? 'Sign Up' : 'Sign In'),
                     ),

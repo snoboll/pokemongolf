@@ -9,14 +9,14 @@ const List<List<BogeybeastType>> _types = <List<BogeybeastType>>[
   [_P.grass],                 // 2   Fairwyn
   [_P.grass, _P.poison],     // 3   Teelord
   [_P.fire],                  // 4   Bogferno
-  [_P.fire],                  // 5   Blazepar
+  [_P.fire],                  // 5   Parablaze
   [_P.fire, _P.flying],      // 6   Emberdie
   [_P.water],                 // 7   Droptooth
   [_P.water],                 // 8   Bladogator
   [_P.water],                 // 9   Hookodile
   [_P.grass],                 // 10  Roughrat
   [_P.grass],                 // 11  Growdent
-  [_P.flying, _P.ice],       // 12  Crisprdie
+  [_P.flying, _P.ice],       // 12  Crisprdi
   [_P.flying, _P.ice],       // 13  Chilleagle
   [_P.flying, _P.ice],       // 14  Albafrosst
   [_P.normal],                // 15  Babydraw
@@ -80,8 +80,8 @@ const List<List<BogeybeastType>> _types = <List<BogeybeastType>>[
   [_P.psychic],               // 73  OBwan
   [_P.psychic],               // 74  Proveewan
   [_P.psychic, _P.dragon],   // 75  Holinwangenobi
-  [_P.water, _P.normal],     // 76  Peboll
-  [_P.water, _P.flying],     // 77  Profsoorfisk
+  [_P.water],                 // 76  Peboll
+  [_P.water],                 // 77  Profesorfisk
   [_P.grass, _P.fighting],   // 78  Lawnshangle
   [_P.grass, _P.fighting],   // 79  Spinrayt
   [_P.grass, _P.fighting],   // 80  Smashfakdurr
@@ -108,54 +108,54 @@ const List<List<BogeybeastType>> _types = <List<BogeybeastType>>[
   [_P.psychic],               // 101 Doormee
   [_P.psychic],               // 102 Jossi
   [_P.psychic, _P.flying],   // 103 Suooja
-  [_P.ghost],                 // 104 Gubbchip
-  [_P.ghost],                 // 105 Bumpandran
+  [_P.ghost],                 // 104 Chipamboo
+  [_P.ghost],                 // 105 Bumpandarun
   [_P.ghost, _P.dark],       // 106 Upandawn
   [_P.dark, _P.poison],      // 107 Grinfee
-  [_P.psychic],               // 108 Bladagast
-  [_P.psychic, _P.grass],    // 109 Muligandalf
+  [_P.psychic, _P.grass],    // 108 Bladagast
+  [_P.psychic, _P.grass],    // 109 Mulligandalf
   [_P.flying],                // 110 Strekstrek
   [_P.flying],                // 111 Bogibardi
   [_P.ghost, _P.fighting],   // 112 Ritebreak
   [_P.ground],                // 113 Linkskors
   [_P.rock],                  // 114 Thindit
   [_P.rock],                  // 115 Fuooor
-  [_P.fire, _P.psychic],     // 116 Lagpoot
-  [_P.fire, _P.psychic],     // 117 Indaahowl
+  [_P.fire, _P.psychic],     // 116 Fringeputt
+  [_P.fire, _P.psychic],     // 117 Indahowl
   [_P.bug, _P.ground],       // 118 Plugfuk
   [_P.grass, _P.fighting],   // 119 Legdog
   [_P.dark],                  // 120 Trigglett
   [_P.dark],                  // 121 Gigatilt
   [_P.water],                 // 122 Fairwhayle
-  [_P.normal],                // 123 Foreplayer
-  [_P.fighting],              // 124 Punnchad
+  [_P.poison],                // 123 Schneschlug
+  [_P.electric, _P.poison],  // 124 Eelonmask
   [_P.normal],                // 125 Flatpitch
   [_P.fire],                  // 126 Pyrepitch
   [_P.water],                 // 127 Tidepitch
   [_P.electric],              // 128 Elepitch
-  [_P.flying],                // 129 Flayerlie
+  [_P.grass],                 // 129 Grovepitch
   [_P.ice, _P.grass],        // 130 Wintergreenor
   [_P.ghost],                 // 131 Waggler
   [_P.ghost, _P.fighting],   // 132 Proofswing
   [_P.ground],                // 133 Sandstroke
-  [_P.electric, _P.water],   // 134 Fittnylle
-  [_P.electric, _P.poison],  // 135 Yewlachit
+  [_P.electric],              // 134 Fahndoh
+  [_P.electric],              // 135 Yewlachit
   [_P.psychic, _P.ice],      // 136 Owberg
   [_P.dragon, _P.rock],      // 137 Roary
-  [_P.psychic, _P.water],    // 138 Shefflor
+  [_P.water, _P.psychic],    // 138 Shefflor
   [_P.fire, _P.dark],        // 139 Braizon
   [_P.fire, _P.bug],         // 140 Hee-Oh
-  [_P.water, _P.bug],        // 141 Shee-Oh
+  [_P.electric, _P.bug],     // 141 Shee-Oh
   [_P.ghost],                 // 142 Bogeyman
-  [_P.grass, _P.flying],     // 143 Saintandroos
-  [_P.fire],                  // 144 Frontanine
+  [_P.grass, _P.flying],     // 143 Saintandrose
+  [_P.dark],                  // 144 Frontanine
   [_P.dark],                  // 145 Bakanine
   [_P.normal],                // 146 Touritslag
-  [_P.fire, _P.flying],      // 147 Yuessowpen
-  [_P.ice, _P.flying],       // 148 Deeowpen
-  [_P.dragon, _P.fighting],  // 149 Pegeaychamp
-  [_P.dark],                  // 150 Agustamastr
-  [_P.flying, _P.dragon],    // 151 Kuondor
+  [_P.dragon, _P.flying],    // 147 Yuessowpen
+  [_P.dark, _P.flying],      // 148 Deeowpen
+  [_P.dragon, _P.dark],      // 149 Pegeaychamp
+  [_P.dragon, _P.electric],  // 150 Agustamastr
+  [_P.flying],                // 151 Kuondor
 ];
 
 const List<String> _bogeybeastNames = <String>[
@@ -163,14 +163,14 @@ const List<String> _bogeybeastNames = <String>[
   'Fairwyn',        // 2
   'Teelord',        // 3
   'Bogferno',       // 4
-  'Blazepar',       // 5
+  'Parablaze',      // 5
   'Emberdie',       // 6
   'Droptooth',      // 7
   'Bladogator',     // 8
   'Hookodile',      // 9
   'Roughrat',       // 10
   'Growdent',       // 11
-  'Crisprdie',      // 12
+  'Crisprdi',       // 12
   'Chilleagle',     // 13
   'Albafrosst',     // 14
   'Babydraw',       // 15
@@ -235,7 +235,7 @@ const List<String> _bogeybeastNames = <String>[
   'Proveewan',      // 74
   'Holinwangenobi', // 75
   'Peboll',         // 76
-  'Profsoorfisk',   // 77
+  'Profesorfisk',   // 77
   'Lawnshangle',    // 78
   'Spinrayt',       // 79
   'Smashfakdurr',   // 80
@@ -262,37 +262,37 @@ const List<String> _bogeybeastNames = <String>[
   'Doormee',        // 101
   'Jossi',          // 102
   'Suooja',         // 103
-  'Gubbchip',       // 104
-  'Bumpandran',     // 105
+  'Chipamboo',      // 104
+  'Bumpandarun',    // 105
   'Upandawn',       // 106
   'Grinfee',        // 107
   'Bladagast',      // 108
-  'Muligandalf',    // 109
+  'Mulligandalf',   // 109
   'Strekstrek',     // 110
   'Bogibardi',      // 111
   'Ritebreak',      // 112
   'Linkskors',      // 113
   'Thindit',        // 114
   'Fuooor',         // 115
-  'Lagpoot',        // 116
-  'Indaahowl',      // 117
+  'Fringeputt',     // 116
+  'Indahowl',       // 117
   'Plugfuk',        // 118
   'Legdog',         // 119
   'Trigglett',      // 120
   'Gigatilt',       // 121
   'Fairwhayle',     // 122
-  'Foreplayer',     // 123
-  'Punnchad',       // 124
+  'Schneschlug',    // 123
+  'Eelonmask',      // 124
   'Flatpitch',      // 125
   'Pyrepitch',      // 126
   'Tidepitch',      // 127
   'Elepitch',       // 128
-  'Flayerlie',      // 129
+  'Grovepitch',     // 129
   'Wintergreenor',  // 130
   'Waggler',        // 131
   'Proofswing',     // 132
   'Sandstroke',     // 133
-  'Fittnylle',      // 134
+  'Fahndoh',        // 134
   'Yewlachit',      // 135
   'Owberg',         // 136
   'Roary',          // 137
@@ -301,7 +301,7 @@ const List<String> _bogeybeastNames = <String>[
   'Hee-Oh',         // 140
   'Shee-Oh',        // 141
   'Bogeyman',       // 142
-  'Saintandroos',   // 143
+  'Saintandrose',   // 143
   'Frontanine',     // 144
   'Bakanine',       // 145
   'Touritslag',     // 146
@@ -315,21 +315,21 @@ const List<String> _bogeybeastNames = <String>[
 const Set<int> _legendaryDexNumbers = <int>{147, 148, 149, 150, 151};
 
 const Set<int> _epicDexNumbers = <int>{
-  6, 9, 75, 80, 84, 87, 106, 136, 140, 141, 144, 145,
+  3, 6, 9, 14, 75, 80, 84, 87, 90, 106, 126, 127, 128, 129,
+  136, 137, 138, 139, 140, 141, 143, 145,
 };
 
 const Set<int> _rareDexNumbers = <int>{
-  3, 27, 29, 33, 35, 44, 46, 51, 58, 68, 74, 79, 81, 83,
-  97, 99, 101, 116, 117, 121, 122, 126, 127, 128, 132,
-  133, 134, 135, 139, 142,
+  2, 5, 8, 23, 25, 27, 29, 33, 35, 41, 44, 46, 51, 58, 68,
+  81, 93, 97, 99, 101, 103, 112, 115, 117, 121, 122, 124,
+  130, 132, 135, 142, 144, 146,
 };
 
 const Set<int> _uncommonDexNumbers = <int>{
-  1, 2, 4, 5, 7, 8, 14, 16, 18, 23, 25, 26, 28, 30, 32,
-  36, 38, 41, 43, 45, 48, 49, 50, 53, 55, 57, 59, 61, 63,
-  65, 66, 67, 70, 71, 73, 76, 82, 85, 86, 89, 90, 92, 93,
-  95, 96, 98, 100, 102, 103, 105, 109, 111, 113, 115, 118,
-  123, 124, 125, 131, 137, 138,
+  1, 4, 7, 11, 13, 16, 18, 19, 20, 22, 26, 28, 30, 32, 36,
+  38, 39, 43, 45, 48, 49, 50, 53, 55, 57, 59, 61, 63, 65,
+  66, 67, 70, 71, 74, 76, 79, 83, 86, 89, 92, 95, 98, 100,
+  102, 105, 107, 109, 111, 113, 118, 119, 123, 125, 133, 134,
 };
 
 final List<BogeybeastSpecies> firstGenBogeybeast = List<BogeybeastSpecies>.unmodifiable(

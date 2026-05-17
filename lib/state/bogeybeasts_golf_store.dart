@@ -9,6 +9,7 @@ import '../models/encounter_modifiers.dart';
 import '../models/golf_course.dart';
 import '../models/golf_score.dart';
 import '../models/hole_stats.dart';
+import '../models/item.dart';
 import '../models/bogeybeast_species.dart';
 import '../models/round_models.dart';
 import '../services/catch_service.dart';
@@ -42,6 +43,7 @@ class BogeybeastGolfStore extends ChangeNotifier {
   List<GolfCourse> _catalogCourses = <GolfCourse>[];
   List<GolfCourse> _userCourses = <GolfCourse>[];
   List<Club> _clubs = <Club>[];
+  final Map<ItemType, int> _items = <ItemType, int>{};
   Map<String, CourseLeader> _courseLeaders = {};
   Map<String, CourseLeader> _defaultLeaders = {};
 
@@ -80,6 +82,39 @@ class BogeybeastGolfStore extends ChangeNotifier {
         return db.compareTo(da);
       });
     return List<Club>.unmodifiable(sorted);
+  }
+
+  // ── Items (inventory) ───────────────────────────────────────────────
+
+  Map<ItemType, int> get items => Map<ItemType, int>.unmodifiable(_items);
+
+  int itemCount(ItemType type) => _items[type] ?? 0;
+
+  int get totalItemCount =>
+      _items.values.fold(0, (int sum, int qty) => sum + qty);
+
+  void addItem(ItemType type, [int amount = 1]) {
+    _items[type] = (_items[type] ?? 0) + amount;
+    notifyListeners();
+    _persistItem(type);
+  }
+
+  /// Consumes one [type] item. Returns false if the player holds none.
+  bool consumeItem(ItemType type) {
+    final int current = _items[type] ?? 0;
+    if (current <= 0) return false;
+    _items[type] = current - 1;
+    notifyListeners();
+    _persistItem(type);
+    return true;
+  }
+
+  void _persistItem(ItemType type) {
+    _supabaseService
+        ?.setItemQuantity(type.id, _items[type] ?? 0)
+        .catchError((e) {
+      debugPrint('Failed to persist item ${type.id}: $e');
+    });
   }
 
   Map<String, CourseLeader> get courseLeaders =>
@@ -275,6 +310,17 @@ class BogeybeastGolfStore extends ChangeNotifier {
       }
 
       try {
+        final Map<String, int> itemRows = await supa.fetchItems();
+        _items.clear();
+        itemRows.forEach((String id, int qty) {
+          final ItemType? type = ItemType.fromId(id);
+          if (type != null) _items[type] = qty;
+        });
+      } catch (e) {
+        debugPrint('Failed to load items: $e');
+      }
+
+      try {
         _courseLeaders = await supa.fetchCourseLeaders();
       } catch (e) {
         debugPrint('Failed to load course leaders: $e');
@@ -343,6 +389,7 @@ class BogeybeastGolfStore extends ChangeNotifier {
       debugPrint('Failed to reset progress: $e');
       rethrow;
     }
+    _items.clear();
     _pendingCatches.clear();
     _activeRound = null;
     notifyListeners();
@@ -361,6 +408,7 @@ class BogeybeastGolfStore extends ChangeNotifier {
     _catalogCourses = <GolfCourse>[];
     _userCourses = <GolfCourse>[];
     _clubs = <Club>[];
+    _items.clear();
     _courseLeaders = {};
     _defaultLeaders = {};
     notifyListeners();

@@ -11,6 +11,7 @@ import '../models/bogeybeast_type.dart';
 import '../models/round_models.dart';
 import '../widgets/distance_to_green.dart';
 import '../widgets/bogeycube_badge.dart';
+import '../widgets/bogeycube_throw.dart';
 import '../widgets/bogeybeast_art.dart';
 import '../widgets/score_picker.dart';
 import 'scorecard_detail_screen.dart';
@@ -31,6 +32,9 @@ class _RoundScreenState extends State<RoundScreen>
   int? _customStrokes; // set when user enters a stroke count manually
   HoleStats _holeStats = const HoleStats();
   HoleResolution? _resolution;
+
+  // Set while the Bogeycube throw animation plays, before the result screen.
+  HoleResolution? _pendingResolution;
 
   // Encounter animation
   late final AnimationController _encounterController;
@@ -152,6 +156,7 @@ class _RoundScreenState extends State<RoundScreen>
       _customStrokes = null;
       _holeStats = const HoleStats();
       _resolution = null;
+      _pendingResolution = null;
     });
     _encounterController.forward(from: 0);
   }
@@ -258,6 +263,26 @@ class _RoundScreenState extends State<RoundScreen>
       );
     }
 
+    if (_pendingResolution != null) {
+      final HoleResult pending = _pendingResolution!.holeResult;
+      return Scaffold(
+        body: SafeArea(
+          child: BogeycubeThrowOverlay(
+            caught: pending.caught,
+            beastAssetPath: pending.bogeybeast.assetPath,
+            beastName: pending.bogeybeast.name,
+            onComplete: () {
+              if (!mounted) return;
+              setState(() {
+                _resolution = _pendingResolution;
+                _pendingResolution = null;
+              });
+            },
+          ),
+        ),
+      );
+    }
+
     if (activeRound == null) {
       return Scaffold(
         body: Center(
@@ -289,6 +314,7 @@ class _RoundScreenState extends State<RoundScreen>
       appBar: AppBar(
         title: Text(
           'Hole ${activeRound.currentHoleNumber} / ${activeRound.holeCount}',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         actions: <Widget>[
           Padding(
@@ -598,16 +624,18 @@ class _RoundScreenState extends State<RoundScreen>
                           width: double.infinity,
                           child: FilledButton.icon(
                             onPressed: () {
+                              final HoleResolution resolution = store
+                                  .playCurrentHole(
+                                    par: _par,
+                                    strokes: _strokes,
+                                    stats: _holeStats,
+                                  );
                               setState(() {
-                                _resolution = store.playCurrentHole(
-                                  par: _par,
-                                  strokes: _strokes,
-                                  stats: _holeStats,
-                                );
+                                _pendingResolution = resolution;
                               });
                             },
-                            icon: const Icon(Icons.pets),
-                            label: const Text('Shoot Bogeycube'),
+                            icon: const Bogeycube(size: 22),
+                            label: const Text('Launch Bogeycube'),
                           ),
                         ),
                       ],
@@ -1098,35 +1126,227 @@ class _StreakBadge extends StatelessWidget {
     final theme = Theme.of(context);
     const Color fireColor = Color(0xFFFFB300);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: fireColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: fireColor.withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          const Text('🔥', style: TextStyle(fontSize: 14)),
-          const SizedBox(width: 4),
-          Text(
-            '$streakCount',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: fireColor,
-              fontWeight: FontWeight.w800,
+    return GestureDetector(
+      onTap: () => _showParstreakModal(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: fireColor.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: fireColor.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const Text('🔥', style: TextStyle(fontSize: 14)),
+            const SizedBox(width: 4),
+            Text(
+              '$streakCount',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: fireColor,
+                fontWeight: FontWeight.w800,
+              ),
             ),
+            const SizedBox(width: 6),
+            Text(
+              'Parstreak',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: fireColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '·  $_legendaryPct% legendary',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: fireColor.withValues(alpha: 0.8),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void _showParstreakModal(BuildContext context) {
+  showDialog<void>(
+    context: context,
+    builder: (context) => const _ParstreakInfoDialog(),
+  );
+}
+
+class _ParstreakInfoDialog extends StatelessWidget {
+  const _ParstreakInfoDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    const Color fireColor = Color(0xFFFFB300);
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: fireColor.withValues(alpha: 0.4),
+            width: 1.5,
           ),
-          const SizedBox(width: 8),
-          Text(
-            '·  $_legendaryPct% legendary',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: fireColor.withValues(alpha: 0.8),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: fireColor.withValues(alpha: 0.1),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  const Text('🔥', style: TextStyle(fontSize: 20)),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Parstreak',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: fireColor,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: <Widget>[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: <Widget>[
+                      Image.asset(
+                        'assets/golfers/starter_hickory.png',
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            'Score par or better on consecutive holes to build your Parstreak! '
+                            'The longer your streak, the higher your chance of encountering a legendary Bogeybeast.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Text(
+                        'Hickory',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _ParstreakRow(
+                    emoji: '🦅',
+                    label: 'Eagle',
+                    description: '+12 streak bonus',
+                    color: const Color(0xFF4CAF50),
+                  ),
+                  const SizedBox(height: 8),
+                  _ParstreakRow(
+                    emoji: '🐦',
+                    label: 'Birdie',
+                    description: '+6 streak bonus',
+                    color: const Color(0xFF2196F3),
+                  ),
+                  const SizedBox(height: 8),
+                  _ParstreakRow(
+                    emoji: '⛳',
+                    label: 'Par',
+                    description: '+3 streak bonus',
+                    color: fireColor,
+                  ),
+                  const SizedBox(height: 8),
+                  _ParstreakRow(
+                    emoji: '💔',
+                    label: 'Bogey or worse',
+                    description: 'Streak resets',
+                    color: theme.colorScheme.error,
+                  ),
+                  const SizedBox(height: 20),
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Got it!'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ParstreakRow extends StatelessWidget {
+  const _ParstreakRow({
+    required this.emoji,
+    required this.label,
+    required this.description,
+    required this.color,
+  });
+
+  final String emoji;
+  final String label;
+  final String description;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: <Widget>[
+        Text(emoji, style: const TextStyle(fontSize: 16)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
-        ],
-      ),
+        ),
+        Text(
+          description,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

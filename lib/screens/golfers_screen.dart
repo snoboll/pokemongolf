@@ -122,7 +122,12 @@ class _GolfersScreenState extends State<GolfersScreen> {
     final total = firstGenBogeybeast.length;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Golfers')),
+      appBar: AppBar(
+        title: const ScreenTitle('Golfers'),
+        centerTitle: false,
+        titleSpacing: 20,
+        toolbarHeight: 64,
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null

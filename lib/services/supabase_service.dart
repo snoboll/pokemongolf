@@ -319,6 +319,7 @@ class SupabaseService {
 
     await _client.from('rounds').delete().eq('user_id', uid);
     await _client.from('caught_bogeybeast').delete().eq('user_id', uid);
+    await _client.from('items').delete().eq('user_id', uid);
   }
 
   Future<void> releaseBogeybeast(int dexNumber) async {
@@ -577,5 +578,32 @@ class SupabaseService {
         .from('profiles')
         .update({'hcp_override': hcp})
         .eq('user_id', currentUserId!);
+  }
+
+  // ── Items (inventory) ──────────────────────────────────────────────
+
+  /// Returns a map of item type id → quantity for the current user.
+  Future<Map<String, int>> fetchItems() async {
+    final uid = currentUserId;
+    if (uid == null) return <String, int>{};
+
+    final List<Map<String, dynamic>> rows = await _client
+        .from('items')
+        .select('item_type, quantity')
+        .eq('user_id', uid);
+
+    final Map<String, int> result = <String, int>{};
+    for (final Map<String, dynamic> row in rows) {
+      result[row['item_type'] as String] = (row['quantity'] as num).toInt();
+    }
+    return result;
+  }
+
+  Future<void> setItemQuantity(String itemType, int quantity) async {
+    await _client.from('items').upsert({
+      'user_id': currentUserId!,
+      'item_type': itemType,
+      'quantity': quantity,
+    }, onConflict: 'user_id,item_type');
   }
 }

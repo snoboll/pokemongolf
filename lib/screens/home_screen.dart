@@ -130,16 +130,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
-                      BeastIcon(size: 72),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Bogeybeasts',
-                        style: theme.textTheme.headlineLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
+                      BeastIcon(size: 124),
+                      const SizedBox(height: 20),
                       if (store.golferName != null) ...<Widget>[
                         Text(
                           'Golfer ${store.golferName}',

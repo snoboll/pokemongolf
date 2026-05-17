@@ -20,7 +20,11 @@ class CollectionScreen extends StatefulWidget {
 class _CollectionScreenState extends State<CollectionScreen> {
   _CatchFilter _filter = _CatchFilter.all;
 
-  void _showDetail(BuildContext context, BogeybeastGolfStore store, BogeybeastSpecies b) {
+  void _showDetail(
+    BuildContext context,
+    BogeybeastGolfStore store,
+    BogeybeastSpecies b,
+  ) {
     showBeastDetailSheet(
       context,
       b,
@@ -32,12 +36,17 @@ class _CollectionScreenState extends State<CollectionScreen> {
   }
 
   void _confirmRelease(
-      BuildContext context, BogeybeastGolfStore store, BogeybeastSpecies bogeybeast) {
+    BuildContext context,
+    BogeybeastGolfStore store,
+    BogeybeastSpecies bogeybeast,
+  ) {
     showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Release ${bogeybeast.name}?'),
-        content: const Text('This Bogeybeast will be removed from your Bogeydex.'),
+        content: const Text(
+          'This Bogeybeast will be removed from your Bogeydex.',
+        ),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -65,15 +74,16 @@ class _CollectionScreenState extends State<CollectionScreen> {
     return ListenableBuilder(
       listenable: store,
       builder: (BuildContext context, _) {
-        final List<BogeybeastSpecies> filteredBogeybeast =
-            firstGenBogeybeast.where((BogeybeastSpecies bogeybeast) {
-          final bool caught = store.hasCaught(bogeybeast);
-          return switch (_filter) {
-            _CatchFilter.all => true,
-            _CatchFilter.caught => caught,
-            _CatchFilter.notCaught => !caught,
-          };
-        }).toList(growable: false);
+        final List<BogeybeastSpecies> filteredBogeybeast = firstGenBogeybeast
+            .where((BogeybeastSpecies bogeybeast) {
+              final bool caught = store.hasCaught(bogeybeast);
+              return switch (_filter) {
+                _CatchFilter.all => true,
+                _CatchFilter.caught => caught,
+                _CatchFilter.notCaught => !caught,
+              };
+            })
+            .toList(growable: false);
 
         return SafeArea(
           child: Column(
@@ -83,14 +93,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 child: Row(
                   children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        'Bogeydex',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
+                    Expanded(child: const ScreenTitle('Bogeydex')),
                     Text(
                       '${store.caughtDexNumbers.length} / ${firstGenBogeybeast.length}',
                       style: theme.textTheme.titleMedium?.copyWith(
@@ -141,9 +144,12 @@ class _CollectionScreenState extends State<CollectionScreen> {
                   ),
                   itemCount: filteredBogeybeast.length,
                   itemBuilder: (BuildContext context, int index) {
-                    final BogeybeastSpecies bogeybeast = filteredBogeybeast[index];
+                    final BogeybeastSpecies bogeybeast =
+                        filteredBogeybeast[index];
                     final bool caught = store.hasCaught(bogeybeast);
-                    final bool seen = store.seenDexNumbers.contains(bogeybeast.dexNumber);
+                    final bool seen = store.seenDexNumbers.contains(
+                      bogeybeast.dexNumber,
+                    );
 
                     return _BogeydexTile(
                       bogeybeast: bogeybeast,
@@ -264,20 +270,26 @@ class _BogeydexTile extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: caught
-                        ? BogeybeastArt(assetPath: bogeybeast.assetPath, height: 100)
+                        ? BogeybeastArt(
+                            assetPath: bogeybeast.assetPath,
+                            height: 100,
+                          )
                         : seen
-                            ? ColorFiltered(
-                                colorFilter: grayscaleColorFilter(1.0),
-                                child: BogeybeastArt(assetPath: bogeybeast.assetPath, height: 100),
-                              )
-                            : Center(
-                                child: Icon(
-                                  Icons.pets,
-                                  size: 48,
-                                  color: theme.colorScheme.outlineVariant
-                                      .withValues(alpha: 0.3),
-                                ),
-                              ),
+                        ? ColorFiltered(
+                            colorFilter: grayscaleColorFilter(1.0),
+                            child: BogeybeastArt(
+                              assetPath: bogeybeast.assetPath,
+                              height: 100,
+                            ),
+                          )
+                        : Center(
+                            child: Icon(
+                              Icons.pets,
+                              size: 48,
+                              color: theme.colorScheme.outlineVariant
+                                  .withValues(alpha: 0.3),
+                            ),
+                          ),
                   ),
                 ),
                 Padding(
@@ -291,8 +303,8 @@ class _BogeydexTile extends StatelessWidget {
                       color: caught
                           ? theme.colorScheme.onSurface
                           : seen
-                              ? theme.colorScheme.onSurface.withValues(alpha: 0.5)
-                              : theme.colorScheme.onSurface.withValues(alpha: 0.3),
+                          ? theme.colorScheme.onSurface.withValues(alpha: 0.5)
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.3),
                     ),
                   ),
                 ),

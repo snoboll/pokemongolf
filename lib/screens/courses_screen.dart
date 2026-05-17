@@ -310,7 +310,10 @@ class _CoursesScreenState extends State<CoursesScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Courses'),
+        title: const ScreenTitle('Courses'),
+        centerTitle: false,
+        titleSpacing: 20,
+        toolbarHeight: 64,
         actions: const <Widget>[],
         bottom: TabBar(
           controller: _tabController,
@@ -705,8 +708,6 @@ class _CourseDetail extends StatelessWidget {
             ),
           const SizedBox(height: 16),
         ],
-        _LeaderBanner(leader: leader, onChallenge: onChallenge),
-        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
@@ -738,6 +739,8 @@ class _CourseDetail extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 16),
+        _LeaderBanner(leader: leader, onChallenge: onChallenge),
         if (!isHome && onSetHome != null) ...[
           const SizedBox(height: 10),
           Align(
@@ -1362,7 +1365,9 @@ class _LeaderBanner extends StatelessWidget {
                                       width: beastSize,
                                       height: beastSize,
                                       decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
+                                        borderRadius: BorderRadius.circular(
+                                          beastSize * 0.22,
+                                        ),
                                         color: ringColor.withValues(alpha: 0.1),
                                         border: Border.all(
                                           color: ringColor.withValues(

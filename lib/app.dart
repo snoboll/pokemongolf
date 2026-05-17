@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -26,6 +27,26 @@ import 'services/battle_service.dart';
 import 'services/supabase_service.dart';
 import 'state/battle_store.dart';
 import 'state/bogeybeasts_golf_store.dart';
+
+class ScreenTitle extends StatelessWidget {
+  const ScreenTitle(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Text(
+      text,
+      style: theme.textTheme.headlineMedium?.copyWith(
+        color: theme.colorScheme.onSurface,
+        fontWeight: FontWeight.w800,
+        height: 1.0,
+        letterSpacing: 0.2,
+      ),
+    );
+  }
+}
 
 class BogeybeastGolfApp extends StatefulWidget {
   const BogeybeastGolfApp({super.key});
@@ -95,28 +116,74 @@ class _BogeybeastGolfAppState extends State<BogeybeastGolfApp> {
 
   @override
   Widget build(BuildContext context) {
+    const Color onSurface = Color(0xFFDCEEDC);
+    final ColorScheme colorScheme =
+        ColorScheme.fromSeed(
+          seedColor: const Color(0xFF00A651),
+          brightness: Brightness.dark,
+        ).copyWith(
+          primary: const Color(0xFF57F287),
+          onPrimary: const Color(0xFF003915),
+          primaryContainer: const Color(0xFF00531F),
+          onPrimaryContainer: const Color(0xFF7EFFA8),
+          secondary: const Color(0xFFFFD700),
+          onSecondary: const Color(0xFF3B2F00),
+          surface: const Color(0xFF141F14),
+          onSurface: onSurface,
+          surfaceContainerHighest: const Color(0xFF263226),
+          outline: const Color(0xFF4A5E4A),
+          outlineVariant: const Color(0xFF2C3C2C),
+        );
+    final TextTheme baseTextTheme = ThemeData.dark().textTheme;
+    final TextTheme bodyTextTheme = GoogleFonts.exo2TextTheme(
+      baseTextTheme,
+    ).apply(bodyColor: onSurface, displayColor: onSurface);
+    final TextTheme appTextTheme = bodyTextTheme.copyWith(
+      displayLarge: GoogleFonts.exo2(
+        textStyle: bodyTextTheme.displayLarge,
+        fontWeight: FontWeight.w800,
+      ),
+      displayMedium: GoogleFonts.exo2(
+        textStyle: bodyTextTheme.displayMedium,
+        fontWeight: FontWeight.w800,
+      ),
+      displaySmall: GoogleFonts.exo2(
+        textStyle: bodyTextTheme.displaySmall,
+        fontWeight: FontWeight.w800,
+      ),
+      headlineLarge: GoogleFonts.exo2(
+        textStyle: bodyTextTheme.headlineLarge,
+        fontWeight: FontWeight.w800,
+      ),
+      headlineMedium: GoogleFonts.exo2(
+        textStyle: bodyTextTheme.headlineMedium,
+        fontWeight: FontWeight.w800,
+      ),
+      headlineSmall: GoogleFonts.exo2(
+        textStyle: bodyTextTheme.headlineSmall,
+        fontWeight: FontWeight.w800,
+      ),
+      titleLarge: GoogleFonts.exo2(
+        textStyle: bodyTextTheme.titleLarge,
+        fontWeight: FontWeight.w700,
+      ),
+      titleMedium: GoogleFonts.exo2(
+        textStyle: bodyTextTheme.titleMedium,
+        fontWeight: FontWeight.w700,
+      ),
+      titleSmall: GoogleFonts.exo2(
+        textStyle: bodyTextTheme.titleSmall,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+
     return MaterialApp(
       title: 'Bogeybeasts',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme:
-            ColorScheme.fromSeed(
-              seedColor: const Color(0xFF00A651),
-              brightness: Brightness.dark,
-            ).copyWith(
-              primary: const Color(0xFF57F287),
-              onPrimary: const Color(0xFF003915),
-              primaryContainer: const Color(0xFF00531F),
-              onPrimaryContainer: const Color(0xFF7EFFA8),
-              secondary: const Color(0xFFFFD700),
-              onSecondary: const Color(0xFF3B2F00),
-              surface: const Color(0xFF141F14),
-              onSurface: const Color(0xFFDCEEDC),
-              surfaceContainerHighest: const Color(0xFF263226),
-              outline: const Color(0xFF4A5E4A),
-              outlineVariant: const Color(0xFF2C3C2C),
-            ),
+        colorScheme: colorScheme,
+        textTheme: appTextTheme,
         scaffoldBackgroundColor: const Color(0xFF0C150C),
         cardTheme: CardThemeData(
           elevation: 0,
@@ -133,20 +200,27 @@ class _BogeybeastGolfAppState extends State<BogeybeastGolfApp> {
           height: 68,
           labelTextStyle: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return const TextStyle(
+              return GoogleFonts.exo2(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF57F287),
               );
             }
-            return const TextStyle(fontSize: 12, fontWeight: FontWeight.w500);
+            return GoogleFonts.exo2(fontSize: 12, fontWeight: FontWeight.w500);
           }),
         ),
-        appBarTheme: const AppBarTheme(
+        appBarTheme: AppBarTheme(
           backgroundColor: Colors.transparent,
           elevation: 0,
           scrolledUnderElevation: 0,
           centerTitle: true,
+          titleTextStyle: GoogleFonts.exo2(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            color: onSurface,
+            height: 1.0,
+            letterSpacing: 0.2,
+          ),
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
@@ -154,7 +228,7 @@ class _BogeybeastGolfAppState extends State<BogeybeastGolfApp> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
-            textStyle: const TextStyle(
+            textStyle: GoogleFonts.exo2(
               fontSize: 17,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.3,
@@ -167,7 +241,7 @@ class _BogeybeastGolfAppState extends State<BogeybeastGolfApp> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
-            textStyle: const TextStyle(
+            textStyle: GoogleFonts.exo2(
               fontSize: 17,
               fontWeight: FontWeight.w600,
             ),
