@@ -607,7 +607,7 @@ class _RoundScreenState extends State<RoundScreen>
                               });
                             },
                             icon: const Icon(Icons.pets),
-                            label: const Text('Shoot Bogeycube'),
+                            label: const Text('Launch Bogeycube'),
                           ),
                         ),
                       ],
