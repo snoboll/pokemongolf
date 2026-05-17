@@ -3,7 +3,7 @@ import 'first_gen_bogeybeasts.dart';
 
 const Map<BogeybeastType, String> _typeToTag = <BogeybeastType, String>{
   BogeybeastType.bug: 'Roughrunner',
-  BogeybeastType.water: 'Fisherman',
+  BogeybeastType.water: 'Fisher',
   BogeybeastType.rock: 'Bunkerboy',
   BogeybeastType.ground: 'Bunkerboy',
   BogeybeastType.fighting: 'Longdriver',

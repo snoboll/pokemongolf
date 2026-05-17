@@ -540,7 +540,7 @@ class _BogeybeastHpBar extends StatelessWidget {
               bogeybeast.assetPath,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.pets, size: 24),
+                  const Icon(Icons.view_in_ar_rounded, size: 24),
             ),
           ),
           const SizedBox(width: 10),
@@ -683,18 +683,23 @@ class _HoleResultCard extends StatelessWidget {
           ),
           if (!isTie) ...[
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Text(
-                  '${event.attackerBogeybeastName} → ${event.defenderBogeybeastName}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            if (event.attackerBogeybeastName != null &&
+                event.defenderBogeybeastName != null)
+              Row(
+                children: [
+                  Text(
+                    '${event.attackerBogeybeastName} → ${event.defenderBogeybeastName}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                _TypeMultBadge(mult: event.typeMult),
-              ],
-            ),
+                  const SizedBox(width: 8),
+                  _TypeMultBadge(mult: event.typeMult),
+                ],
+              ),
+            if (event.attackerBogeybeastName == null ||
+                event.defenderBogeybeastName == null)
+              _TypeMultBadge(mult: event.typeMult),
             const SizedBox(height: 4),
             Text(
               '${event.damage} damage dealt',

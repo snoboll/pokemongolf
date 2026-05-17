@@ -238,7 +238,7 @@ class _RoundCard extends StatelessWidget {
             Row(
               children: <Widget>[
                 Icon(
-                  Icons.pets,
+                  Icons.view_in_ar_rounded,
                   size: 16,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),

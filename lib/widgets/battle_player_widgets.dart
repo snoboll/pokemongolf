@@ -114,7 +114,7 @@ class BattleTeamPreview extends StatelessWidget {
                       height: size,
                       padding: EdgeInsets.all(size * 0.08),
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(size * 0.22),
                         color: theme.colorScheme.surfaceContainerHighest,
                         border: Border.all(
                           color: bogeybeast.isAlive
@@ -128,7 +128,7 @@ class BattleTeamPreview extends StatelessWidget {
                         bogeybeast.assetPath,
                         fit: BoxFit.contain,
                         errorBuilder: (_, _, _) =>
-                            const Icon(Icons.pets_rounded, size: 18),
+                            const Icon(Icons.view_in_ar_rounded, size: 18),
                       ),
                     ),
                     if (showHp) ...[

@@ -43,7 +43,7 @@ class _EvolveAnimationScreenState extends State<EvolveAnimationScreen>
   // New beast / name reveal
   late final Animation<double> _reveal;
 
-  static const _purple = Color(0xFF7C4DFF);
+  static const _purple = Color(0xFF8A9BB0);
 
   @override
   void initState() {
@@ -149,7 +149,7 @@ class _EvolveAnimationScreenState extends State<EvolveAnimationScreen>
                               species.assetPath,
                               fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) =>
-                                  Icon(Icons.pets, size: 80, color: _purple),
+                                  Icon(Icons.view_in_ar_rounded, size: 80, color: _purple),
                             ),
                             // White whiten overlay on sprite before flash
                             if (!pastFlash && _whiten.value > 0)
@@ -176,22 +176,32 @@ class _EvolveAnimationScreenState extends State<EvolveAnimationScreen>
                         child: Column(
                           children: [
                             Text(
-                              widget.into.name,
+                              'Your ${widget.from.name}',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'evolved into',
+                              style: TextStyle(
+                                color: _purple.withValues(alpha: 0.9),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '${widget.into.name}!',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 34,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: -0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'evolved!',
-                              style: TextStyle(
-                                color: _purple.withValues(alpha: 0.9),
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.2,
                               ),
                             ),
                           ],

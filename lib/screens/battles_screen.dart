@@ -363,7 +363,7 @@ class _BattleCard extends StatelessWidget {
                         Text(
                           isPending && !isChallenger
                               ? 'From ${battle.challengerName}'
-                              : 'vs $otherName',
+                              : '$myName vs $otherName',
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -409,7 +409,13 @@ class _BattleCard extends StatelessWidget {
                     isMe: true,
                   ),
                   const SizedBox(width: 8),
-                  Expanded(child: BattleTeamPreview(team: myTeam, size: 30)),
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: BattleTeamPreview(team: myTeam, size: 30),
+                    ),
+                  ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
@@ -428,7 +434,13 @@ class _BattleCard extends StatelessWidget {
                     size: 40,
                   ),
                   const SizedBox(width: 8),
-                  Expanded(child: BattleTeamPreview(team: otherTeam, size: 30)),
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: BattleTeamPreview(team: otherTeam, size: 30),
+                    ),
+                  ),
                 ],
               ),
             ],

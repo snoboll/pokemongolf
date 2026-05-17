@@ -310,10 +310,7 @@ class _CoursesScreenState extends State<CoursesScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const ScreenTitle('Courses'),
-        centerTitle: false,
-        titleSpacing: 20,
-        toolbarHeight: 64,
+        title: const Text('Courses'),
         actions: const <Widget>[],
         bottom: TabBar(
           controller: _tabController,
@@ -708,6 +705,8 @@ class _CourseDetail extends StatelessWidget {
             ),
           const SizedBox(height: 16),
         ],
+        _LeaderBanner(leader: leader, onChallenge: onChallenge),
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
@@ -739,8 +738,6 @@ class _CourseDetail extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        _LeaderBanner(leader: leader, onChallenge: onChallenge),
         if (!isHome && onSetHome != null) ...[
           const SizedBox(height: 10),
           Align(
@@ -1086,7 +1083,7 @@ class _CourseCardState extends State<_CourseCard> {
                 Icon(
                   Icons.golf_course,
                   size: 20,
-                  color: widget.isHome ? theme.colorScheme.primary : dim,
+                  color: teamColor(GolferTeam.fromDb(widget.leader.golferTeam)),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -1365,9 +1362,7 @@ class _LeaderBanner extends StatelessWidget {
                                       width: beastSize,
                                       height: beastSize,
                                       decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(
-                                          beastSize * 0.22,
-                                        ),
+                                        shape: BoxShape.circle,
                                         color: ringColor.withValues(alpha: 0.1),
                                         border: Border.all(
                                           color: ringColor.withValues(

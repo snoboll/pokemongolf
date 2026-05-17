@@ -8,7 +8,7 @@ import '../models/item.dart';
 import '../state/bogeybeasts_golf_store.dart';
 import 'evolve_animation_screen.dart';
 
-const Color _itemAccent = Color(0xFF7C4DFF);
+const Color _itemAccent = Color(0xFF8A9BB0);
 
 class ItemsScreen extends StatelessWidget {
   const ItemsScreen({super.key});
@@ -336,7 +336,7 @@ class _EvolvePickerSheet extends StatelessWidget {
                                 species.assetPath,
                                 fit: BoxFit.contain,
                                 errorBuilder: (_, _, _) =>
-                                    const Icon(Icons.pets),
+                                    const Icon(Icons.view_in_ar_rounded),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -384,7 +384,7 @@ class _EvolvePickerSheet extends StatelessWidget {
                                                 t.assetPath,
                                                 fit: BoxFit.contain,
                                                 errorBuilder: (_, _, _) =>
-                                                    const Icon(Icons.pets),
+                                                    const Icon(Icons.view_in_ar_rounded),
                                               ),
                                             ),
                                             Text(

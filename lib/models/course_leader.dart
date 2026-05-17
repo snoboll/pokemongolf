@@ -41,7 +41,14 @@ class CourseLeader {
       claimedAt: json['claimed_at'] != null
           ? DateTime.parse(json['claimed_at'] as String)
           : null,
+      golferSprite: _sanitizeSprite(json['golfer_sprite'] as String?),
       golferTeam: json['golfer_team'] as String?,
     );
+  }
+
+  static String? _sanitizeSprite(String? sprite) {
+    if (sprite == null) return null;
+    if (sprite.startsWith('assets/trainers/')) return null;
+    return sprite;
   }
 }

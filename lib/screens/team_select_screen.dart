@@ -186,7 +186,7 @@ class _VsLeaderBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = teamColor(GolferTeam.fromDb(leader.golferTeam));
+    final color = teamColor(GolferTeam.fromDb(leader.golferTeam), beasts: leader.team);
 
     return Container(
       width: double.infinity,
@@ -224,7 +224,7 @@ class _VsLeaderBanner extends StatelessWidget {
                               b.assetPath,
                               fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) => Icon(
-                                Icons.pets,
+                                Icons.view_in_ar_rounded,
                                 size: 20,
                                 color: color.withValues(alpha: 0.4),
                               ),
@@ -327,7 +327,7 @@ class _BogeybeastSelectTile extends StatelessWidget {
                   species.assetPath,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.pets, size: 32),
+                      const Icon(Icons.view_in_ar_rounded, size: 32),
                 ),
               ),
               const SizedBox(width: 12),
@@ -793,7 +793,7 @@ class _MiniBogeybeastChip extends StatelessWidget {
             species.assetPath,
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) =>
-                const Icon(Icons.pets, size: 20),
+                const Icon(Icons.view_in_ar_rounded, size: 20),
           ),
         ),
       ),
@@ -834,25 +834,5 @@ class _TypeBadge extends StatelessWidget {
     return t.name[0].toUpperCase() + t.name.substring(1);
   }
 
-  Color _typeColor(BogeybeastType t) {
-    return switch (t) {
-      BogeybeastType.fire => const Color(0xFFFF6B35),
-      BogeybeastType.water => const Color(0xFF4FC3F7),
-      BogeybeastType.grass => const Color(0xFF66BB6A),
-      BogeybeastType.electric => const Color(0xFFFFD700),
-      BogeybeastType.ice => const Color(0xFF80DEEA),
-      BogeybeastType.fighting => const Color(0xFFEF5350),
-      BogeybeastType.poison => const Color(0xFFAB47BC),
-      BogeybeastType.ground => const Color(0xFFD4A853),
-      BogeybeastType.flying => const Color(0xFF90CAF9),
-      BogeybeastType.psychic => const Color(0xFFF48FB1),
-      BogeybeastType.bug => const Color(0xFFA5D6A7),
-      BogeybeastType.rock => const Color(0xFFBCAAA4),
-      BogeybeastType.ghost => const Color(0xFF9575CD),
-      BogeybeastType.dragon => const Color(0xFF7986CB),
-      BogeybeastType.dark => const Color(0xFF5D4037),
-      BogeybeastType.fairy => const Color(0xFFF8BBD0),
-      BogeybeastType.normal => const Color(0xFF9E9E9E),
-    };
-  }
+  Color _typeColor(BogeybeastType t) => t.color;
 }

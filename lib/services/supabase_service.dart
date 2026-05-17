@@ -88,7 +88,7 @@ class SupabaseService {
         .limit(1);
 
     if (rows.isEmpty) return null;
-    return rows.first['golfer_sprite'] as String?;
+    return _sanitizeSprite(rows.first['golfer_sprite'] as String?);
   }
 
   Future<void> updateGolferSprite(String? sprite) async {
@@ -106,7 +106,13 @@ class SupabaseService {
         .limit(1);
 
     if (rows.isEmpty) return null;
-    return rows.first['golfer_sprite'] as String?;
+    return _sanitizeSprite(rows.first['golfer_sprite'] as String?);
+  }
+
+  static String? _sanitizeSprite(String? sprite) {
+    if (sprite == null) return null;
+    if (sprite.startsWith('assets/trainers/')) return null;
+    return sprite;
   }
 
   Future<({String? team, DateTime? changedAt})> fetchGolferTeam() async {
@@ -187,7 +193,7 @@ class SupabaseService {
         caughtCount: countMap[uid] ?? 0,
         homeCourseId: p['home_course_id'] as String?,
         golferTeam: p['golfer_team'] as String?,
-        golferSprite: p['golfer_sprite'] as String?,
+        golferSprite: _sanitizeSprite(p['golfer_sprite'] as String?),
       );
     }).toList()..sort((a, b) => b.caughtCount.compareTo(a.caughtCount)));
   }

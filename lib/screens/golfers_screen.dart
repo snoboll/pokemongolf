@@ -601,7 +601,7 @@ class _GolferBogeydexTile extends StatelessWidget {
                         )
                       : Center(
                           child: Icon(
-                            Icons.pets,
+                            Icons.view_in_ar_rounded,
                             size: 48,
                             color: theme.colorScheme.outlineVariant.withValues(
                               alpha: 0.3,

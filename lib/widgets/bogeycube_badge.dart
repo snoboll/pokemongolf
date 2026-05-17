@@ -18,7 +18,7 @@ class BogeycubeCaughtBadge extends StatelessWidget {
             width: 1.5,
           ),
         ),
-        child: Icon(Icons.pets, size: 18,
+        child: Icon(Icons.view_in_ar_rounded, size: 18,
             color: theme.colorScheme.primary),
       );
     }
@@ -32,7 +32,7 @@ class BogeycubeCaughtBadge extends StatelessWidget {
           width: 1.5,
         ),
       ),
-      child: Icon(Icons.pets, size: 18,
+      child: Icon(Icons.view_in_ar_rounded, size: 18,
           color: theme.colorScheme.onSurface.withValues(alpha: 0.25)),
     );
   }

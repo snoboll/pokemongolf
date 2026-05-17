@@ -449,13 +449,36 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-class _SpritePicker extends StatelessWidget {
+class _SpritePicker extends StatefulWidget {
   const _SpritePicker({this.current});
   final String? current;
 
   @override
+  State<_SpritePicker> createState() => _SpritePickerState();
+}
+
+class _SpritePickerState extends State<_SpritePicker> {
+  late bool _male;
+
+  @override
+  void initState() {
+    super.initState();
+    final idx =
+        _availableSprites.indexWhere((s) => s.asset == widget.current);
+    _male = idx == -1 || idx.isEven;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final visible = _availableSprites
+        .asMap()
+        .entries
+        .where((e) => _male ? e.key.isEven : e.key.isOdd)
+        .map((e) => e.value)
+        .toList();
+
     return DraggableScrollableSheet(
       initialChildSize: 0.55,
       minChildSize: 0.35,
@@ -473,12 +496,23 @@ class _SpritePicker extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text(
-              'Choose Avatar',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                const Spacer(),
+                Text(
+                  'Choose Avatar',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const Spacer(),
+                _GenderToggle(
+                  male: _male,
+                  primary: primary,
+                  onChanged: (v) => setState(() => _male = v),
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -491,10 +525,11 @@ class _SpritePicker extends StatelessWidget {
                 crossAxisSpacing: 12,
                 childAspectRatio: 0.78,
               ),
-              itemCount: _availableSprites.length,
+              itemCount: visible.length,
               itemBuilder: (ctx, i) {
-                final entry = _availableSprites[i];
-                final isSelected = current == entry.asset;
+                final entry = visible[i];
+                final isSelected = widget.current == entry.asset;
+                final name = entry.label.replaceAll(RegExp(r' [♂♀]$'), '');
                 return GestureDetector(
                   onTap: () => Navigator.of(ctx).pop(entry.asset),
                   child: Column(
@@ -505,13 +540,11 @@ class _SpritePicker extends StatelessWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: isSelected
-                              ? theme.colorScheme.primary.withValues(
-                                  alpha: 0.12,
-                                )
+                              ? primary.withValues(alpha: 0.12)
                               : theme.colorScheme.surfaceContainerHighest,
                           border: Border.all(
                             color: isSelected
-                                ? theme.colorScheme.primary
+                                ? primary
                                 : theme.colorScheme.outlineVariant,
                             width: isSelected ? 2.5 : 1,
                           ),
@@ -526,14 +559,13 @@ class _SpritePicker extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        entry.label,
+                        name,
                         style: theme.textTheme.labelSmall?.copyWith(
                           fontWeight: isSelected ? FontWeight.w700 : null,
                           color: isSelected
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.6,
-                                ),
+                              ? primary
+                              : theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.6),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -544,6 +576,92 @@ class _SpritePicker extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _GenderToggle extends StatelessWidget {
+  const _GenderToggle({
+    required this.male,
+    required this.primary,
+    required this.onChanged,
+  });
+  final bool male;
+  final Color primary;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 36,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _GenderBtn(
+            icon: Icons.male_rounded,
+            selected: male,
+            primary: primary,
+            onTap: () => onChanged(true),
+          ),
+          _GenderBtn(
+            icon: Icons.female_rounded,
+            selected: !male,
+            primary: primary,
+            onTap: () => onChanged(false),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GenderBtn extends StatelessWidget {
+  const _GenderBtn({
+    required this.icon,
+    required this.selected,
+    required this.primary,
+    required this.onTap,
+  });
+  final IconData icon;
+  final bool selected;
+  final Color primary;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        width: 48,
+        height: 34,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color:
+              selected ? primary.withValues(alpha: 0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(11),
+          border: selected
+              ? Border.all(color: primary.withValues(alpha: 0.5), width: 1.5)
+              : null,
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: selected
+              ? primary
+              : Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.45),
+        ),
       ),
     );
   }

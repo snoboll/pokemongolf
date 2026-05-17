@@ -223,26 +223,6 @@ class _BogeycubeThrowOverlayState extends State<BogeycubeThrowOverlay>
                   ),
                 ),
               ),
-              Positioned(
-                bottom: 110,
-                left: 24,
-                right: 24,
-                child: Opacity(
-                  opacity: resultT,
-                  child: Text(
-                    widget.caught
-                        ? '${widget.beastName} was caught!'
-                        : '${widget.beastName} broke free!',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: widget.caught
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.error,
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         );

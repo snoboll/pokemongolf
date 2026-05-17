@@ -166,7 +166,7 @@ class _RoundScreenState extends State<RoundScreen>
     super.initState();
     _encounterController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 4000),
+      duration: const Duration(milliseconds: 2500),
     );
 
     // Double flash: 0–800ms (0.00–0.20)
@@ -922,7 +922,7 @@ class _HoleResolutionViewState extends State<_HoleResolutionView>
           child: Column(
             children: <Widget>[
               Icon(
-                result.caught ? Icons.pets : Icons.close,
+                result.caught ? Icons.view_in_ar_rounded : Icons.close,
                 size: 56,
                 color: result.caught
                     ? theme.colorScheme.primary

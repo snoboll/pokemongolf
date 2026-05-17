@@ -263,7 +263,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: <Widget>[
                             _QuickStat(
                               icon: Icon(
-                                Icons.pets,
+                                Icons.view_in_ar_rounded,
                                 size: 18,
                                 color: Theme.of(context).colorScheme.primary,
                               ),
@@ -444,8 +444,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _InfoSheet extends StatelessWidget {
+class _InfoSheet extends StatefulWidget {
   const _InfoSheet();
+
+  @override
+  State<_InfoSheet> createState() => _InfoSheetState();
+}
+
+class _InfoSheetState extends State<_InfoSheet> {
+  int _tab = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -487,7 +494,7 @@ class _InfoSheet extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Starter Hickory explains the strange little things living between the fairway and the flag.',
+                      'Hickory walks you through the game modes.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: dim,
                         height: 1.35,
@@ -509,133 +516,168 @@ class _InfoSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          _hickoryNote(theme),
-          const SizedBox(height: 14),
-          _infoCard(
-            theme,
-            title: '1. Play Better, Catch Easier',
-            body:
-                'Your score on a hole is the biggest thing Hickory looks at. Eagles, birdies, and pars give you the best catch chances. Bogeys still work, but the tougher beasts get slippery fast.',
-            child: _rateTable(theme),
-          ),
-          const SizedBox(height: 12),
-          _infoCard(
-            theme,
-            title: '2. Every Hole Can Stir Up Trouble',
-            body:
-                'Before each hole, the game rolls for the rarity of the Bogeybeast you might meet.',
-            child: Column(
+          Container(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(4),
+            child: Row(
               children: <Widget>[
-                _encounterRow(theme, 'Common', '35%', const Color(0xFF4CAF50)),
-                _encounterRow(
-                  theme,
-                  'Uncommon',
-                  '25%',
-                  const Color(0xFF26A69A),
-                ),
-                _encounterRow(theme, 'Rare', '20%', const Color(0xFF1E88E5)),
-                _encounterRow(theme, 'Epic', '14%', const Color(0xFF8E24AA)),
-                _encounterRow(
-                  theme,
-                  'Legendary',
-                  '6%',
-                  const Color(0xFFFFB300),
-                ),
+                _tabBtn(theme, 0, 'Catch', Icons.view_in_ar_rounded),
+                _tabBtn(theme, 1, 'PvP', Icons.sports_mma_rounded),
+                _tabBtn(theme, 2, 'Challenge', Icons.emoji_events_rounded),
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          _infoCard(
-            theme,
-            title: '3. Terrain Leaves a Trail',
-            body:
-                'Mark what happened on a hole and the next hole leans toward matching Bogeybeast types.',
-            child: Column(
-              children: <Widget>[
-                _terrainRow(
-                  theme,
-                  'Bunker',
-                  'Ground · Rock · Fire',
-                  const Color(0xFFFFB74D),
-                ),
-                _terrainRow(
-                  theme,
-                  'Water',
-                  'Water · Ice',
-                  const Color(0xFF42A5F5),
-                ),
-                _terrainRow(
-                  theme,
-                  'Rough',
-                  'Grass · Poison · Bug',
-                  const Color(0xFF66BB6A),
-                ),
-                _terrainRow(
-                  theme,
-                  '1-Putt',
-                  'Psychic · Ghost · Electric',
-                  const Color(0xFF7E57C2),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          _infoCard(
-            theme,
-            title: '4. Streaks Wake the Legends',
-            body:
-                'Make par or better on consecutive holes to build a legendary streak. From 2 holes onward, each hole in the streak adds +3% legendary encounter rate.',
-            child: Text(
-              'Example: 4 pars in a row = +12% legendary chance on the next hole.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: dim,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ),
+          const SizedBox(height: 16),
+          if (_tab == 0) ..._catchTab(theme),
+          if (_tab == 1) ..._pvpTab(theme),
+          if (_tab == 2) ..._challengeTab(theme),
         ],
       ),
     );
   }
 
-  Widget _hickoryNote(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.24),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Icon(
-            Icons.format_quote_rounded,
-            color: theme.colorScheme.primary,
-            size: 22,
+  Widget _tabBtn(ThemeData theme, int index, String label, IconData icon) {
+    final selected = _tab == index;
+    final color = selected
+        ? theme.colorScheme.onSurface
+        : theme.colorScheme.onSurface.withValues(alpha: 0.5);
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _tab = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: selected ? theme.colorScheme.surface : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+            boxShadow: selected
+                ? <BoxShadow>[
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                : null,
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              "Play tidy golf, mind the terrain, and keep your nerve. That's when the rare ones show themselves.",
-              style: theme.textTheme.bodyMedium?.copyWith(
-                height: 1.4,
-                fontWeight: FontWeight.w600,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Icon(icon, size: 15, color: color),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: color,
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
+
+  List<Widget> _catchTab(ThemeData theme) => <Widget>[
+        _infoCard(
+          theme,
+          title: '1. Your score decides catch rate',
+          body: 'Better score = better chance. Rarer Bogeybeasts need a good score to have any chance at all.',
+          child: _rateTable(theme),
+        ),
+        const SizedBox(height: 12),
+        _infoCard(
+          theme,
+          title: '2. Rarity is rolled before each hole',
+          body: "The game picks a rarity before you tee off. You won't know what's waiting until the hole is done.",
+          child: Column(
+            children: <Widget>[
+              _encounterRow(theme, 'Common', '35%', const Color(0xFF4CAF50)),
+              _encounterRow(theme, 'Uncommon', '25%', const Color(0xFF26A69A)),
+              _encounterRow(theme, 'Rare', '20%', const Color(0xFF1E88E5)),
+              _encounterRow(theme, 'Epic', '14%', const Color(0xFF8E24AA)),
+              _encounterRow(theme, 'Legendary', '6%', const Color(0xFFFFB300)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _infoCard(
+          theme,
+          title: '3. Terrain shapes which types appear',
+          body: 'Mark terrain after a hole and the next encounter leans toward matching Bogeybeast types.',
+          child: Column(
+            children: <Widget>[
+              _terrainRow(theme, 'Bunker', 'Ground · Rock · Fire', const Color(0xFFFFB74D)),
+              _terrainRow(theme, 'Water', 'Water · Ice', const Color(0xFF42A5F5)),
+              _terrainRow(theme, 'Rough', 'Grass · Poison · Bug', const Color(0xFF66BB6A)),
+              _terrainRow(theme, '1-Putt', 'Psychic · Ghost · Electric', const Color(0xFF7E57C2)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _infoCard(
+          theme,
+          title: '4. Keep your Parstreak going',
+          body: 'Par or better builds your Parstreak and raises legendary encounter rate. Bogey resets it.',
+        ),
+      ];
+
+  List<Widget> _pvpTab(ThemeData theme) => <Widget>[
+        _infoCard(
+          theme,
+          title: '1. Pick a team of 3',
+          body: 'Choose 3 Bogeybeasts from your collection. Your opponent does the same.',
+        ),
+        const SizedBox(height: 12),
+        _infoCard(
+          theme,
+          title: '2. Play the same holes, take turns',
+          body: 'Both players play the same course. After each hole, the lower score deals damage to the opponent\'s active Bogeybeast.',
+        ),
+        const SizedBox(height: 12),
+        _infoCard(
+          theme,
+          title: '3. Type matchups matter',
+          body: 'Damage is boosted or reduced by type effectiveness between the two active Bogeybeasts.',
+        ),
+        const SizedBox(height: 12),
+        _infoCard(
+          theme,
+          title: '4. KO or outlast to win',
+          body: 'Knock out all 3 opponent Bogeybeasts for an instant win. Otherwise, most alive at the end wins. Winner earns an Evo-HotDog.',
+        ),
+      ];
+
+  List<Widget> _challengeTab(ThemeData theme) => <Widget>[
+        _infoCard(
+          theme,
+          title: '1. Challenge the course leader',
+          body: 'Each course has a leader defending it with 3 Bogeybeasts. Pick your own team and challenge them.',
+        ),
+        const SizedBox(height: 12),
+        _infoCard(
+          theme,
+          title: '2. Leader scores are auto-generated',
+          body: 'The leader\'s strokes are generated from their handicap each hole. Same combat rules as PvP.',
+        ),
+        const SizedBox(height: 12),
+        _infoCard(
+          theme,
+          title: '3. Win to claim the throne',
+          body: "Beat the leader and you become the new course leader. Set your own team of 3 defenders for the next challenger.",
+        ),
+      ];
 
   Widget _infoCard(
     ThemeData theme, {
     required String title,
     required String body,
-    required Widget child,
+    Widget? child,
   }) {
     final dim = theme.colorScheme.onSurface.withValues(alpha: 0.58);
 
@@ -665,8 +707,10 @@ class _InfoSheet extends StatelessWidget {
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 12),
-          child,
+          if (child != null) ...<Widget>[
+            const SizedBox(height: 12),
+            child,
+          ],
         ],
       ),
     );
@@ -853,7 +897,7 @@ class _CatchCard extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Icon(Icons.pets_rounded, color: fgColor, size: 30),
+              Icon(Icons.view_in_ar_rounded, color: fgColor, size: 30),
               const SizedBox(height: 6),
               Text(
                 'Catch',
@@ -974,7 +1018,7 @@ class _ChallengeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     const challengeColor = Color(0xFFF9A825);
     final leaderColor = leader != null
-        ? teamColor(GolferTeam.fromDb(leader!.golferTeam))
+        ? teamColor(GolferTeam.fromDb(leader!.golferTeam), beasts: leader!.team)
         : challengeColor;
     final enabled = onTap != null;
     final challengeFg = Color.lerp(challengeColor, Colors.white, 0.45)!;
