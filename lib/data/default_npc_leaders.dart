@@ -207,6 +207,32 @@ const List<_Npc> _golfers = [
     107,
     120,
   ], '$_m/slicer.png'), // Dark: Spinbite, Grinfee, Trigglett
+  // Expanded pool — more variety across the full course catalog.
+  _Npc('Fisherman Cora', 27, [7, 8, 9], '$_f/fisher.png'),
+  _Npc('Drawer Milo', 33, [122, 127, 76], '$_m/drawer.png'),
+  _Npc('Slicer Greta', 24, [120, 121, 144], '$_f/slicer.png'),
+  _Npc('Slicer Otto', 22, [59, 145, 148], '$_m/slicer.png'),
+  _Npc('Hotshot Pia', 30, [4, 5, 39], '$_f/hotshot.png'),
+  _Npc('Hotshot Rex', 26, [126, 116, 117], '$_m/hotshot.png'),
+  _Npc('Flyer Nina', 28, [12, 13, 14], '$_f/flyer.png'),
+  _Npc('Flyer Cole', 20, [54, 55, 103], '$_m/flyer.png'),
+  _Npc('Bunkerboy Sven', 32, [30, 67, 133], '$_m/bunkerdigger.png'),
+  _Npc('Bunkerboy Hilda', 34, [26, 27, 71], '$_f/bunkerdigger.png'),
+  _Npc('Chipper Mae', 30, [17, 18, 19], '$_f/chipper.png'),
+  _Npc('Chipper Wes', 28, [20, 125, 146], '$_m/chipper.png'),
+  _Npc('Roughrunner Bo', 33, [10, 11, 68], '$_m/roughrunner.png'),
+  _Npc('Roughrunner Tess', 31, [78, 79, 119], '$_f/roughrunner.png'),
+  _Npc('Longdriver Bjorn', 23, [85, 86, 87], '$_m/longdriver.png'),
+  _Npc('Longdriver Saga', 21, [60, 61, 137], '$_f/longdriver.png'),
+  _Npc('Psych Iris', 27, [100, 101, 102], '$_f/psycher.png'),
+  _Npc('Psych Albin', 25, [73, 74, 75], '$_m/psycher.png'),
+  _Npc('Greenkeeper Tom', 29, [129, 130, 143], '$_m/greenkeeper.png'),
+  _Npc('Greenkeeper Vera', 26, [2, 3, 108], '$_f/greenkeeper.png'),
+  _Npc('Ace Golfer Mira', 16, [45, 46, 62], '$_f/ace.png'),
+  _Npc('Ace Golfer Leo', 14, [82, 83, 84], '$_m/ace.png'),
+  _Npc('Hooker Dane', 24, [24, 25, 107], '$_m/hooker.png'),
+  _Npc('Hooker Elsa', 26, [42, 43, 44], '$_f/hooker.png'),
+  _Npc('Club Manager Nora', 22, [98, 101, 146], '$_f/manager.png'),
 ];
 
 final List<_Npc> _fillerPool = _golfers;
@@ -222,8 +248,11 @@ CourseLeader _npcToLeader(String courseId, _Npc npc) {
   );
 }
 
-/// Builds a deterministic mapping so each course leader appears on exactly one
-/// course. Remaining courses get hookers or generic golfers.
+/// Builds a deterministic mapping of NPC leaders to courses.
+///
+/// The first N sorted courses each get a unique ranked course-leader pro.
+/// Remaining courses are mostly generic golfers, but roughly 1 in 8 gets a
+/// repeated course-leader pro — so the pros recur, just more rarely.
 Map<String, CourseLeader> buildDefaultLeaders(List<String> courseIds) {
   final sorted = List<String>.from(courseIds)..sort();
   final result = <String, CourseLeader>{};
@@ -233,10 +262,22 @@ Map<String, CourseLeader> buildDefaultLeaders(List<String> courseIds) {
     result[sorted[i]] = _npcToLeader(sorted[i], _courseLeaderNpcs[i]);
   }
 
-  // Fill remaining courses from the filler pool
+  // Fill remaining courses: mostly filler golfers, occasionally a repeated pro.
+  int fillerCount = 0;
+  int proCount = 0;
   for (int i = _courseLeaderNpcs.length; i < sorted.length; i++) {
-    final idx = (i - _courseLeaderNpcs.length) % _fillerPool.length;
-    result[sorted[i]] = _npcToLeader(sorted[i], _fillerPool[idx]);
+    final int rem = i - _courseLeaderNpcs.length;
+    if (rem % 8 == 7) {
+      result[sorted[i]] = _npcToLeader(
+        sorted[i],
+        _courseLeaderNpcs[proCount % _courseLeaderNpcs.length],
+      );
+      proCount++;
+    } else {
+      result[sorted[i]] =
+          _npcToLeader(sorted[i], _fillerPool[fillerCount % _fillerPool.length]);
+      fillerCount++;
+    }
   }
 
   return result;

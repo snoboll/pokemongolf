@@ -339,6 +339,44 @@ class _BogeybeastGolfShellState extends State<BogeybeastGolfShell> {
       _currentVersion = info.version;
       _checkForUpdate();
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showPendingNotifications();
+    });
+  }
+
+  void _showPendingNotifications() {
+    if (!mounted) return;
+    final store = BogeybeastGolfScope.of(context);
+    final notifications = store.notifications;
+    if (notifications.isEmpty) return;
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          notifications.length == 1
+              ? notifications.first.title
+              : 'While you were away',
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            for (final n in notifications)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(n.body),
+              ),
+          ],
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    ).then((_) => store.dismissNotifications());
   }
 
   Future<void> _checkForUpdate() async {

@@ -897,10 +897,10 @@ class _CatchCard extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Icon(Icons.pets, color: fgColor, size: 30),
+              Icon(Icons.golf_course_rounded, color: fgColor, size: 30),
               const SizedBox(height: 6),
               Text(
-                'Catch',
+                'Select course',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: fgColor,
@@ -908,7 +908,7 @@ class _CatchCard extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                'Play a round',
+                'Pick where to play a round',
                 style: TextStyle(
                   fontSize: 11,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.4),

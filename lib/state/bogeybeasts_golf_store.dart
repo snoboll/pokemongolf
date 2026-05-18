@@ -53,6 +53,7 @@ class BogeybeastGolfStore extends ChangeNotifier {
   final Map<ItemType, int> _items = <ItemType, int>{};
   Map<String, CourseLeader> _courseLeaders = {};
   Map<String, CourseLeader> _defaultLeaders = {};
+  List<AppNotification> _notifications = <AppNotification>[];
 
   ActiveRound? get activeRound => _activeRound;
   String? get golferName => _golferName;
@@ -228,6 +229,9 @@ class BogeybeastGolfStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  List<AppNotification> get notifications =>
+      List<AppNotification>.unmodifiable(_notifications);
+
   UnmodifiableSetView<int> get caughtDexNumbers =>
       UnmodifiableSetView<int>(_caughtDexNumbers);
 
@@ -346,6 +350,12 @@ class BogeybeastGolfStore extends ChangeNotifier {
         debugPrint('Failed to load course leaders: $e');
       }
 
+      try {
+        _notifications = await supa.fetchUnreadNotifications();
+      } catch (e) {
+        debugPrint('Failed to load notifications: $e');
+      }
+
       _rebuildDefaultLeaders();
       _syncHcp(supa);
 
@@ -439,6 +449,7 @@ class BogeybeastGolfStore extends ChangeNotifier {
     _items.clear();
     _courseLeaders = {};
     _defaultLeaders = {};
+    _notifications = <AppNotification>[];
     notifyListeners();
     await _supabaseService?.signOut();
   }
@@ -713,6 +724,18 @@ class BogeybeastGolfStore extends ChangeNotifier {
   void _syncHcp(SupabaseService supa) {
     supa.updateHcp(playerHcp.round()).catchError((e) {
       debugPrint('Failed to sync HCP: $e');
+    });
+  }
+
+  /// Marks all currently-held notifications as read and clears them locally.
+  Future<void> dismissNotifications() async {
+    if (_notifications.isEmpty) return;
+    final List<String> ids =
+        _notifications.map((AppNotification n) => n.id).toList();
+    _notifications = <AppNotification>[];
+    notifyListeners();
+    await _supabaseService?.markNotificationsRead(ids).catchError((e) {
+      debugPrint('Failed to mark notifications read: $e');
     });
   }
 

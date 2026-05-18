@@ -30,6 +30,20 @@ class GolferProfile {
   final int? hcp;
 }
 
+class AppNotification {
+  const AppNotification({
+    required this.id,
+    required this.type,
+    required this.title,
+    required this.body,
+  });
+
+  final String id;
+  final String type;
+  final String title;
+  final String body;
+}
+
 class SupabaseService {
   SupabaseService() : _client = Supabase.instance.client;
 
@@ -665,5 +679,36 @@ class SupabaseService {
       'item_type': itemType,
       'quantity': quantity,
     }, onConflict: 'user_id,item_type');
+  }
+
+  // ── Notifications ──────────────────────────────────────────────────
+
+  Future<List<AppNotification>> fetchUnreadNotifications() async {
+    final uid = currentUserId;
+    if (uid == null) return <AppNotification>[];
+
+    final List<Map<String, dynamic>> rows = await _client
+        .from('notifications')
+        .select('id, type, title, body')
+        .eq('user_id', uid)
+        .isFilter('read_at', null)
+        .order('created_at');
+
+    return rows
+        .map((r) => AppNotification(
+              id: r['id'] as String,
+              type: r['type'] as String,
+              title: r['title'] as String,
+              body: r['body'] as String,
+            ))
+        .toList();
+  }
+
+  Future<void> markNotificationsRead(List<String> ids) async {
+    if (ids.isEmpty) return;
+    await _client
+        .from('notifications')
+        .update({'read_at': DateTime.now().toUtc().toIso8601String()})
+        .inFilter('id', ids);
   }
 }
