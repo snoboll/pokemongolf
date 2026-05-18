@@ -3,14 +3,17 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../app.dart';
+import '../data/bogeybeast_battle_stats.dart';
 import '../models/encounter_modifiers.dart';
 import '../models/golf_score.dart';
 import '../models/item.dart';
 import '../models/hole_stats.dart';
 import '../models/bogeybeast_rarity.dart';
+import '../models/bogeybeast_species.dart';
 import '../models/bogeybeast_type.dart';
 import '../models/round_models.dart';
 import '../widgets/distance_to_green.dart';
+import '../widgets/beast_detail_sheet.dart';
 import '../widgets/bogeycube_badge.dart';
 import '../widgets/bogeycube_throw.dart';
 import '../widgets/bogeybeast_art.dart';
@@ -994,20 +997,6 @@ class _HoleResolutionViewState extends State<_HoleResolutionView>
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           child: Column(
             children: <Widget>[
-              Icon(
-                !result.caught
-                    ? Icons.close
-                    : shiny
-                        ? Icons.auto_awesome
-                        : Icons.pets,
-                size: 56,
-                color: !result.caught
-                    ? theme.colorScheme.error
-                    : shiny
-                        ? shinyGold
-                        : theme.colorScheme.primary,
-              ),
-              const SizedBox(height: 12),
               Text(
                 !result.caught
                     ? 'It broke free...'
@@ -1029,13 +1018,29 @@ class _HoleResolutionViewState extends State<_HoleResolutionView>
               const SizedBox(height: 24),
               SlideTransition(
                 position: _slideAnimation,
-                child: BogeybeastArt(
-                  assetPath: result.bogeybeast.assetPath,
-                  height: 200,
-                  shiny: shiny,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    BogeybeastArt(
+                      assetPath: result.bogeybeast.assetPath,
+                      height: 200,
+                      shiny: shiny,
+                    ),
+                    if (result.caught)
+                      const Positioned(
+                        top: 0,
+                        right: 0,
+                        child: BogeycubeCaughtBadge(caught: true),
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
+              if (result.caught) ...<Widget>[
+                _CaughtBeastInfo(bogeybeast: result.bogeybeast),
+                const SizedBox(height: 24),
+              ],
               if (widget.resolution.takanajMessage != null) ...<Widget>[
                 _TakanajBanner(message: widget.resolution.takanajMessage!),
                 const SizedBox(height: 16),
@@ -1141,6 +1146,99 @@ class _ConfettiPainter extends CustomPainter {
   @override
   bool shouldRepaint(_ConfettiPainter oldDelegate) {
     return oldDelegate.progress != progress;
+  }
+}
+
+/// Flavor text + battle stats for a freshly caught Bogeybeast, mirroring
+/// the Bogeydex detail sheet.
+class _CaughtBeastInfo extends StatelessWidget {
+  const _CaughtBeastInfo({required this.bogeybeast});
+
+  final BogeybeastSpecies bogeybeast;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final stats = bogeybeastBattleStats[bogeybeast.dexNumber];
+    final String? flavor = bogeybeast.flavorText;
+
+    final Widget? flavorWidget = flavor == null
+        ? null
+        : Center(
+            child: Text(
+              flavor,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontStyle: FontStyle.italic,
+                height: 1.4,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+              ),
+            ),
+          );
+
+    final Widget? statsWidget = stats == null
+        ? null
+        : Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              SizedBox(
+                height: 150,
+                child: BeastStatsDiamondChart(
+                  hp: stats.hp,
+                  attack: stats.offense,
+                  defense: stats.defense,
+                  theme: theme,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: <Widget>[
+                  BeastStatLabel(
+                      label: 'HP',
+                      value: stats.hp,
+                      color: const Color(0xFFEF5350)),
+                  BeastStatLabel(
+                      label: 'Atk',
+                      value: stats.offense,
+                      color: const Color(0xFFFF9800)),
+                  BeastStatLabel(
+                      label: 'Def',
+                      value: stats.defense,
+                      color: const Color(0xFF42A5F5)),
+                ],
+              ),
+            ],
+          );
+
+    return Column(
+      children: <Widget>[
+        // Type chips — sit just below the beast art.
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: bogeybeast.types
+              .map((t) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: BeastTypeChip(type: t),
+                  ))
+              .toList(),
+        ),
+        if (flavorWidget != null || statsWidget != null) ...<Widget>[
+          const SizedBox(height: 16),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                if (flavorWidget != null) Expanded(flex: 5, child: flavorWidget),
+                if (flavorWidget != null && statsWidget != null)
+                  const SizedBox(width: 12),
+                if (statsWidget != null)
+                  Expanded(flex: 5, child: statsWidget),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }
 
