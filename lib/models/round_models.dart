@@ -2,6 +2,7 @@ import 'golf_score.dart';
 import 'hole_stats.dart';
 import 'bogeybeast_rarity.dart';
 import 'bogeybeast_species.dart';
+import 'encounter_modifiers.dart';
 
 class HoleResult {
   const HoleResult({
@@ -34,6 +35,7 @@ class ActiveRound {
     this.holePars,
     this.courseName,
     this.greenCoords,
+    this.encounterModifiers = const EncounterModifiers(),
   });
 
   final int holeCount;
@@ -42,6 +44,9 @@ class ActiveRound {
   final List<HoleResult> completedHoles;
   final List<int>? holePars;
   final String? courseName;
+
+  /// Modifiers used to generate [currentEncounter] — reused when re-rolling.
+  final EncounterModifiers encounterModifiers;
 
   /// Per hole, aligned with [holePars]. Null if no green coordinate for that hole.
   final List<({double lat, double lng})?>? greenCoords;
@@ -162,6 +167,7 @@ class HoleResolution {
     this.roundSummary,
     this.nextHoleNumber,
     this.caughtShiny = false,
+    this.takanajMessage,
   });
 
   final HoleResult holeResult;
@@ -171,4 +177,7 @@ class HoleResolution {
 
   /// True when the Bogeybeast caught on this hole was a shiny variant.
   final bool caughtShiny;
+
+  /// Set when a Takanaj item was found on this hole — the message to show.
+  final String? takanajMessage;
 }

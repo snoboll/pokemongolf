@@ -13,6 +13,7 @@ import '../services/battle_service.dart';
 import '../services/supabase_service.dart';
 import '../state/battle_store.dart';
 import '../widgets/beast_detail_sheet.dart';
+import '../widgets/team_golfers_sheet.dart';
 import '../widgets/white_bg_image.dart';
 import 'battle_round_screen.dart';
 import 'round_screen.dart';
@@ -297,6 +298,14 @@ class _CoursesScreenState extends State<CoursesScreen>
         ? allCourses.where((c) => c.id == store.homeCourseId).firstOrNull
         : null;
 
+    final Map<GolferTeam, int> teamCounts = <GolferTeam, int>{
+      for (final GolferTeam t in GolferTeam.values) t: 0,
+    };
+    for (final CourseLeader leader in store.courseLeaders.values) {
+      final GolferTeam? team = GolferTeam.fromDb(leader.golferTeam);
+      if (team != null) teamCounts[team] = teamCounts[team]! + 1;
+    }
+
     final q = _query.toLowerCase();
     final filtered = q.isEmpty
         ? allCourses.where((c) => c.id != store.homeCourseId).toList()
@@ -310,8 +319,21 @@ class _CoursesScreenState extends State<CoursesScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Courses'),
-        actions: const <Widget>[],
+        title: Row(
+          children: <Widget>[
+            const Text('Courses'),
+            const Spacer(),
+            for (final GolferTeam t in GolferTeam.values)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: _TeamCountChip(
+                  team: t,
+                  count: teamCounts[t]!,
+                  onTap: () => showTeamGolfersSheet(context, t),
+                ),
+              ),
+          ],
+        ),
         bottom: TabBar(
           controller: _tabController,
           tabs: const <Tab>[
@@ -1362,7 +1384,9 @@ class _LeaderBanner extends StatelessWidget {
                                       width: beastSize,
                                       height: beastSize,
                                       decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
+                                        borderRadius: BorderRadius.circular(
+                                          beastSize * 0.24,
+                                        ),
                                         color: ringColor.withValues(alpha: 0.1),
                                         border: Border.all(
                                           color: ringColor.withValues(
@@ -1981,6 +2005,43 @@ class _RadioRow extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TeamCountChip extends StatelessWidget {
+  const _TeamCountChip({
+    required this.team,
+    required this.count,
+    required this.onTap,
+  });
+  final GolferTeam team;
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            TeamEmblem(team: team, size: 15),
+            const SizedBox(width: 3),
+            Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: team.color,
               ),
             ),
           ],

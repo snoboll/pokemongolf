@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../app.dart';
 import '../models/encounter_modifiers.dart';
 import '../models/golf_score.dart';
+import '../models/item.dart';
 import '../models/hole_stats.dart';
 import '../models/bogeybeast_rarity.dart';
 import '../models/bogeybeast_type.dart';
@@ -43,6 +44,15 @@ class _RoundScreenState extends State<RoundScreen>
   late final Animation<double> _overlayAlpha;
   late final Animation<Offset> _bogeybeastSlide;
   late final Animation<double> _grayscaleAmount;
+
+  // Re-rolled each time the encounter intro plays (see [_resetForNextHole]).
+  _WipeStyle _wipeStyle =
+      _WipeStyle.values[Random().nextInt(_WipeStyle.values.length)];
+
+  // Takanaj re-roll spin animation.
+  late final AnimationController _rerollController;
+  bool _rerollSwapped = false;
+  bool _rerolledThisHole = false;
 
   int get _strokes => _customStrokes ?? (_par + _selectedScore.relativeToPar);
 
@@ -158,6 +168,8 @@ class _RoundScreenState extends State<RoundScreen>
       _resolution = null;
       _pendingResolution = null;
     });
+    _rerolledThisHole = false;
+    _wipeStyle = _WipeStyle.values[Random().nextInt(_WipeStyle.values.length)];
     _encounterController.forward(from: 0);
   }
 
@@ -214,6 +226,17 @@ class _RoundScreenState extends State<RoundScreen>
       ),
     );
 
+    _rerollController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    )..addListener(() {
+        // Swap the encounter at the midpoint of the spin.
+        if (!_rerollSwapped && _rerollController.value >= 0.5) {
+          _rerollSwapped = true;
+          if (mounted) BogeybeastGolfScope.of(context).rerollEncounter();
+        }
+      });
+
     if (widget.skipEncounterIntro) {
       _encounterController.value = 1.0;
     } else {
@@ -223,9 +246,33 @@ class _RoundScreenState extends State<RoundScreen>
     }
   }
 
+  void _startReroll() {
+    if (_rerolledThisHole || _rerollController.isAnimating) return;
+    _rerolledThisHole = true;
+    _rerollSwapped = false;
+    _rerollController.forward(from: 0.0);
+  }
+
+  void _showRoundItemsSheet(dynamic store) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetCtx) => _RoundItemsSheet(
+        items: Map<ItemType, int>.from(store.items as Map),
+        takanajAvailable: !_rerolledThisHole,
+        onUseTakanaj: () {
+          Navigator.of(sheetCtx).pop();
+          _startReroll();
+        },
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _encounterController.dispose();
+    _rerollController.dispose();
     super.dispose();
   }
 
@@ -397,22 +444,36 @@ class _RoundScreenState extends State<RoundScreen>
                             clipBehavior: Clip.none,
                             children: <Widget>[
                               AnimatedBuilder(
-                                animation: _encounterController,
+                                animation: _rerollController,
                                 builder: (context, child) {
-                                  return SlideTransition(
-                                    position: _bogeybeastSlide,
-                                    child: ColorFiltered(
-                                      colorFilter: _encounterGrayscaleFilter(
-                                        _grayscaleAmount.value,
-                                      ),
+                                  final double v = _rerollController.value;
+                                  if (v == 0) return child!;
+                                  return Transform.rotate(
+                                    angle: v * 4 * pi, // two full spins
+                                    child: Transform.scale(
+                                      scale: 1.0 - sin(v * pi) * 0.8,
                                       child: child,
                                     ),
                                   );
                                 },
-                                child: BogeybeastArt(
-                                  assetPath:
-                                      activeRound.currentEncounter.assetPath,
-                                  height: 180,
+                                child: AnimatedBuilder(
+                                  animation: _encounterController,
+                                  builder: (context, child) {
+                                    return SlideTransition(
+                                      position: _bogeybeastSlide,
+                                      child: ColorFiltered(
+                                        colorFilter: _encounterGrayscaleFilter(
+                                          _grayscaleAmount.value,
+                                        ),
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  child: BogeybeastArt(
+                                    assetPath:
+                                        activeRound.currentEncounter.assetPath,
+                                    height: 180,
+                                  ),
                                 ),
                               ),
                               Positioned(
@@ -535,6 +596,15 @@ class _RoundScreenState extends State<RoundScreen>
                                 ),
                               ),
                             IconButton(
+                              icon: const Icon(Icons.backpack_rounded, size: 20),
+                              tooltip: 'Items',
+                              visualDensity: VisualDensity.compact,
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.55,
+                              ),
+                              onPressed: () => _showRoundItemsSheet(store),
+                            ),
+                            IconButton(
                               icon: const Icon(Icons.edit_outlined, size: 18),
                               tooltip: 'Enter exact strokes',
                               visualDensity: VisualDensity.compact,
@@ -654,7 +724,8 @@ class _RoundScreenState extends State<RoundScreen>
                   final double v = _encounterController.value;
                   if (v == 0 || v >= 0.625) return const SizedBox.shrink();
                   return CustomPaint(
-                    painter: _EncounterStripePainter(
+                    painter: _EncounterWipePainter(
+                      style: _wipeStyle,
                       flashOpacity: _flashOpacity.value,
                       stripesIn: _stripesIn.value,
                       overlayAlpha: _overlayAlpha.value,
@@ -965,6 +1036,10 @@ class _HoleResolutionViewState extends State<_HoleResolutionView>
                 ),
               ),
               const SizedBox(height: 24),
+              if (widget.resolution.takanajMessage != null) ...<Widget>[
+                _TakanajBanner(message: widget.resolution.takanajMessage!),
+                const SizedBox(height: 16),
+              ],
               if (widget.resolution.roundCompleted &&
                   widget.resolution.roundSummary != null)
                 _RoundCompleteCard(summary: widget.resolution.roundSummary!),
@@ -1066,6 +1141,177 @@ class _ConfettiPainter extends CustomPainter {
   @override
   bool shouldRepaint(_ConfettiPainter oldDelegate) {
     return oldDelegate.progress != progress;
+  }
+}
+
+class _TakanajBanner extends StatelessWidget {
+  const _TakanajBanner({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final Color accent = ItemType.takanaj.accent;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accent.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.casino, size: 40, color: accent),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: accent,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoundItemsSheet extends StatelessWidget {
+  const _RoundItemsSheet({
+    required this.items,
+    required this.takanajAvailable,
+    required this.onUseTakanaj,
+  });
+
+  final Map<ItemType, int> items;
+  final bool takanajAvailable;
+  final VoidCallback onUseTakanaj;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final List<ItemType> owned = ItemType.values
+        .where((ItemType t) => (items[t] ?? 0) > 0)
+        .toList();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        0,
+        20,
+        20 + MediaQuery.of(context).padding.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Text(
+            'Items',
+            style: theme.textTheme.titleLarge
+                ?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
+          if (owned.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Text(
+                'No items in your bag.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            )
+          else
+            for (final ItemType type in owned)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _row(context, type, items[type]!),
+              ),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(BuildContext context, ItemType type, int qty) {
+    final theme = Theme.of(context);
+    final Color accent = type.accent;
+    final bool isTakanaj = type == ItemType.takanaj;
+    final bool usable = isTakanaj && takanajAvailable;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF243024)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(type.icon, color: accent, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  '${type.name}  ×$qty',
+                  style: theme.textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  isTakanaj
+                      ? (takanajAvailable
+                          ? type.description
+                          : 'Already re-rolled this hole.')
+                      : 'Use from the Items screen.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isTakanaj) ...<Widget>[
+            const SizedBox(width: 10),
+            FilledButton(
+              onPressed: usable ? onUseTakanaj : null,
+              style: FilledButton.styleFrom(
+                backgroundColor: accent,
+                foregroundColor: Colors.white,
+                visualDensity: VisualDensity.compact,
+              ),
+              child: Text(usable ? 'Use' : 'Used'),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 
@@ -1542,13 +1788,18 @@ class _NextEncounterBoostsCard extends StatelessWidget {
 ColorFilter _encounterGrayscaleFilter(double amount) =>
     grayscaleColorFilter(amount);
 
-class _EncounterStripePainter extends CustomPainter {
-  _EncounterStripePainter({
+/// The "screen turns to black" wipe style for the encounter intro.
+enum _WipeStyle { stripes, clockwiseSweep, irisClose }
+
+class _EncounterWipePainter extends CustomPainter {
+  _EncounterWipePainter({
+    required this.style,
     required this.flashOpacity,
     required this.stripesIn,
     required this.overlayAlpha,
   });
 
+  final _WipeStyle style;
   final double flashOpacity;
   final double stripesIn;
   final double
@@ -1567,41 +1818,72 @@ class _EncounterStripePainter extends CustomPainter {
     }
 
     if (stripesIn <= 0 && overlayAlpha >= 1) return;
-
-    // When stripes are fully in (stripesIn==1), fill solid black with overlayAlpha.
-    // While stripes are coming in, draw each stripe band.
-    if (stripesIn >= 1.0) {
-      // Fully covered — draw solid black rect (fades with overlayAlpha)
-      canvas.drawRect(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        Paint()..color = Colors.black.withValues(alpha: overlayAlpha),
-      );
-      return;
-    }
-
     if (stripesIn <= 0) return;
 
     final Paint paint = Paint()
       ..color = Colors.black.withValues(alpha: overlayAlpha);
-    final double stripeH = size.height / _stripeCount;
 
+    // Fully covered — draw solid black rect (fades with overlayAlpha).
+    if (stripesIn >= 1.0) {
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+        paint,
+      );
+      return;
+    }
+
+    // Mid-wipe — draw the chosen style at the current progress.
+    switch (style) {
+      case _WipeStyle.stripes:
+        _paintStripes(canvas, size, paint);
+      case _WipeStyle.clockwiseSweep:
+        _paintClockwiseSweep(canvas, size, paint);
+      case _WipeStyle.irisClose:
+        _paintIrisClose(canvas, size, paint);
+    }
+  }
+
+  void _paintStripes(Canvas canvas, Size size, Paint paint) {
+    final double stripeH = size.height / _stripeCount;
     for (int i = 0; i < _stripeCount; i++) {
       final bool fromLeft = i.isEven;
       final double y = i * stripeH;
-      final double x;
-
-      if (fromLeft) {
-        x = size.width * (stripesIn - 1.0); // slides in from left
-      } else {
-        x = size.width * (1.0 - stripesIn); // slides in from right
-      }
-
+      final double x = fromLeft
+          ? size.width * (stripesIn - 1.0) // slides in from left
+          : size.width * (1.0 - stripesIn); // slides in from right
       canvas.drawRect(Rect.fromLTWH(x, y, size.width, stripeH), paint);
     }
   }
 
+  void _paintClockwiseSweep(Canvas canvas, Size size, Paint paint) {
+    final Offset center = Offset(size.width / 2, size.height / 2);
+    // Radius large enough to cover every corner.
+    final double radius =
+        sqrt(size.width * size.width + size.height * size.height);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -pi / 2, // start at 12 o'clock
+      2 * pi * stripesIn, // sweep clockwise
+      true, // pie wedge from center
+      paint,
+    );
+  }
+
+  void _paintIrisClose(Canvas canvas, Size size, Paint paint) {
+    final Offset center = Offset(size.width / 2, size.height / 2);
+    final double maxRadius =
+        0.5 * sqrt(size.width * size.width + size.height * size.height);
+    final double clearRadius = maxRadius * (1.0 - stripesIn);
+    final Path path = Path()
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..addOval(Rect.fromCircle(center: center, radius: clearRadius))
+      ..fillType = PathFillType.evenOdd;
+    canvas.drawPath(path, paint);
+  }
+
   @override
-  bool shouldRepaint(_EncounterStripePainter old) =>
+  bool shouldRepaint(_EncounterWipePainter old) =>
+      old.style != style ||
       old.flashOpacity != flashOpacity ||
       old.stripesIn != stripesIn ||
       old.overlayAlpha != overlayAlpha;

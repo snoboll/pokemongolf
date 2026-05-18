@@ -56,6 +56,14 @@ class ItemsScreen extends StatelessWidget {
     switch (type) {
       case ItemType.evoHotDog:
         await _useEvoHotDog(context, store);
+      case ItemType.takanaj:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Use a Takanaj from the encounter screen during a round.',
+            ),
+          ),
+        );
     }
   }
 
@@ -177,6 +185,7 @@ class _ItemTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final Color accent = type.accent;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -194,10 +203,10 @@ class _ItemTile extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: _itemAccent.withValues(alpha: 0.15),
+                  color: accent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(type.icon, color: _itemAccent, size: 26),
+                child: Icon(type.icon, color: accent, size: 26),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -229,14 +238,14 @@ class _ItemTile extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: _itemAccent.withValues(alpha: 0.15),
+                  color: accent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   '×$quantity',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: _itemAccent,
+                    color: accent,
                   ),
                 ),
               ),
@@ -246,7 +255,7 @@ class _ItemTile extends StatelessWidget {
           FilledButton(
             onPressed: onUse,
             style: FilledButton.styleFrom(
-              backgroundColor: _itemAccent,
+              backgroundColor: accent,
               foregroundColor: Colors.white,
             ),
             child: const Text('Use'),

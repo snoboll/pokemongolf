@@ -36,7 +36,7 @@ class BogeybeastGolfStore extends ChangeNotifier {
   final Set<int> _caughtDexNumbers = <int>{};
   final Set<int> _shinyDexNumbers = <int>{};
   final List<GolfRoundSummary> _completedRounds = <GolfRoundSummary>[];
-  final Random _shinyRng = Random();
+  final Random _rng = Random();
 
   ActiveRound? _activeRound;
   final Set<int> _pendingCatches = <int>{};
@@ -526,10 +526,29 @@ class BogeybeastGolfStore extends ChangeNotifier {
       _caughtDexNumbers.add(dex);
       _pendingCatches.add(dex);
       if (!_shinyDexNumbers.contains(dex) &&
-          _shinyRng.nextInt(shinyOdds) == 0) {
+          _rng.nextInt(shinyOdds) == 0) {
         _shinyDexNumbers.add(dex);
         _pendingShinyCatches.add(dex);
         caughtShiny = true;
+      }
+    }
+
+    // Chance to find a Takanaj — additive: +25% in water, +25% in rough,
+    // +50% on a birdie. No base chance otherwise.
+    String? takanajMessage;
+    {
+      final bool birdie = score.relativeToPar == -1;
+      double chance = 0.0;
+      if (stats.water) chance += 0.25;
+      if (stats.rough) chance += 0.25;
+      if (birdie) chance += 0.50;
+      if (chance > 0 && _rng.nextDouble() < chance) {
+        addItem(ItemType.takanaj);
+        takanajMessage = birdie
+            ? 'Birdelivery! A Takanaj landed in your bag!'
+            : stats.water
+                ? 'You found a Takanaj in the water!'
+                : 'You found a Takanaj in the rough!';
       }
     }
 
@@ -558,6 +577,7 @@ class BogeybeastGolfStore extends ChangeNotifier {
         roundCompleted: true,
         roundSummary: summary,
         caughtShiny: caughtShiny,
+        takanajMessage: takanajMessage,
       );
     }
 
@@ -588,6 +608,7 @@ class BogeybeastGolfStore extends ChangeNotifier {
       holePars: round.holePars,
       courseName: round.courseName,
       greenCoords: round.greenCoords,
+      encounterModifiers: modifiers,
     );
     notifyListeners();
 
@@ -596,7 +617,30 @@ class BogeybeastGolfStore extends ChangeNotifier {
       roundCompleted: false,
       nextHoleNumber: round.currentHoleNumber + 1,
       caughtShiny: caughtShiny,
+      takanajMessage: takanajMessage,
     );
+  }
+
+  /// Consumes a Takanaj to re-roll the current hole's wild encounter.
+  /// Returns false if the player holds no Takanaj or there is no active round.
+  bool rerollEncounter() {
+    final ActiveRound? round = _activeRound;
+    if (round == null) return false;
+    if ((_items[ItemType.takanaj] ?? 0) <= 0) return false;
+    consumeItem(ItemType.takanaj);
+    _activeRound = ActiveRound(
+      holeCount: round.holeCount,
+      currentHoleNumber: round.currentHoleNumber,
+      currentEncounter:
+          _encounterService.generateEncounter(round.encounterModifiers),
+      completedHoles: round.completedHoles,
+      holePars: round.holePars,
+      courseName: round.courseName,
+      greenCoords: round.greenCoords,
+      encounterModifiers: round.encounterModifiers,
+    );
+    notifyListeners();
+    return true;
   }
 
   // ── Club bag management ─────────────────────────────────────────────
