@@ -408,6 +408,7 @@ class _GolferProfileScreenState extends State<GolferProfileScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   Set<int>? _caughtDexNumbers;
+  Set<int>? _shinyDexNumbers;
   List<CourseLeader>? _ledCourses;
   List<Club>? _clubs;
   bool _loading = true;
@@ -431,12 +432,14 @@ class _GolferProfileScreenState extends State<GolferProfileScreen>
       service.fetchGolferCaughtDexNumbers(widget.golfer.userId),
       service.fetchCourseLeadersForUser(widget.golfer.userId),
       service.fetchClubsForUser(widget.golfer.userId),
+      service.fetchGolferShinyDexNumbers(widget.golfer.userId),
     ]);
     if (mounted) {
       setState(() {
         _caughtDexNumbers = results[0] as Set<int>;
         _ledCourses = results[1] as List<CourseLeader>;
         _clubs = results[2] as List<Club>;
+        _shinyDexNumbers = results[3] as Set<int>;
         _loading = false;
       });
     }
@@ -480,7 +483,10 @@ class _GolferProfileScreenState extends State<GolferProfileScreen>
           : TabBarView(
               controller: _tabController,
               children: [
-                _BogeydexTab(caughtDexNumbers: _caughtDexNumbers!),
+                _BogeydexTab(
+                  caughtDexNumbers: _caughtDexNumbers!,
+                  shinyDexNumbers: _shinyDexNumbers!,
+                ),
                 _CoursesTab(
                   courses: _ledCourses!,
                   courseNameForId: BogeybeastGolfScope.of(context).courseNameForId,
@@ -493,8 +499,12 @@ class _GolferProfileScreenState extends State<GolferProfileScreen>
 }
 
 class _BogeydexTab extends StatelessWidget {
-  const _BogeydexTab({required this.caughtDexNumbers});
+  const _BogeydexTab({
+    required this.caughtDexNumbers,
+    required this.shinyDexNumbers,
+  });
   final Set<int> caughtDexNumbers;
+  final Set<int> shinyDexNumbers;
 
   @override
   Widget build(BuildContext context) {
@@ -510,7 +520,11 @@ class _BogeydexTab extends StatelessWidget {
       itemBuilder: (context, index) {
         final bogeybeast = firstGenBogeybeast[index];
         final caught = caughtDexNumbers.contains(bogeybeast.dexNumber);
-        return _GolferBogeydexTile(bogeybeast: bogeybeast, caught: caught);
+        return _GolferBogeydexTile(
+          bogeybeast: bogeybeast,
+          caught: caught,
+          shiny: caught && shinyDexNumbers.contains(bogeybeast.dexNumber),
+        );
       },
     );
   }
@@ -694,10 +708,15 @@ class _CoursesTab extends StatelessWidget {
 }
 
 class _GolferBogeydexTile extends StatelessWidget {
-  const _GolferBogeydexTile({required this.bogeybeast, required this.caught});
+  const _GolferBogeydexTile({
+    required this.bogeybeast,
+    required this.caught,
+    required this.shiny,
+  });
 
   final BogeybeastSpecies bogeybeast;
   final bool caught;
+  final bool shiny;
 
   @override
   Widget build(BuildContext context) {
@@ -751,6 +770,7 @@ class _GolferBogeydexTile extends StatelessWidget {
                       ? BogeybeastArt(
                           assetPath: bogeybeast.assetPath,
                           height: 100,
+                          shiny: shiny,
                         )
                       : Center(
                           child: Icon(

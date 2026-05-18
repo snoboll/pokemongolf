@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
@@ -29,11 +30,17 @@ class BogeybeastGolfStore extends ChangeNotifier {
   final CatchService _catchService;
   final SupabaseService? _supabaseService;
 
+  /// 1-in-[shinyOdds] chance a caught Bogeybeast is a shiny variant.
+  static const int shinyOdds = 256;
+
   final Set<int> _caughtDexNumbers = <int>{};
+  final Set<int> _shinyDexNumbers = <int>{};
   final List<GolfRoundSummary> _completedRounds = <GolfRoundSummary>[];
+  final Random _shinyRng = Random();
 
   ActiveRound? _activeRound;
   final Set<int> _pendingCatches = <int>{};
+  final Set<int> _pendingShinyCatches = <int>{};
   String? _golferName;
   String? _golferSprite;
   String? _golferTeam;
@@ -224,6 +231,11 @@ class BogeybeastGolfStore extends ChangeNotifier {
   UnmodifiableSetView<int> get caughtDexNumbers =>
       UnmodifiableSetView<int>(_caughtDexNumbers);
 
+  UnmodifiableSetView<int> get shinyDexNumbers =>
+      UnmodifiableSetView<int>(_shinyDexNumbers);
+
+  bool isShiny(int dexNumber) => _shinyDexNumbers.contains(dexNumber);
+
   List<GolfRoundSummary> get completedRounds =>
       List<GolfRoundSummary>.unmodifiable(_completedRounds);
 
@@ -259,6 +271,14 @@ class BogeybeastGolfStore extends ChangeNotifier {
         ..clear()
         ..addAll(results[1] as List<GolfRoundSummary>);
       _golferName = results[2] as String?;
+
+      try {
+        _shinyDexNumbers
+          ..clear()
+          ..addAll(await supa.fetchShinyDexNumbers());
+      } catch (e) {
+        debugPrint('Failed to load shiny Bogeybeasts: $e');
+      }
 
       try {
         _golferSprite = await supa.fetchGolferSprite();
@@ -337,6 +357,7 @@ class BogeybeastGolfStore extends ChangeNotifier {
 
   Future<void> releaseBogeybeast(BogeybeastSpecies bogeybeast) async {
     _caughtDexNumbers.remove(bogeybeast.dexNumber);
+    _shinyDexNumbers.remove(bogeybeast.dexNumber);
     notifyListeners();
     _supabaseService?.releaseBogeybeast(bogeybeast.dexNumber).catchError((e) {
       debugPrint('Failed to release bogeybeast: $e');
@@ -346,10 +367,13 @@ class BogeybeastGolfStore extends ChangeNotifier {
   Future<void> evolveBogeybeast(int fromDex, int toDex) async {
     _caughtDexNumbers.remove(fromDex);
     _caughtDexNumbers.add(toDex);
+    // Shiny status carries through evolution.
+    final bool wasShiny = _shinyDexNumbers.remove(fromDex);
+    if (wasShiny) _shinyDexNumbers.add(toDex);
     notifyListeners();
     try {
       await _supabaseService?.releaseBogeybeast(fromDex);
-      await _supabaseService?.insertCaughtBogeybeast(toDex);
+      await _supabaseService?.insertCaughtBogeybeast(toDex, isShiny: wasShiny);
     } catch (e) {
       debugPrint('Failed to evolve bogeybeast: $e');
     }
@@ -391,12 +415,16 @@ class BogeybeastGolfStore extends ChangeNotifier {
     }
     _items.clear();
     _pendingCatches.clear();
+    _pendingShinyCatches.clear();
+    _shinyDexNumbers.clear();
     _activeRound = null;
     notifyListeners();
   }
 
   Future<void> signOut() async {
     _caughtDexNumbers.clear();
+    _shinyDexNumbers.clear();
+    _pendingShinyCatches.clear();
     _completedRounds.clear();
     _activeRound = null;
     _golferName = null;
@@ -437,7 +465,9 @@ class BogeybeastGolfStore extends ChangeNotifier {
 
   void discardRound() {
     _caughtDexNumbers.removeAll(_pendingCatches);
+    _shinyDexNumbers.removeAll(_pendingShinyCatches);
     _pendingCatches.clear();
+    _pendingShinyCatches.clear();
     _activeRound = null;
     notifyListeners();
   }
@@ -490,9 +520,17 @@ class BogeybeastGolfStore extends ChangeNotifier {
       stats: stats,
     );
 
+    bool caughtShiny = false;
     if (caught) {
-      _caughtDexNumbers.add(round.currentEncounter.dexNumber);
-      _pendingCatches.add(round.currentEncounter.dexNumber);
+      final int dex = round.currentEncounter.dexNumber;
+      _caughtDexNumbers.add(dex);
+      _pendingCatches.add(dex);
+      if (!_shinyDexNumbers.contains(dex) &&
+          _shinyRng.nextInt(shinyOdds) == 0) {
+        _shinyDexNumbers.add(dex);
+        _pendingShinyCatches.add(dex);
+        caughtShiny = true;
+      }
     }
 
     final List<HoleResult> updatedHoles = <HoleResult>[
@@ -519,6 +557,7 @@ class BogeybeastGolfStore extends ChangeNotifier {
         holeResult: result,
         roundCompleted: true,
         roundSummary: summary,
+        caughtShiny: caughtShiny,
       );
     }
 
@@ -556,6 +595,7 @@ class BogeybeastGolfStore extends ChangeNotifier {
       holeResult: result,
       roundCompleted: false,
       nextHoleNumber: round.currentHoleNumber + 1,
+      caughtShiny: caughtShiny,
     );
   }
 
@@ -606,10 +646,16 @@ class BogeybeastGolfStore extends ChangeNotifier {
       _persistCatch(dex);
     }
     _pendingCatches.clear();
+    _pendingShinyCatches.clear();
   }
 
   void _persistCatch(int dexNumber) {
-    _supabaseService?.insertCaughtBogeybeast(dexNumber).catchError((e) {
+    _supabaseService
+        ?.insertCaughtBogeybeast(
+          dexNumber,
+          isShiny: _shinyDexNumbers.contains(dexNumber),
+        )
+        .catchError((e) {
       debugPrint('Failed to persist catch: $e');
     });
   }

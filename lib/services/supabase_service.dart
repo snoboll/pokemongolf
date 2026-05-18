@@ -209,6 +209,16 @@ class SupabaseService {
     return rows.map((r) => (r['dex_number'] as num).toInt()).toSet();
   }
 
+  /// Dex numbers [userId] has caught as shiny variants.
+  Future<Set<int>> fetchGolferShinyDexNumbers(String userId) async {
+    final List<Map<String, dynamic>> rows = await _client
+        .from('caught_bogeybeast')
+        .select('dex_number')
+        .eq('user_id', userId)
+        .eq('is_shiny', true);
+    return rows.map((r) => (r['dex_number'] as num).toInt()).toSet();
+  }
+
   Future<Map<String, Set<int>>> fetchAllCaughtDexNumbers() async {
     final List<Map<String, dynamic>> rows = await _client
         .from('caught_bogeybeast')
@@ -305,6 +315,17 @@ class SupabaseService {
     return rows.map<int>((row) => row['dex_number'] as int).toSet();
   }
 
+  /// Dex numbers the current user has caught as shiny variants.
+  Future<Set<int>> fetchShinyDexNumbers() async {
+    final List<Map<String, dynamic>> rows = await _client
+        .from('caught_bogeybeast')
+        .select('dex_number')
+        .eq('user_id', currentUserId!)
+        .eq('is_shiny', true);
+
+    return rows.map<int>((row) => (row['dex_number'] as num).toInt()).toSet();
+  }
+
   Future<void> resetAllProgress() async {
     final uid = currentUserId;
     if (uid == null) return;
@@ -339,9 +360,10 @@ class SupabaseService {
         .eq('dex_number', dexNumber);
   }
 
-  Future<void> insertCaughtBogeybeast(int dexNumber) async {
+  Future<void> insertCaughtBogeybeast(int dexNumber, {bool isShiny = false}) async {
     await _client.from('caught_bogeybeast').upsert({
       'dex_number': dexNumber,
+      'is_shiny': isShiny,
     }, onConflict: 'user_id,dex_number');
   }
 

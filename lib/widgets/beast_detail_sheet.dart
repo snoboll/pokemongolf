@@ -68,6 +68,10 @@ class BeastDetailSheet extends StatelessWidget {
               Text(bogeybeast.name,
                   style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
               const Spacer(),
+              if (store.isShiny(bogeybeast.dexNumber)) ...[
+                const BeastShinyBadge(),
+                const SizedBox(width: 6),
+              ],
               BeastRarityBadge(rarity: bogeybeast.rarity),
             ],
           ),
@@ -107,7 +111,11 @@ class BeastDetailSheet extends StatelessWidget {
                 Expanded(
                   flex: 4,
                   child: Center(
-                    child: BogeybeastArt(assetPath: bogeybeast.assetPath, height: 160),
+                    child: BogeybeastArt(
+                      assetPath: bogeybeast.assetPath,
+                      height: 160,
+                      shiny: store.isShiny(bogeybeast.dexNumber),
+                    ),
                   ),
                 ),
                 if (stats != null)
@@ -175,6 +183,34 @@ class BeastStatLabel extends StatelessWidget {
             style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.5))),
       ],
+    );
+  }
+}
+
+class BeastShinyBadge extends StatelessWidget {
+  const BeastShinyBadge({super.key});
+
+  static const Color _gold = Color(0xFFFFB300);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: _gold.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: _gold.withValues(alpha: 0.5)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.auto_awesome, size: 12, color: _gold),
+          SizedBox(width: 4),
+          Text('Shiny',
+              style: TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w700, color: _gold)),
+        ],
+      ),
     );
   }
 }

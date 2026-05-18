@@ -8,7 +8,7 @@ import '../widgets/beast_detail_sheet.dart';
 import '../widgets/bogeybeast_art.dart';
 import '../widgets/bogeycube_badge.dart';
 
-enum _CatchFilter { all, notCaught, caught }
+enum _CatchFilter { all, seen, caught }
 
 class CollectionScreen extends StatefulWidget {
   const CollectionScreen({super.key});
@@ -77,10 +77,12 @@ class _CollectionScreenState extends State<CollectionScreen> {
         final List<BogeybeastSpecies> filteredBogeybeast = firstGenBogeybeast
             .where((BogeybeastSpecies bogeybeast) {
               final bool caught = store.hasCaught(bogeybeast);
+              final bool seen =
+                  store.seenDexNumbers.contains(bogeybeast.dexNumber);
               return switch (_filter) {
                 _CatchFilter.all => true,
                 _CatchFilter.caught => caught,
-                _CatchFilter.notCaught => !caught,
+                _CatchFilter.seen => seen && !caught,
               };
             })
             .toList(growable: false);
@@ -117,10 +119,10 @@ class _CollectionScreenState extends State<CollectionScreen> {
                     ),
                     const SizedBox(width: 8),
                     _FilterChipButton(
-                      label: 'Not caught',
-                      selected: _filter == _CatchFilter.notCaught,
+                      label: 'Seen',
+                      selected: _filter == _CatchFilter.seen,
                       onSelected: () =>
-                          setState(() => _filter = _CatchFilter.notCaught),
+                          setState(() => _filter = _CatchFilter.seen),
                     ),
                     const SizedBox(width: 8),
                     _FilterChipButton(
@@ -155,6 +157,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                       bogeybeast: bogeybeast,
                       caught: caught,
                       seen: seen,
+                      shiny: caught && store.isShiny(bogeybeast.dexNumber),
                       onTap: caught
                           ? () => _showDetail(context, store, bogeybeast)
                           : null,
@@ -223,6 +226,7 @@ class _BogeydexTile extends StatelessWidget {
     required this.bogeybeast,
     required this.caught,
     required this.seen,
+    required this.shiny,
     this.onTap,
     this.onRelease,
   });
@@ -230,6 +234,7 @@ class _BogeydexTile extends StatelessWidget {
   final BogeybeastSpecies bogeybeast;
   final bool caught;
   final bool seen;
+  final bool shiny;
   final VoidCallback? onTap;
   final VoidCallback? onRelease;
 
@@ -273,6 +278,7 @@ class _BogeydexTile extends StatelessWidget {
                         ? BogeybeastArt(
                             assetPath: bogeybeast.assetPath,
                             height: 100,
+                            shiny: shiny,
                           )
                         : seen
                         ? ColorFiltered(

@@ -161,10 +161,14 @@ class HoleResolution {
     required this.roundCompleted,
     this.roundSummary,
     this.nextHoleNumber,
+    this.caughtShiny = false,
   });
 
   final HoleResult holeResult;
   final bool roundCompleted;
   final GolfRoundSummary? roundSummary;
   final int? nextHoleNumber;
+
+  /// True when the Bogeybeast caught on this hole was a shiny variant.
+  final bool caughtShiny;
 }

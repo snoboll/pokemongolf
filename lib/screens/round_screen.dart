@@ -913,7 +913,9 @@ class _HoleResolutionViewState extends State<_HoleResolutionView>
   @override
   Widget build(BuildContext context) {
     final HoleResult result = widget.resolution.holeResult;
+    final bool shiny = widget.resolution.caughtShiny;
     final theme = Theme.of(context);
+    const Color shinyGold = Color(0xFFFFB300);
 
     return Stack(
       children: <Widget>[
@@ -922,17 +924,28 @@ class _HoleResolutionViewState extends State<_HoleResolutionView>
           child: Column(
             children: <Widget>[
               Icon(
-                result.caught ? Icons.pets : Icons.close,
+                !result.caught
+                    ? Icons.close
+                    : shiny
+                        ? Icons.auto_awesome
+                        : Icons.pets,
                 size: 56,
-                color: result.caught
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.error,
+                color: !result.caught
+                    ? theme.colorScheme.error
+                    : shiny
+                        ? shinyGold
+                        : theme.colorScheme.primary,
               ),
               const SizedBox(height: 12),
               Text(
-                result.caught ? 'Caught!' : 'It broke free...',
+                !result.caught
+                    ? 'It broke free...'
+                    : shiny
+                        ? 'Shiny Catch!'
+                        : 'Caught!',
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w800,
+                  color: shiny && result.caught ? shinyGold : null,
                 ),
               ),
               const SizedBox(height: 4),
@@ -948,6 +961,7 @@ class _HoleResolutionViewState extends State<_HoleResolutionView>
                 child: BogeybeastArt(
                   assetPath: result.bogeybeast.assetPath,
                   height: 200,
+                  shiny: shiny,
                 ),
               ),
               const SizedBox(height: 24),
